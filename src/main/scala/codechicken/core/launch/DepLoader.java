@@ -184,7 +184,7 @@ public class DepLoader implements IFMLLoadingPlugin, IFMLCallHook {
                 }
             });
 
-            JOptionPane.showMessageDialog(null, ep, "A download error has occured", JOptionPane.ERROR_MESSAGE);
+            JOptionPane.showMessageDialog(null, ep, "A download error has occurred", JOptionPane.ERROR_MESSAGE);
         }
     }
 
@@ -320,7 +320,7 @@ public class DepLoader implements IFMLLoadingPlugin, IFMLCallHook {
                 String msg = owner + " was unable to delete file " + mod.getPath() + " the game will now try to delete it on exit. If this dialog appears again, delete it manually.";
                 System.err.println(msg);
                 if (!GraphicsEnvironment.isHeadless())
-                    JOptionPane.showMessageDialog(null, msg, "An update error has occured", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, msg, "An update error has occurred", JOptionPane.ERROR_MESSAGE);
 
                 System.exit(1);
             }
@@ -351,7 +351,7 @@ public class DepLoader implements IFMLLoadingPlugin, IFMLCallHook {
                     return;
                 }
                 downloadMonitor.showErrorDialog(dep.file.filename, dep.url + '/' + dep.file.filename);
-                throw new RuntimeException("A download error occured", e);
+                throw new RuntimeException("A download error occurred", e);
             }
         }
 
@@ -501,7 +501,7 @@ public class DepLoader implements IFMLLoadingPlugin, IFMLCallHook {
         private void scanDepInfo(File file) {
             try {
                 ZipFile zip = new ZipFile(file);
-                ZipEntry e = zip.getEntry("dependancies.info");
+                ZipEntry e = zip.getEntry("dependencies.info");
                 if (e == null) e = zip.getEntry("dependencies.info");
                 if (e != null)
                     loadJSon(zip.getInputStream(e));
