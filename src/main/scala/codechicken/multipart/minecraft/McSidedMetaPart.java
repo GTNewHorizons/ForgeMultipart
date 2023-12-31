@@ -25,7 +25,7 @@ public abstract class McSidedMetaPart extends McMetaPart implements TFacePart {
 
     public boolean canStay() {
         int side = sideForMeta(meta);
-        if(side < 0 || side > 5) return false;
+        if (side < 0 || side > 5) return false;
 
         BlockCoord pos = new BlockCoord(tile()).offset(side);
         return world().isSideSolid(pos.x, pos.y, pos.z, ForgeDirection.getOrientation(side ^ 1));

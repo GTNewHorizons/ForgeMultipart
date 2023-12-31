@@ -1,6 +1,5 @@
 package codechicken.multipart.minecraft;
 
-import cpw.mods.fml.relauncher.ReflectionHelper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockButton;
 import net.minecraft.entity.Entity;
@@ -17,12 +16,6 @@ import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Vector3;
 import codechicken.multipart.IFaceRedstonePart;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.Arrays;
-
 public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
 
     public static BlockButton stoneButton = (BlockButton) Blocks.stone_button;
@@ -32,19 +25,23 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
     public static Cuboid6[] cuboidRegions = setupCuboids();
 
     /**
-     * Capture the boxes of all 16 button states, copying all button hitboxes directly
-     * We do this so any button mixins will use the proper mixed hitbox size.
-     * So mods like Et Futurum Requiem which add floor/ceiling buttons need no extra setup to have proper block bounds.
+     * Capture the boxes of all 16 button states, copying all button hitboxes directly We do this so any button mixins
+     * will use the proper mixed hitbox size. So mods like Et Futurum Requiem which add floor/ceiling buttons need no
+     * extra setup to have proper block bounds.
      */
     private static Cuboid6[] setupCuboids() {
         Cuboid6[] regions = new Cuboid6[16];
         for (int i = 0; i < regions.length; i++) {
-            woodenButton.setBlockBoundsForItemRender(); //Reset bounds
-            woodenButton.func_150043_b(i); //Set button bounds based on meta; this is how buttons change their hitbox
+            woodenButton.setBlockBoundsForItemRender(); // Reset bounds
+            woodenButton.func_150043_b(i); // Set button bounds based on meta; this is how buttons change their hitbox
             regions[i] = new Cuboid6(
-                    woodenButton.getBlockBoundsMinX(), woodenButton.getBlockBoundsMinY(), woodenButton.getBlockBoundsMinZ(),
-                    woodenButton.getBlockBoundsMaxX(), woodenButton.getBlockBoundsMaxY(), woodenButton.getBlockBoundsMaxZ()
-            ); //Use the button hitbox to generate a Cuboid6 region. This isn't the actual instance, we'll copy from this later.
+                    woodenButton.getBlockBoundsMinX(),
+                    woodenButton.getBlockBoundsMinY(),
+                    woodenButton.getBlockBoundsMinZ(),
+                    woodenButton.getBlockBoundsMaxX(),
+                    woodenButton.getBlockBoundsMaxY(),
+                    woodenButton.getBlockBoundsMaxZ()); // Use the button hitbox to generate a Cuboid6 region. This
+                                                        // isn't the actual instance, we'll copy from this later.
         }
         return regions;
     }
@@ -84,8 +81,8 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
 
     @Override
     public Cuboid6 getBounds() {
-        //Somehow I got a crash here for meta 20? Let's wrap it to be safe
-        return cuboidRegions[meta & 15].copy();//these objects get transformed I think, so we need to make a copy.
+        // Somehow I got a crash here for meta 20? Let's wrap it to be safe
+        return cuboidRegions[meta & 15].copy();// these objects get transformed I think, so we need to make a copy.
     }
 
     public static McBlockPart placement(World world, BlockCoord pos, int side, int type) {
