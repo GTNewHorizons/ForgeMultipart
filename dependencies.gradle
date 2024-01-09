@@ -2,5 +2,6 @@
 
 dependencies {
     api("com.github.GTNewHorizons:CodeChickenLib:1.2.0:dev")
-    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.5.0-GTNH:dev")
+    
+    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.5.3-GTNH:dev")
 }
