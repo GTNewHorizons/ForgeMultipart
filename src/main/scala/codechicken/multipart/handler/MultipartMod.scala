@@ -7,10 +7,13 @@ import cpw.mods.fml.common.event.FMLInitializationEvent
 import cpw.mods.fml.common.Mod.EventHandler
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent
 import codechicken.multipart.MultiPartRegistry
+import codechicken.multipart.Tags
 
 @Mod(
   modid = "ForgeMultipart",
+  name = "Forge Multipart",
   acceptedMinecraftVersions = "[1.7.10]",
+  version = Tags.VERSION,
   modLanguage = "scala"
 )
 object MultipartMod {

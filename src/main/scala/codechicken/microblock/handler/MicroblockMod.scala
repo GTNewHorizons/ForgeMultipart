@@ -7,6 +7,7 @@ import cpw.mods.fml.common.Mod.EventHandler
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent
 import codechicken.microblock.MicroMaterialRegistry
 import codechicken.microblock.DefaultContent
+import codechicken.multipart.Tags
 import cpw.mods.fml.common.event.FMLPostInitializationEvent
 import codechicken.microblock.ConfigContent
 import cpw.mods.fml.common.event.FMLInterModComms.IMCEvent
@@ -14,8 +15,10 @@ import scala.collection.JavaConversions._
 
 @Mod(
   modid = "ForgeMicroblock",
+  name = "Forge Microblocks",
   acceptedMinecraftVersions = "[1.7.10]",
   dependencies = "required-after:ForgeMultipart",
+  version = Tags.VERSION,
   modLanguage = "scala"
 )
 object MicroblockMod {

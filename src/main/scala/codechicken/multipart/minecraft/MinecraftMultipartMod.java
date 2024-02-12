@@ -3,12 +3,17 @@ package codechicken.multipart.minecraft;
 import net.minecraftforge.common.MinecraftForge;
 
 import codechicken.lib.packet.PacketCustom;
+import codechicken.multipart.Tags;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.Mod.Instance;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 
-@Mod(modid = "McMultipart", acceptedMinecraftVersions = "[1.7.10]")
+@Mod(
+        modid = "McMultipart",
+        name = "Minecraft Multipart Plugin",
+        acceptedMinecraftVersions = "[1.7.10]",
+        version = Tags.VERSION)
 public class MinecraftMultipartMod {
 
     @Instance("McMultipart")
