@@ -7,6 +7,7 @@ import org.lwjgl.opengl.GL11._
 import codechicken.lib.render.{CCRenderState, TextureUtils}
 import codechicken.lib.render.BlockRenderer.BlockFace
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial
+import java.util.function.Supplier
 
 object MicroblockRender {
   def renderHighlight(
@@ -55,7 +56,9 @@ object MicroblockRender {
     glPopMatrix()
   }
 
-  val face = new BlockFace()
+  val face = ThreadLocal.withInitial[BlockFace](new Supplier[BlockFace]() {
+    override def get(): BlockFace = new BlockFace()
+  })
   def renderCuboid(
       pos: Vector3,
       mat: IMicroMaterial,
@@ -63,9 +66,10 @@ object MicroblockRender {
       c: Cuboid6,
       faces: Int
   ) {
-    CCRenderState.instance().setModel(face)
+    val localFace = face.get()
+    CCRenderState.instance().setModel(localFace)
     for (s <- 0 until 6 if (faces & 1 << s) == 0) {
-      face.loadCuboidFace(c, s)
+      localFace.loadCuboidFace(c, s)
       mat.renderMicroFace(pos, pass, c)
     }
   }
