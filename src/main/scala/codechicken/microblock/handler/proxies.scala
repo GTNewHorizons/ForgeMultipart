@@ -123,6 +123,9 @@ class MicroblockProxy_clientImpl extends MicroblockProxy_serverImpl {
     MicroMaterialRegistry.loadIcons()
     MinecraftForgeClient.registerItemRenderer(itemMicro, ItemMicroPartRenderer)
     PacketCustom.assignHandler(MicroblockCPH.registryChannel, MicroblockCPH)
+
+    if(Loader.isModLoaded("angelica"))
+      MicroblockMod.angelicaCompat = new AngelicaCompat
   }
 
   @SideOnly(Side.CLIENT)
