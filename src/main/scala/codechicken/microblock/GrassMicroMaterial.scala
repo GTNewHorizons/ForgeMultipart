@@ -26,6 +26,7 @@ class GrassMicroMaterial extends BlockMicroMaterial(Blocks.grass, 0) {
         .start(pos, pass, icont)
         .blockColour(getColour(pass))
         .lighting()
+        .blockAndMeta(block, meta)
         .render()
     else
       MaterialRenderHelper.start(pos, pass, icont).lighting().render()
@@ -35,6 +36,7 @@ class GrassMicroMaterial extends BlockMicroMaterial(Blocks.grass, 0) {
         .start(pos, pass, new UVTranslation(0, bounds.max.y - 1) ++ sideIconT)
         .blockColour(getColour(pass))
         .lighting()
+        .blockAndMeta(block, meta)
         .render()
   }
 }
@@ -48,12 +50,14 @@ class TopMicroMaterial($block: Block, $meta: Int = 0)
         .start(pos, pass, icont)
         .blockColour(getColour(pass))
         .lighting()
+        .blockAndMeta(block, meta)
         .render()
     else
       MaterialRenderHelper
         .start(pos, pass, new UVTranslation(0, bounds.max.y - 1) ++ icont)
         .blockColour(getColour(pass))
         .lighting()
+        .blockAndMeta(block, meta)
         .render()
   }
 }

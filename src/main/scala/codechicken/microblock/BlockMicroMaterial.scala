@@ -8,15 +8,11 @@ import cpw.mods.fml.relauncher.Side
 import net.minecraft.item.ItemStack
 import codechicken.lib.vec.{Cuboid6, Vector3}
 import net.minecraft.entity.player.EntityPlayer
-import codechicken.lib.render.{
-  CCRenderPipeline,
-  CCRenderState,
-  ColourMultiplier
-}
-import codechicken.microblock.handler.MicroblockProxy
+import codechicken.lib.render.{CCRenderPipeline, CCRenderState, ColourMultiplier}
+import codechicken.microblock.handler.{MicroblockMod, MicroblockProxy}
 import net.minecraft.entity.Entity
-import codechicken.lib.render.uv.{UVTransformation, MultiIconTransformation}
-import cpw.mods.fml.common.registry.{GameRegistry, GameData}
+import codechicken.lib.render.uv.{MultiIconTransformation, UVTransformation}
+import cpw.mods.fml.common.registry.{GameData, GameRegistry}
 
 import java.util.function.Supplier
 
@@ -54,7 +50,17 @@ object MaterialRenderHelper {
     this
   }
 
-  def render() = builder.render()
+  def blockAndMeta(b: Block, meta: Int) = {
+    if(MicroblockMod.angelicaCompat != null)
+      MicroblockMod.angelicaCompat.setShaderMaterialOverride(b, meta)
+    this
+  }
+
+  def render() = {
+    builder.render()
+    if(MicroblockMod.angelicaCompat != null)
+      MicroblockMod.angelicaCompat.resetShaderMaterialOverride()
+  }
 }
 
 /** Standard micro material class suitable for most blocks.
@@ -92,6 +98,7 @@ class BlockMicroMaterial(val block: Block, val meta: Int = 0)
       .start(pos, pass, icont)
       .blockColour(getColour(pass))
       .lighting()
+      .blockAndMeta(block, meta)
       .render()
   }
 
