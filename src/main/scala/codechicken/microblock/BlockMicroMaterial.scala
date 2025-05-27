@@ -8,7 +8,11 @@ import cpw.mods.fml.relauncher.Side
 import net.minecraft.item.ItemStack
 import codechicken.lib.vec.{Cuboid6, Vector3}
 import net.minecraft.entity.player.EntityPlayer
-import codechicken.lib.render.{CCRenderPipeline, CCRenderState, ColourMultiplier}
+import codechicken.lib.render.{
+  CCRenderPipeline,
+  CCRenderState,
+  ColourMultiplier
+}
 import codechicken.microblock.handler.{MicroblockMod, MicroblockProxy}
 import net.minecraft.entity.Entity
 import codechicken.lib.render.uv.{MultiIconTransformation, UVTransformation}
@@ -51,14 +55,14 @@ object MaterialRenderHelper {
   }
 
   def blockAndMeta(b: Block, meta: Int) = {
-    if(MicroblockMod.angelicaCompat != null)
+    if (MicroblockMod.angelicaCompat != null)
       MicroblockMod.angelicaCompat.setShaderMaterialOverride(b, meta)
     this
   }
 
   def render() = {
     builder.render()
-    if(MicroblockMod.angelicaCompat != null)
+    if (MicroblockMod.angelicaCompat != null)
       MicroblockMod.angelicaCompat.resetShaderMaterialOverride()
   }
 }

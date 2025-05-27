@@ -10,8 +10,7 @@ class AngelicaCompat {
     try {
       if (Tessellator.instance.isInstanceOf[CapturingTessellator])
         Iris.setShaderMaterialOverride(block, meta)
-    }
-    catch {
+    } catch {
       case ex: ClassCastException => Unit
     }
   }
@@ -20,8 +19,7 @@ class AngelicaCompat {
     try {
       if (Tessellator.instance.isInstanceOf[CapturingTessellator])
         Iris.resetShaderMaterialOverride()
-    }
-    catch {
+    } catch {
       case ex: ClassCastException => Unit
     }
   }

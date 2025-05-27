@@ -5,7 +5,12 @@ import cpw.mods.fml.common.event.FMLInitializationEvent
 import cpw.mods.fml.common.event.FMLPreInitializationEvent
 import cpw.mods.fml.common.Mod.EventHandler
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent
-import codechicken.microblock.{AngelicaCompat, ConfigContent, DefaultContent, MicroMaterialRegistry}
+import codechicken.microblock.{
+  AngelicaCompat,
+  ConfigContent,
+  DefaultContent,
+  MicroMaterialRegistry
+}
 import codechicken.multipart.Tags
 import cpw.mods.fml.common.event.FMLPostInitializationEvent
 import cpw.mods.fml.common.event.FMLInterModComms.IMCEvent
