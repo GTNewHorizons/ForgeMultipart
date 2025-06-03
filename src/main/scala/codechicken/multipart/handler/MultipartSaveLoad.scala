@@ -7,7 +7,6 @@ import net.minecraft.world.chunk.Chunk
 import net.minecraft.world.ChunkPosition
 import codechicken.multipart.{MultipartHelper, TileMultipart}
 import codechicken.lib.asm.ObfMapping
-import net.minecraft.world.World
 import scala.collection.mutable
 import codechicken.multipart.MultipartHelper.IPartTileConverter
 import scala.collection.JavaConversions._
