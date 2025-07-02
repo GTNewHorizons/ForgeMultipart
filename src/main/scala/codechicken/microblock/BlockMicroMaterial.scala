@@ -60,7 +60,7 @@ object MaterialRenderHelper {
     this
   }
 
-  def render() = {
+  def render(): Unit = {
     builder.render()
     if (MicroblockMod.angelicaCompat != null)
       MicroblockMod.angelicaCompat.resetShaderMaterialOverride()
