@@ -85,7 +85,8 @@ object MultipartCPH extends MultipartPH with IClientPacketHandler {
         new BlockCoord(
           packet.readByte + (cc.chunkXPos << 4),
           packet.readInt,
-          packet.readByte + (cc.chunkZPos << 4)),
+          packet.readByte + (cc.chunkZPos << 4)
+        ),
         packet
       )
   }
