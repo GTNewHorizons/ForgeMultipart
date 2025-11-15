@@ -34,6 +34,8 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 
   private var doesTick = false
 
+  private var cachedLightValue: Int = 0
+
   private[multipart] def from(that: TileMultipart) {
     copyFrom(that)
     loadFrom(that)
@@ -162,7 +164,11 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def getWeakChanges = false
 
-  def getLightValue = partList.view.map(_.getLightValue).max
+  def getLightValue: Int = cachedLightValue
+
+  private def recalculateLightValue(): Unit = {
+    cachedLightValue = partList.view.map(_.getLightValue).max
+  }
 
   def getExplosionResistance(entity: Entity) =
     partList.view.map(_.explosionResistance(entity)).max
@@ -284,6 +290,10 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     bindPart(part)
     part.bind(this)
 
+    if (part.getLightValue > cachedLightValue) {
+      cachedLightValue = part.getLightValue
+    }
+
     if (!doesTick && part.doesTick)
       setTicking(true)
   }
@@ -326,6 +336,8 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     if (r < 0)
       throw new IllegalArgumentException("Tried to remove a non-existant part")
 
+    val removedLightValue = part.getLightValue
+
     part.preRemove()
     partList = partList.filterNot(_ == part)
 
@@ -335,6 +347,10 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     partRemoved(part, r)
     part.onRemoved()
     part.tile = null
+
+    if (removedLightValue == cachedLightValue && removedLightValue > 0) {
+      recalculateLightValue()
+    }
 
     if (partList.isEmpty) {
       worldObj.setBlockToAir(xCoord, yCoord, zCoord)
