@@ -385,6 +385,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def clearParts() {
     partList = Seq()
+    cachedLightValue = 0
   }
 
   /** Writes the description of this tile, and all parts composing it, to packet
