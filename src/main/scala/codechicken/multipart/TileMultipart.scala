@@ -167,6 +167,9 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
   def getLightValue: Int = cachedLightValue
 
   private def recalculateLightValue(): Unit = {
+    if (partList.isEmpty)
+      return
+
     cachedLightValue = partList.view.map(_.getLightValue).max
   }
 
