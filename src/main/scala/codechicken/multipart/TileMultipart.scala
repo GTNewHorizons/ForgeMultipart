@@ -1,10 +1,12 @@
 package codechicken.multipart
 
 import net.minecraft.tileentity.TileEntity
+
 import scala.collection.mutable.ListBuffer
 import codechicken.lib.packet.PacketCustom
-import codechicken.lib.vec.{Cuboid6, BlockCoord, Vector3}
+import codechicken.lib.vec.{BlockCoord, Cuboid6, Vector3}
 import net.minecraft.world.World
+
 import java.util.List
 import net.minecraft.nbt.NBTTagCompound
 import codechicken.lib.data.MCDataOutput
@@ -15,16 +17,21 @@ import codechicken.multipart.handler.{
 }
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagList
+
 import java.util.Random
 import net.minecraft.entity.item.EntityItem
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.entity.Entity
+
 import scala.collection.JavaConversions._
 import java.util.Collection
 import codechicken.lib.raytracer.ExtendedMOP
 import net.minecraft.util.Vec3
+import net.minecraft.util.AxisAlignedBB
+
 import java.lang.Iterable
 import codechicken.lib.world.IChunkLoadTile
+import net.minecraft.block.Block
 
 class TileMultipart extends TileEntity with IChunkLoadTile {
 
@@ -34,7 +41,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 
   private var doesTick = false
 
-  private var cachedLightValue: Int = 0
+  var cachedLightValue: Int = 0
 
   private[multipart] def from(that: TileMultipart) {
     copyFrom(that)
@@ -42,12 +49,12 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
   }
 
   /** This method should be used for copying all the data from the fields in
-    * that container tile. This method will be automatically generated on java
-    * tile traits with fields if it is not overridden.
+    * that container tile.
     */
   def copyFrom(that: TileMultipart) {
     partList = that.partList
     doesTick = that.doesTick
+    cachedLightValue = that.cachedLightValue
   }
 
   def loadFrom(that: TileMultipart) {
@@ -116,11 +123,56 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
       TileCache.add(this)
   }
 
+  override def shouldRefresh(
+      oldBlock: Block,
+      newBlock: Block,
+      oldMeta: Int,
+      newMeta: Int,
+      world: World,
+      x: Int,
+      y: Int,
+      z: Int
+  ): Boolean = {
+    oldBlock != newBlock
+  }
+
+  def updateLight(): Unit = {
+    if (partList.isEmpty) {
+      cachedLightValue = 0
+      return
+    }
+
+    var max = 0
+    val it = partList.iterator
+    while (it.hasNext) {
+      val l = it.next().getLightValue
+      if (l > max) max = l
+    }
+    cachedLightValue = max
+
+    if (
+      worldObj != null && worldObj.getBlockMetadata(
+        xCoord,
+        yCoord,
+        zCoord
+      ) != cachedLightValue
+    ) {
+      worldObj.setBlockMetadataWithNotify(
+        xCoord,
+        yCoord,
+        zCoord,
+        cachedLightValue,
+        3
+      )
+    }
+  }
+
   /** Called by parts when they have changed in some form that affects the
     * world. Notifies neighbor blocks, the world and parts that share this host
     * and recalculates lighting
     */
   def notifyPartChange(part: TMultiPart) {
+    updateLight()
     internalPartChange(part)
 
     worldObj.markBlockForUpdate(xCoord, yCoord, zCoord)
@@ -164,14 +216,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def getWeakChanges = false
 
-  def getLightValue: Int = cachedLightValue
-
-  private def recalculateLightValue(): Unit = {
-    if (partList.isEmpty)
-      return
-
-    cachedLightValue = partList.view.map(_.getLightValue).max
-  }
+  def getLightValue = cachedLightValue
 
   def getExplosionResistance(entity: Entity) =
     partList.view.map(_.explosionResistance(entity)).max
@@ -293,10 +338,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     bindPart(part)
     part.bind(this)
 
-    if (part.getLightValue > cachedLightValue) {
-      cachedLightValue = part.getLightValue
-    }
-
     if (!doesTick && part.doesTick)
       setTicking(true)
   }
@@ -339,8 +380,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     if (r < 0)
       throw new IllegalArgumentException("Tried to remove a non-existant part")
 
-    val removedLightValue = part.getLightValue
-
     part.preRemove()
     partList = partList.filterNot(_ == part)
 
@@ -350,10 +389,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     partRemoved(part, r)
     part.onRemoved()
     part.tile = null
-
-    if (removedLightValue == cachedLightValue && removedLightValue > 0) {
-      recalculateLightValue()
-    }
 
     if (partList.isEmpty) {
       worldObj.setBlockToAir(xCoord, yCoord, zCoord)
@@ -388,7 +423,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def clearParts() {
     partList = Seq()
-    cachedLightValue = 0
   }
 
   /** Writes the description of this tile, and all parts composing it, to packet
@@ -469,25 +503,112 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 }
 
 trait TileMultipartClient extends TileMultipart {
-  def renderStatic(pos: Vector3, pass: Int) =
-    partList.foldLeft(false)((r, part) => part.renderStatic(pos, pass) || r)
 
-  def renderDynamic(pos: Vector3, frame: Float, pass: Int) {
-    partList.foreach(part => part.renderDynamic(pos, frame, pass: Int))
+  var staticCache: Array[TMultiPart] = null
+  var dynamicCache: Array[TMultiPart] = null
+  var hasDynamicParts: Boolean = false
+
+  var cachedRenderBounds: AxisAlignedBB = null
+
+  override def copyFrom(that: TileMultipart) {
+    super.copyFrom(that)
+    updateRenderCache()
   }
 
-  def randomDisplayTick(random: Random) {}
+  override def loadFrom(that: TileMultipart) {
+    super.loadFrom(that)
+    updateRenderCache()
+  }
+
+  override def partAdded(part: TMultiPart) {
+    super.partAdded(part)
+    updateRenderCache()
+  }
+
+  override def partRemoved(part: TMultiPart, p: Int) {
+    super.partRemoved(part, p)
+    updateRenderCache()
+  }
+
+  def updateRenderCache() {
+    if (partList != null) {
+      val (dynamic, static) = partList.partition(_.doesTick)
+      staticCache = static.toArray
+      dynamicCache = dynamic.toArray
+      hasDynamicParts = dynamicCache.length > 0
+
+      var c: Cuboid6 = null
+      var i = 0
+      val len = partList.size
+      while (i < len) {
+        val b = partList(i).getRenderBounds
+        if (c == null) c = b.copy
+        else c.enclose(b)
+        i += 1
+      }
+
+      if (c == null) c = Cuboid6.full
+
+      c.add(Vector3.fromTileEntity(this))
+      cachedRenderBounds = c.toAABB
+    } else {
+      staticCache = Array.empty
+      dynamicCache = Array.empty
+      hasDynamicParts = false
+      cachedRenderBounds = AxisAlignedBB.getBoundingBox(
+        xCoord,
+        yCoord,
+        zCoord,
+        xCoord + 1,
+        yCoord + 1,
+        zCoord + 1
+      )
+    }
+  }
 
   override def shouldRenderInPass(pass: Int) = {
     MultipartRenderer.pass = pass
-    true
+    if (staticCache == null) updateRenderCache()
+    hasDynamicParts
   }
 
   override def getRenderBoundingBox = {
-    val c = Cuboid6.full.copy
-    partList.foreach(part => c.enclose(part.getRenderBounds))
-    c.add(Vector3.fromTileEntity(this)).toAABB
+    if (cachedRenderBounds == null) updateRenderCache()
+    cachedRenderBounds
   }
+
+  def renderStatic(pos: Vector3, pass: Int) = {
+    if (staticCache == null) updateRenderCache()
+    var rendered = false
+
+    var i = 0
+    var len = staticCache.length
+    while (i < len) {
+      if (staticCache(i).renderStatic(pos, pass)) rendered = true
+      i += 1
+    }
+
+    i = 0
+    len = dynamicCache.length
+    while (i < len) {
+      if (dynamicCache(i).renderStatic(pos, pass)) rendered = true
+      i += 1
+    }
+    rendered
+  }
+
+  def renderDynamic(pos: Vector3, frame: Float, pass: Int) {
+    if (!hasDynamicParts) return
+
+    var i = 0
+    val len = dynamicCache.length
+    while (i < len) {
+      dynamicCache(i).renderDynamic(pos, frame, pass)
+      i += 1
+    }
+  }
+
+  def randomDisplayTick(random: Random) {}
 }
 
 /** Static class with multipart manipulation helper functions

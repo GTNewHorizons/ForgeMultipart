@@ -305,10 +305,7 @@ class BlockMultipart extends Block(Material.rock) {
   }
 
   override def getLightValue(world: IBlockAccess, x: Int, y: Int, z: Int): Int =
-    getTile(world, x, y, z) match {
-      case null => 0
-      case tile => tile.getLightValue
-    }
+    world.getBlockMetadata(x, y, z)
 
   override def randomDisplayTick(
       world: World,

@@ -37,8 +37,7 @@ object MultipartRenderer
       f: Float
   ) {
     val tmpart = t.asInstanceOf[TileMultipartClient]
-    if (tmpart.partList.isEmpty)
-      return
+    if (tmpart.partList.isEmpty || !tmpart.hasDynamicParts) return
 
     val state = CCRenderState.instance
     state.resetInstance()
