@@ -25,6 +25,10 @@ object MultipartRenderer
   TileMultipart.renderID = RenderingRegistry.getNextAvailableRenderId
   var pass: Int = 0
 
+  private val cachedPos = new ThreadLocal[Vector3] {
+    override def initialValue() = new Vector3()
+  }
+
   override def renderTileEntityAt(
       t: TileEntity,
       x: Double,
@@ -41,7 +45,9 @@ object MultipartRenderer
     state.pullLightmapInstance()
     state.useNormals = true
 
-    val pos = new Vector3(x, y, z)
+    val pos = cachedPos.get()
+    pos.set(x, y, z)
+
     tmpart.renderDynamic(pos, f, pass)
   }
 
