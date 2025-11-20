@@ -65,6 +65,8 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     }
   }
 
+  def getBaseRenderDistanceSquared: Double = super.getMaxRenderDistanceSquared
+
   /** Overidden in TSlottedTile when a part that goes in a slot is added
     */
   def partMap(slot: Int): TMultiPart = null
@@ -564,6 +566,11 @@ trait TileMultipartClient extends TileMultipart {
         zCoord + 1
       )
     }
+  }
+
+  override def getMaxRenderDistanceSquared: Double = {
+    if (staticCache == null) updateRenderCache()
+    if (hasDynamicParts) getBaseRenderDistanceSquared else 0.0
   }
 
   override def shouldRenderInPass(pass: Int) = {
