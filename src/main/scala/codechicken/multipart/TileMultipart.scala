@@ -63,6 +63,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
       doesTick = false
       setTicking(true)
     }
+    updateLight()
   }
 
   def getBaseRenderDistanceSquared: Double = super.getMaxRenderDistanceSquared
@@ -506,9 +507,9 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 
 trait TileMultipartClient extends TileMultipart {
 
-  var staticCache: Array[TMultiPart] = null
-  var dynamicCache: Array[TMultiPart] = null
-  var hasDynamicParts: Boolean = false
+  @volatile var staticCache: Array[TMultiPart] = null
+  @volatile var dynamicCache: Array[TMultiPart] = null
+  @volatile var hasDynamicParts: Boolean = false
 
   var cachedRenderBounds: AxisAlignedBB = null
 
@@ -535,15 +536,14 @@ trait TileMultipartClient extends TileMultipart {
   def updateRenderCache() {
     if (partList != null) {
       val (dynamic, static) = partList.partition(_.doesTick)
-      staticCache = static.toArray
-      dynamicCache = dynamic.toArray
-      hasDynamicParts = dynamicCache.length > 0
+      val sArr = static.toArray
+      val dArr = dynamic.toArray
 
       var c: Cuboid6 = null
       var i = 0
-      val len = partList.size
-      while (i < len) {
-        val b = partList(i).getRenderBounds
+      val allParts = sArr ++ dArr
+      while (i < allParts.length) {
+        val b = allParts(i).getRenderBounds
         if (c == null) c = b.copy
         else c.enclose(b)
         i += 1
@@ -553,6 +553,9 @@ trait TileMultipartClient extends TileMultipart {
 
       c.add(Vector3.fromTileEntity(this))
       cachedRenderBounds = c.toAABB
+      staticCache = sArr
+      dynamicCache = dArr
+      hasDynamicParts = dArr.length > 0
     } else {
       staticCache = Array.empty
       dynamicCache = Array.empty
@@ -588,18 +591,26 @@ trait TileMultipartClient extends TileMultipart {
     if (staticCache == null) updateRenderCache()
     var rendered = false
 
-    var i = 0
-    var len = staticCache.length
-    while (i < len) {
-      if (staticCache(i).renderStatic(pos, pass)) rendered = true
-      i += 1
+    val statics = staticCache
+    if (statics != null) {
+      var i = 0
+      val len = statics.length
+      while (i < len) {
+        if (statics(i) != null && statics(i).renderStatic(pos, pass))
+          rendered = true
+        i += 1
+      }
     }
 
-    i = 0
-    len = dynamicCache.length
-    while (i < len) {
-      if (dynamicCache(i).renderStatic(pos, pass)) rendered = true
-      i += 1
+    val dynamics = dynamicCache
+    if (dynamics != null) {
+      var i = 0
+      val len = dynamics.length
+      while (i < len) {
+        if (dynamics(i) != null && dynamics(i).renderStatic(pos, pass))
+          rendered = true
+        i += 1
+      }
     }
     rendered
   }
@@ -607,11 +618,14 @@ trait TileMultipartClient extends TileMultipart {
   def renderDynamic(pos: Vector3, frame: Float, pass: Int) {
     if (!hasDynamicParts) return
 
-    var i = 0
-    val len = dynamicCache.length
-    while (i < len) {
-      dynamicCache(i).renderDynamic(pos, frame, pass)
-      i += 1
+    val dynamics = dynamicCache
+    if (dynamics != null) {
+      var i = 0
+      val len = dynamics.length
+      while (i < len) {
+        if (dynamics(i) != null) dynamics(i).renderDynamic(pos, frame, pass)
+        i += 1
+      }
     }
   }
 
