@@ -7,6 +7,7 @@ import org.lwjgl.opengl.GL11._
 import codechicken.lib.render.{CCRenderState, TextureUtils}
 import codechicken.lib.render.BlockRenderer.BlockFace
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial
+
 import java.util.function.Supplier
 
 object MicroblockRender {
@@ -68,9 +69,12 @@ object MicroblockRender {
   ) {
     val localFace = face.get()
     CCRenderState.instance().setModelInstance(localFace)
-    for (s <- 0 until 6 if (faces & 1 << s) == 0) {
-      localFace.loadCuboidFace(c, s)
-      mat.renderMicroFace(pos, pass, c)
+
+    for (s <- 0 until 6) {
+      if ((faces & 1 << s) == 0) {
+        localFace.loadCuboidFace(c, s)
+        mat.renderMicroFace(pos, pass, c)
+      }
     }
   }
 }
