@@ -82,7 +82,11 @@ object MultipartCPH extends MultipartPH with IClientPacketHandler {
     for (i <- 0 until num)
       TileMultipart.handleDescPacket(
         world,
-        indexInChunk(cc, packet.readShort),
+        new BlockCoord(
+          packet.readByte + (cc.chunkXPos << 4),
+          packet.readInt,
+          packet.readByte + (cc.chunkZPos << 4)
+        ),
         packet
       )
   }
@@ -220,7 +224,9 @@ object MultipartSPH
     while (it.hasNext) {
       val tile = it.next
       if (tile.isInstanceOf[TileMultipart]) {
-        s.writeShort(indexInChunk(new BlockCoord(tile)))
+        s.writeByte(tile.xCoord & 0xf)
+        s.writeInt(tile.yCoord)
+        s.writeByte(tile.zCoord & 0xf)
         tile.asInstanceOf[TileMultipart].writeDesc(s)
         num += 1
       }
