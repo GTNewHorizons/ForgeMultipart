@@ -613,6 +613,11 @@ trait TileMultipartClient extends TileMultipart {
     if (cachedRenderBounds == null) updateRenderCache()
     cachedRenderBounds
   }
+
+  override def markRender(): Unit = {
+    super.markRender()
+    updateRenderCache()
+  }
 }
 
 /** Static class with multipart manipulation helper functions
