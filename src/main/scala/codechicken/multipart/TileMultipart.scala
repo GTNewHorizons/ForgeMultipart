@@ -40,8 +40,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 
   private var doesTick = false
 
-  private var cachedLightValue: Int = 0
-
   private[multipart] def from(that: TileMultipart) {
     copyFrom(that)
     loadFrom(that)
@@ -118,6 +116,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
 
   override def validate() {
     super.validate()
+
     if (worldObj != null && worldObj.isRemote)
       TileCache.add(this)
   }
@@ -170,25 +169,9 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def getWeakChanges = false
 
-  def getLightValue: Int = cachedLightValue
-
-  override def shouldRefresh(
-      oldBlock: Block,
-      newBlock: Block,
-      oldMeta: Int,
-      newMeta: Int,
-      world: World,
-      x: Int,
-      y: Int,
-      z: Int
-  ): Boolean = {
-    oldBlock != newBlock
-  }
-
-  private def updateLight(): Unit = {
+  def getLightValue: Int = {
     if (partList.isEmpty) {
-      cachedLightValue = 0
-      return
+      return 0
     }
 
     var max = 0
@@ -197,23 +180,8 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
       val l = it.next().getLightValue
       if (l > max) max = l
     }
-    cachedLightValue = max
 
-    if (
-      worldObj != null && worldObj.getBlockMetadata(
-        xCoord,
-        yCoord,
-        zCoord
-      ) != cachedLightValue
-    ) {
-      worldObj.setBlockMetadataWithNotify(
-        xCoord,
-        yCoord,
-        zCoord,
-        cachedLightValue,
-        3
-      )
-    }
+    max
   }
 
   def getExplosionResistance(entity: Entity) =
@@ -336,10 +304,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     bindPart(part)
     part.bind(this)
 
-    if (part.getLightValue > cachedLightValue) {
-      cachedLightValue = part.getLightValue
-    }
-
     if (!doesTick && part.doesTick)
       setTicking(true)
   }
@@ -394,10 +358,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     part.onRemoved()
     part.tile = null
 
-    if (removedLightValue == cachedLightValue && removedLightValue > 0) {
-      updateLight()
-    }
-
     if (partList.isEmpty) {
       worldObj.setBlockToAir(xCoord, yCoord, zCoord)
     } else {
@@ -420,8 +380,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     clearParts()
     parts.foreach(p => addPart_do(p))
 
-    updateLight()
-
     if (worldObj != null) {
       if (worldObj.isRemote)
         operate(_.onWorldJoin())
@@ -434,7 +392,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def clearParts() {
     partList = Seq()
-    cachedLightValue = 0
   }
 
   /** Writes the description of this tile, and all parts composing it, to packet
