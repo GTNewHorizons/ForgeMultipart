@@ -480,7 +480,8 @@ trait TileMultipartClient extends TileMultipart {
 
   def updateRenderCache() {
     if (partList != null) {
-      val (dynamic, static) = partList.partition(p => p.doesTick || p.shouldRenderDynamic)
+      val (dynamic, static) =
+        partList.partition(p => p.doesTick || p.shouldRenderDynamic)
       val sArr = static.toArray
       val dArr = dynamic.toArray
 
