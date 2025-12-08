@@ -307,6 +307,13 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
   private def getWriteStream =
     MultipartSPH.getTileStream(worldObj, new BlockCoord(this))
 
+  private[multipart] def updatePartLightCache(part: TMultiPart): Unit = {
+    val currentLight = part.getLightValue
+    if (currentLight > cachedLightValue) {
+      cachedLightValue = currentLight
+    }
+  }
+
   private[multipart] def addPart_impl(part: TMultiPart) {
     if (!worldObj.isRemote)
       writeAddPart(part)
@@ -314,6 +321,10 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     addPart_do(part)
     part.onAdded()
     partAdded(part)
+
+    // AE2 crashes if called before TMultiPart.onAdded is called
+    updatePartLightCache(part)
+
     notifyPartChange(part)
     notifyTileChange()
     markDirty()
@@ -335,10 +346,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     partList = partList :+ part
     bindPart(part)
     part.bind(this)
-
-    if (part.getLightValue > cachedLightValue) {
-      cachedLightValue = part.getLightValue
-    }
 
     if (!doesTick && part.doesTick)
       setTicking(true)
@@ -420,13 +427,14 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     clearParts()
     parts.foreach(p => addPart_do(p))
 
-    updateLight()
-
     if (worldObj != null) {
       if (worldObj.isRemote)
         operate(_.onWorldJoin())
       notifyPartChange(null)
     }
+
+    // AE2 crashes if called before TMultiPart.onWorldJoin is called
+    updateLight()
   }
 
   /** Remove all parts from internal cache Provided for trait overrides, do not
