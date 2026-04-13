@@ -1,11 +1,14 @@
 package codechicken.multipart.handler
 
 import cpw.mods.fml.common.Mod
-import cpw.mods.fml.common.event.FMLPostInitializationEvent
-import cpw.mods.fml.common.event.FMLPreInitializationEvent
-import cpw.mods.fml.common.event.FMLInitializationEvent
+import cpw.mods.fml.common.event.{
+  FMLInitializationEvent,
+  FMLPostInitializationEvent,
+  FMLPreInitializationEvent,
+  FMLServerAboutToStartEvent,
+  FMLServerStoppedEvent
+}
 import cpw.mods.fml.common.Mod.EventHandler
-import cpw.mods.fml.common.event.FMLServerAboutToStartEvent
 import codechicken.multipart.MultiPartRegistry
 import codechicken.multipart.Tags
 
@@ -38,5 +41,10 @@ object MultipartMod {
   @EventHandler
   def beforeServerStart(event: FMLServerAboutToStartEvent) {
     MultiPartRegistry.beforeServerStart()
+  }
+
+  @EventHandler
+  def serverStopped(event: FMLServerStoppedEvent) {
+    MultipartSaveLoad.loadingWorld = null;
   }
 }
