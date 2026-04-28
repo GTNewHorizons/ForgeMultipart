@@ -85,7 +85,9 @@ object MultipartRenderer
     val state = CCRenderState.instance
     state.resetInstance()
     state.lightMatrix.locate(world, x, y, z)
-    return tmpart.renderStatic(new Vector3(x, y, z), pass)
+    val b = tmpart.renderStatic(new Vector3(x, y, z), pass)
+    state.lightMatrix.access = null
+    b
   }
 
   override def renderInventoryBlock(
