@@ -9,8 +9,7 @@ import cpw.mods.fml.common.event.{
   FMLServerStoppedEvent
 }
 import cpw.mods.fml.common.Mod.EventHandler
-import codechicken.multipart.MultiPartRegistry
-import codechicken.multipart.Tags
+import codechicken.multipart.{ControlKeyModifer, MultiPartRegistry, Tags}
 
 @Mod(
   modid = "ForgeMultipart",
@@ -46,5 +45,6 @@ object MultipartMod {
   @EventHandler
   def serverStopped(event: FMLServerStoppedEvent) {
     MultipartSaveLoad.loadingWorld = null;
+    ControlKeyModifer.map.clear();
   }
 }
