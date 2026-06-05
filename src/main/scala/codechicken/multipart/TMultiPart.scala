@@ -252,7 +252,9 @@ abstract class TMultiPart {
     * Incremental changes should be sent rather than the whole description
     * packet if possible.
     */
-  def sendDescUpdate() = writeDesc(getWriteStream)
+  def sendDescUpdate() {
+    if (tile != null) writeDesc(getWriteStream)
+  }
 
   /** Called when a part is added or removed from this block space. The part
     * parameter may be null if several things have changed.
