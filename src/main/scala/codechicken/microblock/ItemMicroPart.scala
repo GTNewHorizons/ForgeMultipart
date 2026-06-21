@@ -133,15 +133,18 @@ object ItemMicroPart {
     if (!stack.getTagCompound.hasKey("mat"))
       return null
 
-    return MicroMaterialRegistry.getMaterial(
+    MicroMaterialRegistry.getMaterial(
       stack.getTagCompound.getString("mat")
-    )
+    ) match {
+      case null => MissingMicroMaterial
+      case mat  => mat
+    }
   }
 
   def getMaterialID(stack: ItemStack): Int = {
     checkTagCompound(stack)
     if (!stack.getTagCompound.hasKey("mat"))
-      return 0
+      return MicroMaterialRegistry.getMissingId
 
     return MicroMaterialRegistry.materialID(
       stack.getTagCompound.getString("mat")

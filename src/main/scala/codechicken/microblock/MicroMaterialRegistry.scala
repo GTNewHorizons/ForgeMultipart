@@ -114,6 +114,7 @@ object MicroMaterialRegistry {
   private var maxCuttingStrength: Int = _
 
   private val remap = HashMap[String, String]()
+  private var missingId: Int = 0
 
   /** Register a micro material with unique identifier name
     */
@@ -162,7 +163,16 @@ object MicroMaterialRegistry {
     nameMap.clear()
     for (i <- 0 until idMap.length)
       nameMap.put(idMap(i)._1, i)
+    missingId = nameMap.getOrElse(
+      MissingMicroMaterial.key,
+      throw new IllegalStateException(
+        "MissingMicroMaterial is not registered; the placeholder must never " +
+          "fall back to id 0."
+      )
+    )
   }
+
+  def getMissingId = missingId
 
   private[microblock] def calcMaxCuttingStrength() {
     val it = Item.itemRegistry.iterator.asInstanceOf[JIterator[Item]]
@@ -216,7 +226,7 @@ object MicroMaterialRegistry {
       case Some(v) => v
       case None =>
         logger.error("Missing mapping for part with ID: " + name)
-        0
+        missingId
     }
 
   def getMaterial(name: String) =
