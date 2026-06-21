@@ -26,7 +26,14 @@ object MicroblockCPH extends MicroblockPH with IClientPacketHandler {
       netHandler: INetHandlerPlayClient
   ) {
     packet.getType match {
-      case 1 => handleMaterialRegistration(packet, netHandler)
+      // In singleplayer the integrated server and this client share the one
+      // static registry, so the id-map packet is redundant. Skipping it avoids
+      // rebuilding (clearing) the shared maps on the netty thread while the
+      // server thread reads them - the race that turned microblocks into Blood
+      // Rune slabs.
+      case 1 =>
+        if (!mc.isSingleplayer)
+          handleMaterialRegistration(packet, netHandler)
     }
   }
 

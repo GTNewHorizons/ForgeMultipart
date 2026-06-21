@@ -54,5 +54,7 @@ object DefaultContent {
     registerMaterial(new GrassMicroMaterial, materialKey(grass))
     MicroMaterialRegistry.remapName(oldKey(mycelium), materialKey(mycelium))
     registerMaterial(new TopMicroMaterial(mycelium), materialKey(mycelium))
+
+    registerMaterial(MissingMicroMaterial, MissingMicroMaterial.key)
   }
 }
