@@ -3,7 +3,7 @@ package codechicken.multipart
 import java.util.List
 import java.lang.Iterable
 import net.minecraft.block.Block
-import net.minecraft.block.material.Material
+import net.minecraft.block.material.{MapColor, Material}
 import net.minecraft.entity.Entity
 import net.minecraft.util.AxisAlignedBB
 import net.minecraft.world.World
@@ -12,6 +12,7 @@ import net.minecraft.util.Vec3
 import net.minecraft.util.MovingObjectPosition
 import codechicken.lib.raytracer.RayTracer
 import net.minecraft.entity.player.EntityPlayer
+
 import java.util.Random
 import java.util.ArrayList
 import net.minecraft.item.ItemStack
@@ -68,7 +69,7 @@ object BlockMultipart {
 
 /** Block class for all multiparts, should be internal use only.
   */
-class BlockMultipart extends Block(Material.rock) {
+class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
   import BlockMultipart._
 
   override def hasTileEntity(meta: Int = 0) = true
