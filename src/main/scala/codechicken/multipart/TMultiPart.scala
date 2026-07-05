@@ -252,7 +252,9 @@ abstract class TMultiPart {
     * Incremental changes should be sent rather than the whole description
     * packet if possible.
     */
-  def sendDescUpdate() = writeDesc(getWriteStream)
+  def sendDescUpdate() {
+    if (tile != null) writeDesc(getWriteStream)
+  }
 
   /** Called when a part is added or removed from this block space. The part
     * parameter may be null if several things have changed.
@@ -315,6 +317,12 @@ abstract class TMultiPart {
     * addition/removal so it should be a constant for this instance.
     */
   def doesTick = true
+
+  /** Return whether this part needs to be included in the dynamic render loop
+    * (renderDynamic). Default is false. Override this to true for parts like
+    * lights that need per-frame rendering but no logic updates.
+    */
+  def shouldRenderDynamic = false
 
   /** Called once per world tick. This will be called even if doesTick returns
     * false if another part in the space needs ticks.

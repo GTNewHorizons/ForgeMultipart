@@ -1,9 +1,10 @@
 // Add your dependencies here
 
 dependencies {
-    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.7:dev")
-    compileOnly("com.github.GTNewHorizons:Angelica:1.0.0-beta62:dev")
-    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.20-GTNH:dev") {
+    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.12:dev")
+    compileOnly("com.github.GTNewHorizons:Angelica:2.1.19:dev")
+    compileOnly("com.github.GTNewHorizons:Postea:1.2.5:dev") {transitive = false}
+    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.93-GTNH:dev") {
         exclude group: 'com.github.GTNewHorizons', module: 'CodeChickenCore'
     }
 }

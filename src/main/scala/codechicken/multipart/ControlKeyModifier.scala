@@ -18,10 +18,17 @@ object ControlKeyModifer {
   implicit def playerControlValue(p: EntityPlayer) = new ControlKeyValue(p)
 
   class ControlKeyValue(p: EntityPlayer) {
-    def isControlDown = map(p)
+    def isControlDown = {
+      if (p.worldObj.isRemote) {
+        isClientPressing
+      } else {
+        map(p)
+      }
+    }
   }
 
   val map = HashMap[EntityPlayer, Boolean]().withDefaultValue(false)
+  var isClientPressing = false;
 
   /** Implicit static for Java users.
     */
@@ -38,7 +45,6 @@ object ControlKeyHandler
     ) {
   import ControlKeyModifer._
   var wasPressed = false
-  var oldPlayer: EntityPlayer = null
 
   @SubscribeEvent
   @SideOnly(Side.CLIENT)
@@ -47,19 +53,11 @@ object ControlKeyHandler
     if (pressed != wasPressed) {
       wasPressed = pressed
       if (Minecraft.getMinecraft.getNetHandler != null) {
-        map.put(Minecraft.getMinecraft.thePlayer, pressed)
+        isClientPressing = pressed
         val packet = new PacketCustom(MultipartCPH.channel, 1)
         packet.writeBoolean(pressed)
         packet.sendToServer()
       }
-    }
-    if (oldPlayer != null) {
-      if (oldPlayer != Minecraft.getMinecraft.thePlayer) {
-        map.remove(oldPlayer)
-        oldPlayer = Minecraft.getMinecraft.thePlayer
-      }
-    } else {
-      oldPlayer = Minecraft.getMinecraft.thePlayer
     }
   }
 }
