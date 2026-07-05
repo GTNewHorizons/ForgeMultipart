@@ -16,6 +16,7 @@ import net.minecraftforge.oredict.OreDictionary
 import net.minecraft.item.ItemStack
 import net.minecraftforge.oredict.ShapedOreRecipe
 import codechicken.lib.packet.PacketCustom
+import codechicken.microblock.compat.PosteaCompat
 import cpw.mods.fml.common.Loader
 import cpw.mods.fml.common.registry.GameRegistry
 import net.minecraft.client.renderer.RenderBlocks
@@ -110,6 +111,9 @@ class MicroblockProxy_serverImpl {
       MicroblockSPH.registryChannel,
       MicroblockSPH
     )
+    if (Loader.isModLoaded("postea")) {
+      PosteaCompat.registerTransformers()
+    }
   }
 }
 
