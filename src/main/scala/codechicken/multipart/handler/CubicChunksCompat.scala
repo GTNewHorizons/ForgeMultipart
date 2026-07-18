@@ -9,7 +9,7 @@ object CubicChunksCompat {
   def init(): Unit = MinecraftForge.EVENT_BUS.register(this)
 
   @SubscribeEvent(priority = EventPriority.HIGHEST)
-  def onTileEntitiesLoad(event: CubeEvent.TileEntitiesLoad): Unit = {
+  def onTileEntitiesLoad(event: CubeEvent.DataLoad): Unit = {
     val cube = event.cube
     val world = event.world
 
