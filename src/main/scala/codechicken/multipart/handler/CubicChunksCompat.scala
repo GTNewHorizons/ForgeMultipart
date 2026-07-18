@@ -13,16 +13,6 @@ object CubicChunksCompat {
     val cube = event.cube
     val world = event.world
 
-    val iter = cube.cubeTileEntityMap.entrySet().iterator()
-
-    while (iter.hasNext) {
-      val e = iter.next();
-
-      val converted = MultipartSaveLoad.convertTileForCube(world, e.getValue)
-      if (converted != e.getValue) {
-        if (converted != null) e.setValue(converted)
-        else cube.cubeTileEntityMap.remove(e.getKey)
-      }
-    }
+    MultipartSaveLoad.loadTiles(world, cube.cubeTileEntityMap)
   }
 }
