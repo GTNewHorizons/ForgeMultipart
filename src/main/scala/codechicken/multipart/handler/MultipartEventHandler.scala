@@ -18,7 +18,11 @@ import scala.collection.JavaConverters._
 object MultipartEventHandler {
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   def tileEntityLoad(event: ChunkDataEvent.Load) {
-    MultipartSaveLoad.loadTiles(event.getChunk.worldObj, event.getChunk.chunkTileEntityMap.asInstanceOf[java.util.Map[ChunkPosition, TileEntity]])
+    MultipartSaveLoad.loadTiles(
+      event.getChunk.worldObj,
+      event.getChunk.chunkTileEntityMap
+        .asInstanceOf[java.util.Map[ChunkPosition, TileEntity]]
+    )
   }
 
   @SubscribeEvent

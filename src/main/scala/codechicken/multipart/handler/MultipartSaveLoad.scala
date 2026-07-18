@@ -62,9 +62,7 @@ object MultipartSaveLoad {
 
   def loadTiles(world: World, tiles: Map[ChunkPosition, TileEntity]) {
     loadingWorld = world
-    val iterator = tiles
-      .entrySet
-      .iterator
+    val iterator = tiles.entrySet.iterator
     while (iterator.hasNext) {
       val e = iterator.next
       var next = false
