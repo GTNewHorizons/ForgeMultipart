@@ -58,6 +58,34 @@ object MultipartSaveLoad {
     field.get(null).asInstanceOf[Map[Class[_ <: TileEntity], String]]
   }
 
+  def convertTileForCube(world: World, tile: TileEntity): TileEntity = {
+    loadingWorld = world
+    tile match {
+      case s: TileNBTContainer if s.tag.getString("id") == "savedMultipart" =>
+        val newTile = TileMultipart.createFromNBT(s.tag)
+        if (newTile != null) {
+          newTile.setWorldObj(world)
+          newTile.validate()
+        }
+        newTile
+      case t =>
+        converters.find(_.canConvert(t)) match {
+          case Some(c) =>
+            val parts = c.convert(t)
+            if (parts.isEmpty) null
+            else {
+              val newTile = MultipartHelper.createTileFromParts(parts)
+              if (newTile != null) {
+                newTile.setWorldObj(world)
+                newTile.validate()
+              }
+              newTile
+            }
+          case None => tile
+        }
+    }
+  }
+
   def loadTiles(chunk: Chunk) {
     loadingWorld = chunk.worldObj
     val iterator = chunk.chunkTileEntityMap
