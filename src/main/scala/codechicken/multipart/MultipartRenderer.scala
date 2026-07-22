@@ -10,6 +10,8 @@ import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer
 import net.minecraft.tileentity.TileEntity
 import net.minecraft.world.IBlockAccess
 import net.minecraft.client.Minecraft
+import net.minecraftforge.client.ForgeHooksClient
+import net.minecraftforge.client.MinecraftForgeClient
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import codechicken.lib.raytracer.ExtendedMOP
@@ -23,7 +25,6 @@ object MultipartRenderer
     extends TileEntitySpecialRenderer
     with ISimpleBlockRenderingHandler {
   TileMultipart.renderID = RenderingRegistry.getNextAvailableRenderId
-  var pass: Int = 0
 
   override def renderTileEntityAt(
       t: TileEntity,
@@ -42,7 +43,7 @@ object MultipartRenderer
     state.useNormals = true
 
     val pos = new Vector3(x, y, z)
-    tmpart.renderDynamic(pos, f, pass)
+    tmpart.renderDynamic(pos, f, MinecraftForgeClient.getRenderPass)
   }
 
   override def getRenderId = TileMultipart.renderID
@@ -85,7 +86,10 @@ object MultipartRenderer
     val state = CCRenderState.instance
     state.resetInstance()
     state.lightMatrix.locate(world, x, y, z)
-    val b = tmpart.renderStatic(new Vector3(x, y, z), pass)
+    val b = tmpart.renderStatic(
+      new Vector3(x, y, z),
+      ForgeHooksClient.getWorldRenderPass
+    )
     state.lightMatrix.access = null
     b
   }

@@ -562,7 +562,6 @@ trait TileMultipartClient extends TileMultipart {
   def randomDisplayTick(random: Random) {}
 
   override def shouldRenderInPass(pass: Int) = {
-    MultipartRenderer.pass = pass
     if (staticCache == null) updateRenderCache()
     hasDynamicParts
   }
