@@ -289,7 +289,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
     val tile = getTile(world, x, y, z)
     if (hit != null && tile != null) {
       val (index, mop) = reduceMOP(hit)
-      return tile.partList(index).getStrength(mop, player) / breakSpeed / 30f
+      return breakSpeed * tile.partList(index).getStrength(mop, player) / 30f
     }
 
     return 1 / 100f
