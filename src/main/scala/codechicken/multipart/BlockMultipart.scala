@@ -284,7 +284,8 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
       y: Int,
       z: Int
   ): Float = {
-    val breakSpeed = player.getBreakSpeed(this, true, world.getBlockMetadata(x, y, z), x, y, z)
+    val breakSpeed =
+      player.getBreakSpeed(this, true, world.getBlockMetadata(x, y, z), x, y, z)
     val hit = RayTracer.retraceBlock(world, player, x, y, z)
     val tile = getTile(world, x, y, z)
     if (hit != null && tile != null) {
