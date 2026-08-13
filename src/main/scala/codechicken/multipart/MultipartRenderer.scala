@@ -87,7 +87,7 @@ object MultipartRenderer
     val state = CCRenderState.instance
     state.resetInstance()
     state.lightMatrix.locate(world, x, y, z)
-    val b = tmpart.renderStatic(world, x, y, z, renderer)
+    val b = tmpart.renderStatic(world, new Vector3(x, y, z), renderer)
     state.lightMatrix.access = null
     b
   }

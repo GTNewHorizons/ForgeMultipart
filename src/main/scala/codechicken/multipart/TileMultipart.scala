@@ -521,9 +521,7 @@ trait TileMultipartClient extends TileMultipart {
 
   def renderStatic(
       world: IBlockAccess,
-      x: Int,
-      y: Int,
-      z: Int,
+      vec: Vector3,
       renderer: RenderBlocks
   ) = {
     if (staticCache == null)
@@ -540,9 +538,9 @@ trait TileMultipartClient extends TileMultipart {
           if (
             isbrh.renderWorldBlock(
               world,
-              x,
-              y,
-              z,
+              vec.x.toInt,
+              vec.y.toInt,
+              vec.z.toInt,
               renderer
             )
           ) {
@@ -552,7 +550,7 @@ trait TileMultipartClient extends TileMultipart {
         case _ =>
           if (
             part.renderStatic(
-              new Vector3(x, y, z),
+              vec,
               ForgeHooksClient.getWorldRenderPass
             )
           ) {
