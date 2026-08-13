@@ -5,7 +5,7 @@ import net.minecraft.tileentity.TileEntity
 import scala.collection.mutable.ListBuffer
 import codechicken.lib.packet.PacketCustom
 import codechicken.lib.vec.{BlockCoord, Cuboid6, Vector3}
-import net.minecraft.world.World
+import net.minecraft.world.{IBlockAccess, World}
 
 import java.util.List
 import net.minecraft.nbt.NBTTagCompound
@@ -31,6 +31,8 @@ import net.minecraft.util.{AxisAlignedBB, Vec3}
 import java.lang.Iterable
 import codechicken.lib.world.IChunkLoadTile
 import net.minecraft.block.Block
+import net.minecraft.client.renderer.RenderBlocks
+import net.minecraftforge.client.ForgeHooksClient
 
 class TileMultipart extends TileEntity with IChunkLoadTile {
 
@@ -517,17 +519,53 @@ trait TileMultipartClient extends TileMultipart {
     }
   }
 
-  def renderStatic(pos: Vector3, pass: Int) = {
-    if (staticCache == null) updateRenderCache()
+  def renderStatic(
+      world: IBlockAccess,
+      vec: Vector3,
+      renderer: RenderBlocks
+  ) = {
+    if (staticCache == null)
+      updateRenderCache()
+
     var rendered = false
+
+    def renderPart(part: TMultiPart): Unit = {
+      if (part == null)
+        return
+
+      part match {
+        case isbrh: ISBRHPart =>
+          if (
+            isbrh.renderWorldBlock(
+              world,
+              vec.x.toInt,
+              vec.y.toInt,
+              vec.z.toInt,
+              renderer
+            )
+          ) {
+            rendered = true
+          }
+
+        case _ =>
+          if (
+            part.renderStatic(
+              vec,
+              ForgeHooksClient.getWorldRenderPass
+            )
+          ) {
+            rendered = true
+          }
+      }
+    }
 
     val statics = staticCache
     if (statics != null) {
       var i = 0
       val len = statics.length
+
       while (i < len) {
-        if (statics(i) != null && statics(i).renderStatic(pos, pass))
-          rendered = true
+        renderPart(statics(i))
         i += 1
       }
     }
@@ -536,12 +574,13 @@ trait TileMultipartClient extends TileMultipart {
     if (dynamics != null) {
       var i = 0
       val len = dynamics.length
+
       while (i < len) {
-        if (dynamics(i) != null && dynamics(i).renderStatic(pos, pass))
-          rendered = true
+        renderPart(dynamics(i))
         i += 1
       }
     }
+
     rendered
   }
 
