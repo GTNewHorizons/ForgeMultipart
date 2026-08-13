@@ -10,7 +10,11 @@ import net.minecraft.world.{IBlockAccess, World}
 import java.util.List
 import net.minecraft.nbt.NBTTagCompound
 import codechicken.lib.data.MCDataOutput
-import codechicken.multipart.handler.{MultipartCompatiblity, MultipartProxy, MultipartSPH}
+import codechicken.multipart.handler.{
+  MultipartCompatiblity,
+  MultipartProxy,
+  MultipartSPH
+}
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagList
 
@@ -516,12 +520,12 @@ trait TileMultipartClient extends TileMultipart {
   }
 
   def renderStatic(
-                    world: IBlockAccess,
-                    x: Int,
-                    y: Int,
-                    z: Int,
-                    renderer: RenderBlocks
-                  ) = {
+      world: IBlockAccess,
+      x: Int,
+      y: Int,
+      z: Int,
+      renderer: RenderBlocks
+  ) = {
     if (staticCache == null)
       updateRenderCache()
 
@@ -533,18 +537,25 @@ trait TileMultipartClient extends TileMultipart {
 
       part match {
         case isbrh: ISBRHPart =>
-          if (isbrh.renderWorldBlock(
-            world,
-            x,
-            y,
-            z,
-            renderer
-          )) {
+          if (
+            isbrh.renderWorldBlock(
+              world,
+              x,
+              y,
+              z,
+              renderer
+            )
+          ) {
             rendered = true
           }
 
         case _ =>
-          if (part.renderStatic(new Vector3(x, y, z), ForgeHooksClient.getWorldRenderPass)) {
+          if (
+            part.renderStatic(
+              new Vector3(x, y, z),
+              ForgeHooksClient.getWorldRenderPass
+            )
+          ) {
             rendered = true
           }
       }
@@ -574,7 +585,7 @@ trait TileMultipartClient extends TileMultipart {
 
     rendered
   }
-  
+
   def renderDynamic(pos: Vector3, frame: Float, pass: Int) {
     if (!hasDynamicParts) return
 
