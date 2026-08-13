@@ -16,6 +16,7 @@ import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import codechicken.lib.raytracer.ExtendedMOP
 import codechicken.lib.lighting.LightMatrix
+import com.gtnewhorizons.angelica.api.ThreadSafeISBRH
 
 /** Internal class for rendering callbacks. Should be moved to the handler
   * package
@@ -86,10 +87,7 @@ object MultipartRenderer
     val state = CCRenderState.instance
     state.resetInstance()
     state.lightMatrix.locate(world, x, y, z)
-    val b = tmpart.renderStatic(
-      new Vector3(x, y, z),
-      ForgeHooksClient.getWorldRenderPass
-    )
+    val b = tmpart.renderStatic(world, x, y, z, renderer)
     state.lightMatrix.access = null
     b
   }
