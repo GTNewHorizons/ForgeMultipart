@@ -1,10 +1,16 @@
 package codechicken.multipart;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
@@ -98,6 +104,60 @@ class NormalOcclusionCharacterizationTest {
         };
 
         assertTrue(NormalOcclusionTest.apply(origin, barePart));
+    }
+
+    @Test
+    void singletonAndStaticForwardersAgree() {
+        Traversable<Cuboid6> left = scalaBoxes(box(0, 0, 0, 0.5, 1, 1));
+        Traversable<Cuboid6> fits = scalaBoxes(box(0.5, 0, 0, 1, 1, 1));
+        Traversable<Cuboid6> overlaps = scalaBoxes(box(0.25, 0, 0, 1, 1, 1));
+
+        assertTrue(NormalOcclusionTest$.MODULE$.apply(left, fits));
+        assertFalse(NormalOcclusionTest$.MODULE$.apply(left, overlaps));
+
+        NormallyOccludedPart part = new NormallyOccludedPart(box(0, 0, 0, 0.5, 1, 1));
+        NormallyOccludedPart neighbour = new NormallyOccludedPart(box(0.5, 0, 0, 1, 1, 1));
+        assertEquals(NormalOcclusionTest.apply(part, neighbour), NormalOcclusionTest$.MODULE$.apply(part, neighbour));
+    }
+
+    @Test
+    void bridgeCombinesTheBoxTestWithTheSuperChain() {
+        NormallyOccludedPart part = new NormallyOccludedPart(box(0, 0, 0, 0.5, 1, 1));
+        TMultiPart fits = new NormallyOccludedPart(box(0.5, 0, 0, 1, 1, 1));
+        TMultiPart overlaps = new NormallyOccludedPart(box(0.25, 0, 0, 1, 1, 1));
+
+        assertTrue(TNormalOcclusion$class.occlusionTest(part, fits));
+        assertFalse(TNormalOcclusion$class.occlusionTest(part, overlaps));
+    }
+
+    /**
+     * The super accessor is ACC_SYNTHETIC in the reference, so javac hides it and only reflection can reach it. The
+     * bridge calls it through invokeinterface, so its name and descriptor are part of the supported ABI.
+     */
+    @Test
+    void superAccessorExistsAndChainsToTheTMultiPartDefault() throws Exception {
+        NormallyOccludedPart part = new NormallyOccludedPart(box(0, 0, 0, 0.5, 1, 1));
+        Method accessor = TNormalOcclusion.class
+                .getMethod("codechicken$multipart$TNormalOcclusion$$super$occlusionTest", TMultiPart.class);
+
+        assertEquals(Boolean.TRUE, accessor.invoke(part, new NormallyOccludedPart(box(0.25, 0, 0, 1, 1, 1))));
+        assertNull(part.getType());
+    }
+
+    @Test
+    void singleBoxConstructorMatchesTheIterableConstructor() {
+        Cuboid6 bound = box(0, 0, 0, 0.5, 1, 1);
+        NormallyOccludedPart single = new NormallyOccludedPart(bound);
+        TMultiPart overlaps = new NormallyOccludedPart(box(0.25, 0, 0, 1, 1, 1));
+
+        List<Cuboid6> boxes = new ArrayList<>();
+        for (Cuboid6 box : single.getOcclusionBoxes()) {
+            boxes.add(box);
+        }
+
+        assertEquals(1, boxes.size());
+        assertSame(bound, boxes.get(0));
+        assertFalse(single.occlusionTest(overlaps));
     }
 
     private static boolean compatible(Cuboid6 first, Cuboid6 second) {

@@ -34,3 +34,16 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 `TCuboidPartBinaryCompatibilityTest` exercises `$init$`, `getSubParts` and `getCollisionBoxes`. The `drawBreaking`
 forwarder is present in the fixture but cannot be invoked without a client render context, so its bridge descriptor is
 covered by the ABI baseline rather than by execution.
+
+### `ReferenceScalaNormalOcclusion`
+
+`scala/codechicken/multipart/compat/ReferenceScalaNormalOcclusion.scala` mixes in `TNormalOcclusion` without overriding
+`occlusionTest`, so the compiled class carries the generated
+`codechicken$multipart$TNormalOcclusion$$super$occlusionTest` accessor and forwards `occlusionTest` to
+`TNormalOcclusion$class`. Invoking it therefore covers the whole bridge round trip: forwarder, `$class`, the singleton
+`NormalOcclusionTest$.MODULE$`, and the callback through the accessor.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `cd6420f`
+(SHA-256 `da0a35a968905203187edc5a1f26018305cf146114426ed7b468080b40c95771`). Class-file SHA-256 is
+`0ce8ddd700df8ec859325133a1a683de1aceaabd67cb4c0d1867e6cb907e5790`, stored as
+`src/test/resources/compat/ReferenceScalaNormalOcclusion.class.b64`.
