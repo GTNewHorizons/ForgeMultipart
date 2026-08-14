@@ -98,3 +98,17 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `cec40ee4c94f89fadf29e3f4860c68ca7d55caf12634d950a3eb5ecfb272a01b`). Class-file SHA-256 is
 `76e4d3875ae9246ed2277f0470b22f596885282386ed179a42e5f571711ae5e0`, stored as
 `src/test/resources/compat/ReferenceScalaEdgePart.class.b64`.
+
+### `ReferenceScalaSaw`
+
+`scala/codechicken/multipart/compat/ReferenceScalaSaw.scala` mixes in `Saw` without overriding
+`getMaxCuttingStrength`, so its compiled forwarder calls `Saw$class.getMaxCuttingStrength` and its constructor calls
+`Saw$class.$init$`. ProjRed links against both.
+
+Its `getCuttingStrength` reports 7 only when handed a stack that actually wraps the saw itself, so the test proves the
+bridge built the stack rather than only that it linked.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `0de7283`
+(SHA-256 `e931927e83134f57197aba082345ea96909291469d01a4f146836418a76bb3d1`). Class-file SHA-256 is
+`a03e8eb8566ae830829d59a379c67f355519bc82de24265baabd84720f068ce1`, stored as
+`src/test/resources/compat/ReferenceScalaSaw.class.b64`.
