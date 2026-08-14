@@ -411,3 +411,35 @@ private static method rather than a closure class in both versions.
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
 - Real placement into a world needs a client or a server scenario and stays on the functional and manual layers.
+
+## 2026-08-14 — TEdgePart Java port
+
+### Observable behavior
+
+No known divergence. `conductsRedstone` still returns false and `TEdgePart` still extends `TSlottedPart`.
+
+### Default method, same test as TFacePart
+
+`TMultiPart` does not declare `conductsRedstone`, and nothing in the microblock superclass chain does either, so the
+member is emitted as a real Java `default`. `EdgeMicroblock` never declared its own forwarder even in the reference,
+because it is a Scala trait rather than a concrete class, and the generated concrete classes now resolve the interface
+default instead of a Scala trait forwarder. The functional microblock generation case added during the `TFacePart`
+port already covers that resolution path.
+
+No in-repo Scala needed changing.
+
+### Supported JVM API
+
+- `TEdgePart` is descriptor-identical to the reference.
+- `TEdgePart$class` keeps both statics and adds only a private constructor. OpenComputers links against `$init$` only,
+  but `conductsRedstone` is retained because the bridge class is being kept regardless and dropping one static from a
+  live bridge would be a gratuitous shape change.
+- The emitted class-file set for this area is unchanged; the Scala implementation generated no closure classes here.
+
+### Validation
+
+- `EdgePartCharacterizationTest`: 3 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- `TEdgePartBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors.
+- Complete plain-JVM suite: 61 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
