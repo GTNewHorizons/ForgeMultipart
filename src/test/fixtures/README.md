@@ -47,3 +47,14 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `da0a35a968905203187edc5a1f26018305cf146114426ed7b468080b40c95771`). Class-file SHA-256 is
 `0ce8ddd700df8ec859325133a1a683de1aceaabd67cb4c0d1867e6cb907e5790`, stored as
 `src/test/resources/compat/ReferenceScalaNormalOcclusion.class.b64`.
+
+### `ReferenceScalaFacePart`
+
+`scala/codechicken/multipart/compat/ReferenceScalaFacePart.scala` mixes in `TFacePart` without overriding either
+member it supplies, so its compiled forwarders call all three `TFacePart$class` statics: `solid`,
+`redstoneConductionMap` and `$init$`. OpenComputers, ProjRed and ProjectBlue depend on those descriptors.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `a1bf3c8`
+(SHA-256 `1cb57d8728f06b3d283b0bca8ce9f92a58f4c2b8cc835fa4f7ee3de6338c27ec`). Class-file SHA-256 is
+`a95dfa131f57e6e6efdba25e989154899d9b1f9a5cbff7a1e6b4374ec9c2b0b2`, stored as
+`src/test/resources/compat/ReferenceScalaFacePart.class.b64`.
