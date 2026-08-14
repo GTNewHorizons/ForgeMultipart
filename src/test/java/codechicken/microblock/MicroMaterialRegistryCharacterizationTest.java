@@ -123,12 +123,14 @@ class MicroMaterialRegistryCharacterizationTest {
      */
     @Test
     void materialInterfaceSuppliesRenderPassAndSolidity() {
-        assertTrue(MissingMicroMaterial.canRenderInPass(0));
-        assertFalse(MissingMicroMaterial.canRenderInPass(1));
-        assertFalse(MissingMicroMaterial.canRenderInPass(-1));
+        IMicroMaterial missing = MissingMicroMaterial$.MODULE$;
 
-        assertFalse(MissingMicroMaterial.isTransparent());
-        assertTrue(MissingMicroMaterial.isSolid());
+        assertTrue(missing.canRenderInPass(0));
+        assertFalse(missing.canRenderInPass(1));
+        assertFalse(missing.canRenderInPass(-1));
+
+        assertFalse(missing.isTransparent());
+        assertTrue(missing.isSolid());
     }
 
     private static MCDataInput input(byte[] bytes) {

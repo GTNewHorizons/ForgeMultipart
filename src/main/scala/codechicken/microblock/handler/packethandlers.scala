@@ -47,7 +47,7 @@ object MicroblockCPH extends MicroblockPH with IClientPacketHandler {
         new S40PacketDisconnect(
           new ChatComponentTranslation(
             "microblock.missing",
-            missing.mkString(", ")
+            String.join(", ", missing)
           )
         )
       )

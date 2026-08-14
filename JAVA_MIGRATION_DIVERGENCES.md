@@ -489,3 +489,73 @@ and deliberately ignore overrides. Both behaviors are preserved as found and are
 - Complete plain-JVM suite: 65 tests, 0 failures, 0 errors.
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
+
+## 2026-08-14 — MicroMaterialRegistry Java port
+
+The first stateful registry converted, and the widest surface so far: ten jars reference the type and three more reach
+it reflectively. Covers `MicroMaterialRegistry`, `MicroMaterialRegistry$` and the two nested interfaces.
+
+### Observable behavior
+
+No known divergence. `setupIDMap` still sorts the type map by name into the id array so ids are indexes into it,
+`materialID` and `materialName` still round trip, `remapName` still resolves on both `getMaterial(String)` and
+`materialID`, `getMissingId` still fails loudly when the placeholder is absent rather than falling back to zero, ids
+still round trip through the shared `IDWriter`, and a highlight renderer that claims the highlight still short-circuits
+the default renderer.
+
+`calcMaxCuttingStrength` still throws when no saw is registered. The reference reached that through `max` on an empty
+collection; the port throws `UnsupportedOperationException` explicitly to keep the same failure rather than silently
+leaving the field at zero.
+
+### Changed API: readIDMap
+
+Accepted divergence: `readIDMap` returns `java.util.List<String>` instead of `scala.collection.Seq<String>`. No jar in
+the pack references it, and the only caller is the in-repo material registration packet handler, which was updated
+from `mkString` to `String.join`. This removes one of the five Scala-typed descriptors the ABI inventory identified.
+
+`getIdMap()[Lscala/Tuple2;` is deliberately **not** changed, because extrautilities links against it. The registry
+therefore still stores `scala.Tuple2` internally rather than converting on every call.
+
+### Removed API
+
+- The three mangled accessors Scala emitted as public so its closure classes could reach private state:
+  `codechicken$microblock$MicroMaterialRegistry$$idMap()`, `$$typeMap()` and `$$nameMap()`. They are compiler
+  artifacts, not API, and no jar references them.
+- `MicroMaterialRegistry$IMicroMaterial$class`, along with its four statics. No jar references it. All ten
+  implementors reach `IMicroMaterial` through `BlockMicroMaterial`, which is in-repo, so nothing external carries
+  forwarders to the helper.
+- `MissingMicroMaterial.canRenderInPass(int)` and `MissingMicroMaterial.isSolid()` static forwarders, plus the
+  matching instance methods on `MissingMicroMaterial$`. That object overrides neither, so with the members now being
+  Java interface defaults Scala emits no forwarder and therefore no static forwarder either. Nothing in the pack
+  references `MissingMicroMaterial` at all. This is the same class of change as `ItemSaw` in the `Saw` port, and the
+  characterization caught it by failing to compile.
+
+### Added API
+
+`setupIDMap`, `calcMaxCuttingStrength` and `loadIcons` gain static forwarders on `MicroMaterialRegistry`. They were
+`private[microblock]` in Scala, which is public on the JVM but produces no static forwarder. Additive.
+
+### IMicroMaterial defaults
+
+`loadIcons`, `canRenderInPass` and `isSolid` become real Java defaults. Neither nested interface has a superclass to
+lose to, and both in-repo implementors, `BlockMicroMaterial` and `MissingMicroMaterial`, extend nothing else. Java
+implementors can now inherit the three instead of restating them; both nested interfaces are descriptor-identical to
+the reference.
+
+### Compiler artifacts
+
+Accepted divergence: all eleven `MicroMaterialRegistry$$anonfun$*` classes are removed. The Java loops produce no
+replacement classes.
+
+### Validation
+
+- `MicroMaterialRegistryCharacterizationTest`: 7 tests, 0 failures, 0 errors, passing against both the Scala baseline
+  and the port.
+- `MicroMaterialRegistryBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors, driving a reference-compiled Scala
+  consumer through `MODULE$` and the raw `scala.Tuple2` array.
+- Complete plain-JVM suite: 73 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors. This exercises the real path, since server
+  startup calls `setupIDMap`, `calcMaxCuttingStrength` and the default content registration.
+- Error paths remain uncovered by tests: they call the microblock logger, which is null until `MicroblockProxy.preInit`
+  runs, so they cannot execute headless. They are unchanged from the reference.
