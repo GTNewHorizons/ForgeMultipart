@@ -11,6 +11,8 @@ import net.minecraft.world.World
 import codechicken.lib.vec.Cuboid6
 import codechicken.lib.vec.Vector3
 import codechicken.multipart.TIconHitEffects
+import codechicken.multipart.IconHitEffects
+import net.minecraft.client.particle.EffectRenderer
 import net.minecraft.util.IIcon
 import net.minecraft.block.Block
 import codechicken.multipart.TCuboidPart
@@ -143,6 +145,15 @@ trait MicroblockClient
     case null => Blocks.stone.getIcon(0, 0)
     case mat  => mat.getBreakingIcon(side)
   }
+
+  // TIconHitEffects is a Java interface, so these must be declared explicitly or TMultiPart's empty versions win.
+  override def addHitEffects(
+      hit: MovingObjectPosition,
+      effectRenderer: EffectRenderer
+  ) = IconHitEffects.addHitEffects(this, hit, effectRenderer)
+
+  override def addDestroyEffects(effectRenderer: EffectRenderer) =
+    IconHitEffects.addDestroyEffects(this, effectRenderer)
 
   override def renderStatic(pos: Vector3, pass: Int) = {
     if (getIMaterial.canRenderInPass(pass)) {
