@@ -112,3 +112,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `e931927e83134f57197aba082345ea96909291469d01a4f146836418a76bb3d1`). Class-file SHA-256 is
 `a03e8eb8566ae830829d59a379c67f355519bc82de24265baabd84720f068ce1`, stored as
 `src/test/resources/compat/ReferenceScalaSaw.class.b64`.
+
+### `ReferenceScalaMicroMaterialConsumer`
+
+`scala/codechicken/multipart/compat/ReferenceScalaMicroMaterialConsumer.scala` reads
+`MicroMaterialRegistry$.MODULE$` and calls the instance methods ProjRed links against (`getMaterial(int)`,
+`materialID`, `materialName`), plus the `scala.Tuple2` array `getIdMap` that extrautilities links against. It reads
+`_1` and `_2` off the raw tuples rather than going through accessors, so the array element type is exercised too.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `52ff8ff`
+(SHA-256 `122d89cf0a070cfd2325bbbcf4bb4550d6130bb7da1ffba1a3b2e2efea6ec7e5`). Class-file SHA-256 is
+`e66be14e6422277cc9567acf8e96a26e419abf5ec6582085c8c6e32cc60aa599`, stored as
+`src/test/resources/compat/ReferenceScalaMicroMaterialConsumer.class.b64`.
