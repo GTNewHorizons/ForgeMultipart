@@ -358,3 +358,56 @@ loop produces no replacement class.
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
 - Particle appearance itself needs a client and stays on the manual checklist.
+
+## 2026-08-14 — TItemMultiPart Java port
+
+Covers `JItemMultiPart`, `TItemMultiPart` and `TItemMultiPart$class`, which shared `ItemMultiPart.scala`.
+
+### Observable behavior
+
+No known divergence. `getHitDepth` still projects a copy of the hit vector onto the axis for that side and adds 1 on
+even sides, leaving the caller's vector untouched. `onItemUse` still tries the clicked block only when the depth is
+below 1, then always tries the neighbour on that side, reusing and mutating a single `BlockCoord` across both attempts
+and passing the same `Vector3` to every `newPart` call. Placement still short-circuits on a null part before touching
+the world, still skips `addPart` on the client, and still decrements the stack only outside creative mode.
+
+### First trait extending a Minecraft class rather than TMultiPart
+
+`TItemMultiPart extends Item`, so the linearization check runs against `Item` instead of `TMultiPart`. The outcome is
+the same split seen in the `TIconHitEffects` port:
+
+- `getHitDepth` becomes a real `default`. `Item` does not declare it, so nothing in an implementor's superclass chain
+  can beat it.
+- `onItemUse` stays abstract. `Item` declares it, so a default would silently lose to the vanilla implementation and
+  placement would stop working.
+
+This confirms the rule generalises: what matters is the implementor's actual superclass, not `TMultiPart` specifically.
+
+There were no in-repo implementors beyond `JItemMultiPart` itself, so nothing else needed changing.
+
+### Supported JVM API
+
+- `TItemMultiPart` is descriptor-identical to the reference.
+- `JItemMultiPart` keeps its constructor, both instance methods and their descriptors; WR-CBE links against the
+  constructor and the inherited `func_77658_a`. It gains two public statics, `hitDepth` and the `onItemUse` overload
+  taking the part, plus a private `place`. All additive.
+- `TItemMultiPart$class` keeps all three public statics for ProjRed, its only consumer. It adds a private constructor
+  and drops the reference's private `place$1` helper, which was never visible to consumers.
+- `getHitDepth` on the bridge ignores its part argument and calls the static directly, matching the reference, whose
+  trait body never used `this`. The `onItemUse` path still dispatches `getHitDepth` through the interface, so an
+  implementor's override is honoured exactly as before.
+
+### Compiler artifacts
+
+None removed or added. The emitted class-file set for this area is unchanged; the local `place` function compiled to a
+private static method rather than a closure class in both versions.
+
+### Validation
+
+- `ItemMultiPartCharacterizationTest`: 7 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- `TItemMultiPartBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors, driving a reference-compiled Scala consumer
+  through both attempt positions.
+- Complete plain-JVM suite: 57 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
+- Real placement into a world needs a client or a server scenario and stays on the functional and manual layers.
