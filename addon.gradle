@@ -1,1 +1,83 @@
+import org.gradle.api.tasks.GradleBuild
+import groovy.xml.XmlSlurper
+
 apply plugin: 'scala'
+
+SourceSet functionalTestSet
+
+sourceSets {
+    functionalTestSet = create("functionalTest") {
+        java {
+            srcDir("src/functionalTest/java")
+            compileClasspath += sourceSets.patchedMc.output + sourceSets.main.output
+        }
+    }
+}
+
+configurations {
+    named(functionalTestSet.compileClasspathConfigurationName).configure {
+        extendsFrom(named("compileClasspath").get())
+    }
+    named(functionalTestSet.runtimeClasspathConfigurationName).configure {
+        extendsFrom(named("runtimeClasspath").get())
+    }
+    named(functionalTestSet.annotationProcessorConfigurationName).configure {
+        extendsFrom(named("annotationProcessor").get())
+    }
+}
+
+tasks.register(functionalTestSet.jarTaskName, Jar) {
+    from(functionalTestSet.output)
+    archiveClassifier.set("functionalTests")
+    archiveVersion.set("1.0")
+    destinationDirectory.set(layout.buildDirectory.dir("tmp"))
+}
+
+def functionalTestRunProperty = "forgemultipart.withFunctionalTests"
+def withFunctionalTests = providers.gradleProperty(functionalTestRunProperty).map { it.toBoolean() }.orElse(false).get()
+def functionalTestReportDirectory = layout.projectDirectory.dir("run/server/junit-out")
+def addFunctionalTestsToRun = { JavaExec task ->
+    task.dependsOn(functionalTestSet.jarTaskName)
+    task.classpath(
+        configurations.named(functionalTestSet.runtimeClasspathConfigurationName),
+        tasks.named(functionalTestSet.jarTaskName))
+}
+
+tasks.register("runFunctionalTestServer", GradleBuild) {
+    group = "verification"
+    description = "Runs the Java 8 Forge server with the ForgeMultipart functional test mod"
+    setTasks(["runServer"])
+    startParameter.projectProperties.put(functionalTestRunProperty, "true")
+
+    doFirst {
+        delete(functionalTestReportDirectory)
+    }
+    doLast {
+        def reports = fileTree(functionalTestReportDirectory).matching { include("TEST-*.xml") }.files
+        if (reports.isEmpty()) {
+            throw new GradleException("ForgeMultipart functional tests produced no JUnit XML report")
+        }
+
+        int tests = 0
+        int failures = 0
+        int errors = 0
+        reports.each { report ->
+            def suite = new XmlSlurper(false, false).parse(report)
+            tests += suite.@tests.toInteger()
+            failures += suite.@failures.toInteger()
+            errors += suite.@errors.toInteger()
+        }
+        if (tests == 0 || failures > 0 || errors > 0) {
+            throw new GradleException(
+                "ForgeMultipart functional tests failed: ${tests} tests, ${failures} failures, ${errors} errors")
+        }
+    }
+}
+
+if (withFunctionalTests) {
+    tasks.withType(JavaExec).configureEach { task ->
+        if (task.name == "runServer") {
+            addFunctionalTestsToRun(task)
+        }
+    }
+}

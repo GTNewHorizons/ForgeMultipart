@@ -42,6 +42,16 @@ Allowed divergences are:
 
 Each divergence should record the old behavior, new behavior, reason, compatibility impact, and how it was manually verified. Unintentional behavior changes are regressions even if the new implementation appears cleaner.
 
+### Java runtime policy
+
+The main GTNH release targets modern Java across the Java 17–26 range. A Java 8 artifact must remain available for legacy launchers, with the same functional behavior even if it cannot match the modern runtime's performance.
+
+- Modern Java syntax and APIs may be used when the GTNH build's JVM Downgrader/desugaring path provides a verified Java 8 artifact.
+- Do not enable desugaring speculatively. Introduce it with the first source change that needs it, then verify both the modern and downgraded artifacts.
+- Java 8 startup, serialization, networking, registration, and gameplay semantics are compatibility requirements. Equal throughput or allocation behavior between Java 8 and modern Java is not required.
+- Validate routinely in the Java 8 deobfuscated Forge runner. Validate the packaged release in a representative modern-Java server before release, because the current GTNH deobfuscated `runServer17`/`runServer21`/`runServer25` tasks do not provide a working dedicated-server path in this checkout.
+- Avoid modern runtime APIs whose downgrader stubs are unavailable or whose semantics materially differ on Java 8, especially in compatibility-critical and hot code.
+
 ## Audit findings
 
 ### Codebase size
@@ -200,11 +210,11 @@ If a characterization test captures a confirmed bug that the port intentionally 
 ### Phase 0 — Freeze and measure the reference behavior
 
 - [x] Produce and retain a reference dev jar from `f10595d` or the selected migration base.
-- [ ] Dump the public/protected JVM API and important generated tile class shapes.
+- [x] Dump the public/protected JVM API and important generated tile class shapes.
 - [ ] Inventory downstream mods that compile against or reflect into ForgeMultipart.
 - [ ] Record part IDs, NBT layouts, packet layouts, registration order, and side/lifecycle behavior.
 - [x] Add a Java-8-compatible JUnit/Jupiter setup to the existing Gradle `test` task.
-- [ ] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
+- [x] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
 - [x] Write the first characterization suite against the untouched Scala implementation.
 - [ ] Create a remaining manual compatibility checklist for rendering, input, and other behavior that cannot be asserted reliably by the automated harness.
 - [ ] Capture representative CPU and allocation profiles before optimization work.
@@ -403,3 +413,7 @@ These ranges were formed before designing the characterization suite and should 
 - Adopted characterization tests against the existing Scala implementation as a prerequisite for each converted area, backed by golden ABI/data fixtures and real Forge integration scenarios where plain JVM tests are insufficient.
 - Bootstrapped JUnit Jupiter and passed an eight-case `IDWriter` characterization pilot against the untouched Scala implementation, covering byte/short/int thresholds and exact encoded bytes.
 - The pilot found that negative `IDWriter.setMax` values select the byte carrier because Scala 2.11 treats `0xffffffff` as signed `-1`; current registry callers supply non-negative collection sizes, so this is recorded as a dormant edge case and possible deliberate divergence rather than changed during characterization.
+- Added a dedicated `functionalTest` source set and `runFunctionalTestServer` task. The task starts a real Java 8 Forge dedicated server, loads a test-only FML mod, runs JUnit after `FMLServerStartedEvent`, writes legacy JUnit XML, and shuts the server down.
+- Passed the first two Forge integration checks against the untouched Scala implementation: complete server lifecycle/world startup with all three ForgeMultipart mod IDs loaded, and generation plus constructor-class caching of a `TSlottedTile` composite with its 27-slot map.
+- Hardened the Gradle wrapper to delete stale reports and fail when no fresh report is produced, no tests run, or any failure/error is reported. This is necessary because Forge 1.7.10 can terminate after a test-mod exception with process exit code 0.
+- Confirmed the Java 8 server lane on Azul OpenJDK 8u492. The current deobfuscated modern-server tasks are not usable as release evidence: Java 21 needs the legacy Security Manager switch and then `Lwjgl3ifyRelauncherTweaker` rejects the server launch; Java 25 rejects `System.setSecurityManager` before Forge loads. Modern-Java validation therefore remains a packaged-server gate rather than a custom test-runner workaround.
