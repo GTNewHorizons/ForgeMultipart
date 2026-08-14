@@ -218,7 +218,7 @@ If a characterization test captures a confirmed bug that the port intentionally 
 - [x] Write the first characterization suite against the untouched Scala implementation.
 - [ ] Create a remaining manual compatibility checklist for rendering, input, and other behavior that cannot be asserted reliably by the automated harness.
 - [ ] Capture representative CPU and allocation profiles before optimization work.
-- [ ] Start a divergence log; it should initially be empty.
+- [x] Start a divergence log.
 
 Exit condition: there is a reproducible behavior and ABI baseline, the test layers run in CI or an equivalent repeatable command, and the initial suite passes against the Scala implementation.
 
@@ -421,3 +421,6 @@ These ranges were formed before designing the characterization suite and should 
 - Confirmed that normal occlusion returns `true` when parts may coexist, despite the source comment saying “true if the test fails.” Face contact and overlaps no larger than CodeChickenLib's `1e-5` intersection tolerance are accepted; larger overlaps reject placement. Preserve the behavior and correct the misleading documentation separately when this area is ported.
 - Added nine plain-JVM characterization cases for `PartialOcclusionTest`: its fixed 8³ grid and x-major indexing, part-ID encoding, half-voxel coordinate rounding, required visibility, complete-occlusion exemption, cross-part overlap, same-part box overlap, unfilled entries, and the public `JPartialOcclusion` overload.
 - Confirmed that every non-exempt part needs at least one exclusively owned voxel. Any second write to an occupied voxel permanently changes it to `-1`, including overlap between two boxes supplied by the same part; this can make that part fail the test. Preserve this exact dynamic-tile behavior during translation unless it is changed later as an explicitly documented bug fix.
+- Completed the first behavior-preserving production conversion by replacing `IDWriter.scala` with `IDWriter.java`. All eight existing encoding cases, all 25 plain-JVM tests, the clean build, and both Java 8 Forge server checks pass unchanged.
+- Preserved the four legacy Scala function accessor descriptors as deprecated binary bridges and added direct Java `write(MCDataOutput, int)` and `read(MCDataInput)` methods. Recompiled Scala registry callers use the new primitive methods because Scala property auto-application does not apply to accessors declared in Java.
+- Removed the six `IDWriter$$anonfun$setMax$*` compiler artifacts from the packaged jar. Their disappearance and replacement with Java anonymous helper classes is recorded in `JAVA_MIGRATION_DIVERGENCES.md`; the supported `IDWriter` descriptors remain link-compatible.
