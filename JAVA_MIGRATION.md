@@ -211,7 +211,7 @@ If a characterization test captures a confirmed bug that the port intentionally 
 
 - [x] Produce and retain a reference dev jar from `f10595d` or the selected migration base.
 - [x] Dump the public/protected JVM API and important generated tile class shapes.
-- [ ] Inventory downstream mods that compile against or reflect into ForgeMultipart.
+- [x] Inventory downstream mods that compile against or reflect into ForgeMultipart. See `JAVA_MIGRATION_ABI_INVENTORY.md`.
 - [ ] Record part IDs, NBT layouts, packet layouts, registration order, and side/lifecycle behavior.
 - [x] Add a Java-8-compatible JUnit/Jupiter setup to the existing Gradle `test` task.
 - [x] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
@@ -427,3 +427,9 @@ These ranges were formed before designing the characterization suite and should 
 - Added a frozen Scala 2.11.5 consumer compiled against the reference dev jar. Its constructor and inherited default method call `JPartialOcclusion$class` directly, so it detects the linkage failure that freshly recompiled tests would miss.
 - Replaced `TPartialOcclusion.scala` with Java implementations of `PartialOcclusionTest` and `JPartialOcclusion`. The interface keeps its name and method descriptors, while `allowCompleteOcclusion()` is now a Java default method and the deprecated `$class` helper remains for old Scala binaries.
 - Passed all ten partial-occlusion behavior/API cases, the frozen Scala binary consumer, all 27 plain-JVM tests, a clean build, and both Java 8 Forge server checks. The existing marker-interface registration remains unchanged and continues to drive runtime tile generation.
+- Completed the downstream ABI inventory by constant-pool scan of 240 mod jars in GTNH daily `2026-08-14+678`, recorded in `JAVA_MIGRATION_ABI_INVENTORY.md` with the scanner in `tools/AbiScan.java` and the frozen baseline in `src/test/fixtures/abi/`. GitHub code search was rejected as an oracle because it indexes default branches only and cannot see reflection strings or closed-source consumers.
+- Found 28 consumer jars referencing 35 inherited types, 255 exact member descriptors, 76 other types, and 20 reflective string constants.
+- Answered open decision 2: third-party Scala traits are registered externally. ProjRed passes its own `LightMicroblock` Scala trait to `MicroblockGenerator.registerTrait`, so `registerScalaTrait` and ScalaSignature decoding must survive Phase 7.
+- Answered open decision 4: Scala runtime removal is not achievable for the first Java release. ProjRed, OpenComputers, ProjectBlue, and ForgeRelocationFMP link against 16 static methods on 8 trait `$class` helpers plus 17 companion `MODULE$` singletons.
+- Found only five referenced descriptors containing Scala types, and `TileMultipart.jPartList()` already outweighs `partList()` in downstream use. The Scala bridge surface is much smaller than the initial audit assumed.
+- Found zero downstream references to `IDWriter`, so its four retained Scala function accessors are not load-bearing and can be dropped.
