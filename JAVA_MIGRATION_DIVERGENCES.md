@@ -443,3 +443,49 @@ No in-repo Scala needed changing.
 - Complete plain-JVM suite: 61 tests, 0 failures, 0 errors.
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.
+
+## 2026-08-14 — Saw Java port
+
+The first port outside `codechicken.multipart`. `Saw` was declared in `ItemSaw.scala`; only the trait is extracted,
+and `ItemSaw` itself stays Scala.
+
+### Observable behavior
+
+No known divergence. `getMaxCuttingStrength` still asks the saw about a stack of itself, so the stack handed to
+`getCuttingStrength` wraps the saw and has size 1, and the result still follows an implementor's
+`getCuttingStrength` override.
+
+### Default method, and a shape change on ItemSaw
+
+`Item` does not declare `getMaxCuttingStrength`, so it becomes a real Java `default`.
+
+Consequence worth recording: `ItemSaw` previously carried a Scala trait forwarder for `getMaxCuttingStrength` and now
+inherits the default instead, so it no longer declares that method. Three jars reference the `ItemSaw` type
+(IguanaTweaksTConstruct, ProjectBlue, endercore) but none reference any of its members, and an `invokevirtual` against
+`ItemSaw.getMaxCuttingStrength` would still resolve through the interface default. `harvestLevel` and
+`getCuttingStrength` are unchanged.
+
+This is the first time a port changed the declared members of a class it did not touch. Watch for it whenever a trait
+default is introduced on a type with concrete Scala implementors.
+
+### Unlike the other constant bridges
+
+`Saw$class.getMaxCuttingStrength` dispatches `getCuttingStrength` back through the interface, so an implementor's
+override is honoured even when the bridge is called directly. `TFacePart$class` and `TEdgePart$class` hold constants
+and deliberately ignore overrides. Both behaviors are preserved as found and are asserted separately.
+
+### Supported JVM API
+
+- `Saw` is descriptor-identical to the reference.
+- `Saw$class` keeps both statics for ProjRed and adds only a private constructor. Its body casts to `Item` to build
+  the stack, exactly as the reference bytecode did.
+- The emitted class-file set for this area is unchanged.
+
+### Validation
+
+- `SawCharacterizationTest`: 3 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- `SawBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors, where the fixture reports its strength only if handed a
+  stack that wraps itself.
+- Complete plain-JVM suite: 65 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 3 tests, 0 failures, 0 errors.

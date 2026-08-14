@@ -21,20 +21,6 @@ import net.minecraft.client.renderer.texture.{TextureMap, IIconRegister}
 import codechicken.lib.render.uv.UVTranslation
 import codechicken.microblock.handler.MicroblockProxy
 
-/** Interface for items that are 'saws'
-  */
-trait Saw extends Item {
-
-  /** The maximum harvest level that some version of this saw is capable of
-    * cutting
-    */
-  def getMaxCuttingStrength: Int = getCuttingStrength(new ItemStack(this))
-
-  /** The harvest level this saw is capable of cutting
-    */
-  def getCuttingStrength(item: ItemStack): Int
-}
-
 class ItemSaw(sawTag: ConfigTag, val harvestLevel: Int) extends Item with Saw {
   {
     val maxDamage =
