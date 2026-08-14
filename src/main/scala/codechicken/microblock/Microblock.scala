@@ -1,5 +1,6 @@
 package codechicken.microblock
 
+import net.minecraft.client.renderer.RenderBlocks
 import net.minecraft.nbt.NBTTagCompound
 import codechicken.lib.lighting.LightMatrix
 import codechicken.microblock.MicroMaterialRegistry._
@@ -13,6 +14,8 @@ import codechicken.multipart.TIconHitEffects
 import net.minecraft.util.IIcon
 import net.minecraft.block.Block
 import codechicken.multipart.TCuboidPart
+import codechicken.multipart.JCuboidPart
+import codechicken.multipart.TMultiPart
 import net.minecraft.util.MovingObjectPosition
 import net.minecraft.entity.player.EntityPlayer
 import codechicken.multipart.JPartialOcclusion
@@ -31,8 +34,18 @@ import net.minecraft.init.Blocks
 import cpw.mods.fml.relauncher.{Side, SideOnly}
 import codechicken.lib.render.BlockRenderer.BlockFace
 
-abstract class Microblock(var material: Int = 0) extends TCuboidPart {
+abstract class Microblock(var material: Int = 0)
+    extends TMultiPart
+    with TCuboidPart {
   var shape: Byte = 0
+
+  // TCuboidPart is a Java interface, so these must be declared explicitly or TMultiPart's empty versions win.
+  override def getSubParts = JCuboidPart.subParts(this)
+
+  override def getCollisionBoxes = JCuboidPart.collisionBoxes(this)
+
+  override def drawBreaking(renderBlocks: RenderBlocks) =
+    JCuboidPart.renderBreaking(this, renderBlocks)
 
   def microClass: MicroblockClass
 

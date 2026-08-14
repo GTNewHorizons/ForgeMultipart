@@ -85,3 +85,74 @@ Accepted divergence: calling `write` or `read` before `setMax` now throws `Illeg
 - Complete plain-JVM suite: 27 tests, 0 failures, 0 errors.
 - Clean `checkstyleTest build` with Spotless re-enabled: passing.
 - Java 8 Forge dedicated-server suite: 2 tests, 0 failures, 0 errors.
+
+## 2026-08-14 — TCuboidPart Java port
+
+### Observable behavior
+
+No known divergence for any part that reaches the cuboid implementation. `getSubParts` still yields one
+`IndexedCuboid6` holding a boxed `Integer` 0 and a copy of the bounds, `getCollisionBoxes` still yields the bounds
+instance itself, and `drawBreaking` performs the same pipeline setup and `BlockRenderer.renderCuboid` call.
+
+The concrete `java.lang.Iterable` implementation changes from a Scala `Seq` wrapped by `JavaConversions` to
+`Collections.singletonList`. Both are single-element and immutable; only code inspecting the runtime class or
+attempting mutation could observe the difference.
+
+### Accepted divergence: Scala trait linearization is not reproducible
+
+This is the significant one, and it affects source compatibility rather than binary compatibility.
+
+A Scala trait that overrides superclass methods wins over that superclass. A Java interface loses to it: on the JVM a
+superclass method always beats an interface default. `TCuboidPart` is now a Java interface, so a **recompiled** Scala
+class written as `class Foo extends TMultiPart with TCuboidPart` silently inherits `TMultiPart`'s empty `getSubParts`
+and `getCollisionBoxes` instead of the cuboid ones. It compiles cleanly and fails at runtime with missing collision and
+selection boxes.
+
+Declaring the interface methods as `default` would not help, because the superclass still wins. They are therefore left
+abstract, which also matches the reference bytecode exactly.
+
+Consequences:
+
+- Already compiled binaries are unaffected. Their forwarders call `TCuboidPart$class`, which is retained.
+- Java consumers are unaffected. They extend `JCuboidPart`, which carries the overrides.
+- Scala consumers that recompile must extend `JCuboidPart`, or declare the three overrides themselves and delegate to
+  `JCuboidPart.subParts`, `JCuboidPart.collisionBoxes` and `JCuboidPart.renderBreaking`.
+
+`Microblock` was the one in-repo case and now does exactly that. It changed from `extends TCuboidPart` to
+`extends TMultiPart with TCuboidPart` plus the three explicit forwarders, because a Java interface can no longer supply
+`TMultiPart` as its superclass.
+
+`CuboidPartCharacterizationTest.cuboidBehaviorWinsOverTheEmptyTMultiPartDefaults` is the regression guard for this.
+
+### Supported JVM API
+
+- Preserved every reference descriptor on `TCuboidPart`, `JCuboidPart` and `TCuboidPart$class`, verified by diffing
+  `javap -s` output against the reference dev jar built at `246daff`.
+- Retained `TCuboidPart$class` with all four statics, since ForgeRelocationFMP, OpenComputers, ProjRed and ProjectBlue
+  call them. Its bodies cannot delegate to the instance methods, because old forwarders call the statics and would
+  recurse; they delegate to the canonical statics on `JCuboidPart` instead.
+- Kept `@SideOnly(Side.CLIENT)` on `TCuboidPart.drawBreaking` and `TCuboidPart$class.drawBreaking`, matching the
+  reference. As in the reference, `Microblock.drawBreaking` is deliberately not annotated, so on a dedicated server it
+  survives while its callee is stripped. That hazard is unchanged; the method is never invoked server-side.
+- Added `JCuboidPart.subParts`, `JCuboidPart.collisionBoxes` and `JCuboidPart.renderBreaking` as public statics, plus a
+  private constructor on `TCuboidPart$class`. Both are additive.
+
+### Build layout
+
+`compileJava` runs before `compileScala`, so Java sources under `src/main/java` cannot reference types that are still
+Scala. All three files live under `src/main/scala/codechicken/multipart/` for joint compilation, matching the existing
+`minecraft/McBlockPart.java`. They can move to `src/main/java` once `TMultiPart` is ported.
+
+### Compiler artifacts
+
+None removed. The Scala implementation generated no closure classes for this trait.
+
+### Validation
+
+- `CuboidPartCharacterizationTest`: 5 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- `TCuboidPartBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors, loading a Scala 2.11.5 class compiled against the
+  reference dev jar whose forwarders call all four `$class` statics.
+- Complete plain-JVM suite: 33 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 2 tests, 0 failures, 0 errors. The `RenderBlocks` side warning and the `antlr4`
+  jar parse errors in that log are present on the pre-port baseline as well.
