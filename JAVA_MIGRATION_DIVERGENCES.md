@@ -156,3 +156,90 @@ None removed. The Scala implementation generated no closure classes for this tra
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Java 8 Forge dedicated-server suite: 2 tests, 0 failures, 0 errors. The `RenderBlocks` side warning and the `antlr4`
   jar parse errors in that log are present on the pre-port baseline as well.
+
+## 2026-08-14 — TNormalOcclusion Java port
+
+Covers `NormalOcclusionTest`, `NormalOcclusionTest$`, `JNormalOcclusion`, `TNormalOcclusion`,
+`TNormalOcclusion$class` and `NormallyOccludedPart`, which all shared one Scala file.
+
+### Observable behavior
+
+No known divergence in the occlusion result. The box test still returns true when every pair of boxes fails to
+intersect, still gathers the neighbour's normal boxes followed by its partial boxes in that order, and the bridge still
+evaluates the box test before the super chain and short-circuits on failure.
+
+`Traversable` inputs are drained through `JavaConversions.asJavaIterator(boxes.toIterator())` into an `ArrayList`
+before testing, rather than traversed with `forall`. Iteration order is preserved. The result of the test does not
+depend on order, since `intersects` is side-effect free.
+
+### Accepted divergence: super accessor becomes a non-synthetic default
+
+The reference interface declares `codechicken$multipart$TNormalOcclusion$$super$occlusionTest(TMultiPart)Z` as
+`ACC_PUBLIC | ACC_ABSTRACT | ACC_SYNTHETIC`. `javac` hides synthetic members completely, so no Java class, and no
+Scala class recompiled against a Java interface, could ever implement it. Left abstract it would make the interface
+unimplementable outside the original Scala compiler.
+
+It is therefore emitted as a non-synthetic `default` returning `true`. `true` is the identity for the `&&` chain the
+bridge builds, and matches `TMultiPart.occlusionTest`. Classes compiled against the reference supply their own
+override carrying their real super chain, so the default is only reached if the deprecated bridge is used on a class
+that never had one. Method resolution ignores `ACC_SYNTHETIC`, so existing `invokeinterface` call sites are unaffected.
+
+Consequently `NormallyOccludedPart` no longer declares that method itself and inherits the default. An old
+`invokevirtual` against it still resolves through the interface default and still returns `true`.
+
+### Accepted divergence: Scala apply sugar on NormalOcclusionTest
+
+`NormalOcclusionTest` was a Scala `object`, so Scala callers could write `NormalOcclusionTest(boxes1, boxes2)`. It is
+now a Java class with static methods, and that sugar no longer compiles; recompiled Scala callers must write
+`NormalOcclusionTest.apply(...)`. The in-repo callers in `EdgeMicroblock` and `HollowMicroblock` were updated.
+
+Binary compatibility is unaffected: both static forwarders keep their reference descriptors, and `NormalOcclusionTest$`
+keeps `MODULE$` plus both instance methods, which is what ForgeRelocationFMP and OpenComputers link against.
+
+### Accepted divergence: NormallyOccludedPart.getType
+
+The reference emitted two `getType` methods, `()Ljava/lang/String;` and `()Lscala/runtime/Null$;`, because Scala infers
+`Null` for `def getType = null`. Only the `String` form remains. The `Null$` form was a compiler artifact of the
+inferred type, and no jar in the pack references it. AE2, the only consumer of this class, uses the `(Cuboid6)V`
+constructor and the type itself.
+
+### Trait linearization, as with TCuboidPart
+
+Both in-repo mixins needed explicit handling, and the two cases differ:
+
+- `HollowMicroblock` did not override `occlusionTest` at all and relied on the trait. It now declares
+  `NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)`.
+- `PostMicroblock` already overrode `occlusionTest` and ended with `super.occlusionTest(npart)`, which previously
+  routed through `TNormalOcclusion` because it was the last mixin. That call now reaches `Microblock` directly and
+  would have skipped the box test entirely, so the same expression was substituted at that call site.
+
+This second shape is the more dangerous one: the class looks correct, still compiles, and silently drops the box test.
+Every remaining trait conversion needs its existing `super` call sites audited, not just its missing overrides.
+
+### Supported JVM API
+
+- `NormalOcclusionTest$`, `JNormalOcclusion` and `TNormalOcclusion` are descriptor-identical to the reference.
+- `NormalOcclusionTest` and `TNormalOcclusion$class` add only a private constructor, and `NormalOcclusionTest` three
+  private helpers. Both public `apply` descriptors are unchanged, including
+  `(Lscala/collection/Traversable;Lscala/collection/Traversable;)Z`.
+- Scala's `Traversable` is retained in two descriptors, as the ABI inventory anticipated.
+
+### Compiler artifacts
+
+Accepted divergence: `NormalOcclusionTest$$anonfun$apply$1` and `NormalOcclusionTest$$anonfun$apply$1$$anonfun$apply$2`
+are removed. The Java loops produce no replacement classes. These were closure implementation details of the nested
+`forall` and are not retained as supported API.
+
+### Documentation fix
+
+The reference scaladoc said the test "returns true if the test fails", which the earlier characterization showed to be
+backwards. The Java doc comments now say the test returns true when the parts may coexist.
+
+### Validation
+
+- `NormalOcclusionCharacterizationTest`: 12 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- `TNormalOcclusionBinaryCompatibilityTest`: 1 test, 0 failures, 0 errors, exercising forwarder, `$class`, singleton
+  and the accessor callback.
+- Complete plain-JVM suite: 38 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 2 tests, 0 failures, 0 errors.

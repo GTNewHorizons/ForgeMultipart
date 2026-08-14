@@ -10,6 +10,7 @@ import Vector3._
 import Rotation._
 import codechicken.multipart.TMultiPart
 import codechicken.multipart.TNormalOcclusion
+import codechicken.multipart.NormalOcclusionTest
 import codechicken.multipart.JPartialOcclusion
 import codechicken.multipart.TileMultipart
 import codechicken.multipart.MultiPartRegistry
@@ -215,7 +216,8 @@ trait PostMicroblock
       if (npart.asInstanceOf[CommonMicroblock].getSlot >> 1 == getShape)
         return true
 
-    return super.occlusionTest(npart)
+    // TNormalOcclusion is a Java interface, so its box test must be applied here rather than by the super chain.
+    return NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)
   }
 
   def getResistanceFactor = PostMicroClass.getResistanceFactor

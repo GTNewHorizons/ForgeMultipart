@@ -3,8 +3,10 @@ package codechicken.microblock
 import net.minecraft.entity.player.EntityPlayer
 import net.minecraft.util.MovingObjectPosition
 import codechicken.multipart.TFacePart
+import codechicken.multipart.TMultiPart
 import codechicken.lib.vec.{Translation, Cuboid6, Rotation, Vector3}
 import codechicken.multipart.TNormalOcclusion
+import codechicken.multipart.NormalOcclusionTest
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial
 import net.minecraft.client.renderer.RenderBlocks
 import codechicken.lib.render.{BlockRenderer, RenderUtils, CCRenderState}
@@ -340,6 +342,10 @@ trait HollowMicroblock
   def microClass = HollowMicroClass
 
   def getBounds: Cuboid6 = FaceMicroClass.aBounds(shape)
+
+  // TNormalOcclusion is a Java interface, so its box test must be applied here rather than by the super chain.
+  override def occlusionTest(npart: TMultiPart): Boolean =
+    NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)
 
   override def getPartialOcclusionBoxes = HollowMicroClass.pBoxes(shape)
 
