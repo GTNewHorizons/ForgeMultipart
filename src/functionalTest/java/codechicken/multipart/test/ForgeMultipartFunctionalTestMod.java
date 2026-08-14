@@ -71,7 +71,8 @@ public final class ForgeMultipartFunctionalTestMod {
             throw new IllegalStateException("No ForgeMultipart functional tests were discovered");
         }
         if (summary.getTotalFailureCount() > 0) {
-            throw new IllegalStateException("ForgeMultipart functional tests failed; check junit-out and the server log");
+            throw new IllegalStateException(
+                    "ForgeMultipart functional tests failed; check junit-out and the server log");
         }
 
         server.addChatMessage(new ChatComponentText("ForgeMultipart functional tests passed"));
@@ -91,8 +92,7 @@ public final class ForgeMultipartFunctionalTestMod {
         }
 
         LauncherDiscoveryRequest discovery = LauncherDiscoveryRequestBuilder.request()
-                .selectors(DiscoverySelectors.selectPackage("codechicken.multipart.test"))
-                .build();
+                .selectors(DiscoverySelectors.selectPackage("codechicken.multipart.test")).build();
         SummaryGeneratingListener summaryListener = new SummaryGeneratingListener();
         PrintWriter stderr = new PrintWriter(System.err, true);
         LegacyXmlReportGeneratingListener xmlListener = new LegacyXmlReportGeneratingListener(reportDirectory, stderr);

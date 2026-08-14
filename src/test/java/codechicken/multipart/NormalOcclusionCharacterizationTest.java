@@ -55,14 +55,13 @@ class NormalOcclusionCharacterizationTest {
 
     @Test
     void everyBoxPairMustBeCompatible() {
-        Traversable<Cuboid6> existing = scalaBoxes(
-                box(0, 0, 0, 0.2, 0.2, 0.2),
-                box(0.8, 0.8, 0.8, 1, 1, 1));
+        Traversable<Cuboid6> existing = scalaBoxes(box(0, 0, 0, 0.2, 0.2, 0.2), box(0.8, 0.8, 0.8, 1, 1, 1));
 
         assertTrue(NormalOcclusionTest.apply(existing, scalaBoxes(box(0.3, 0.3, 0.3, 0.4, 0.4, 0.4))));
-        assertFalse(NormalOcclusionTest.apply(
-                existing,
-                scalaBoxes(box(0.3, 0.3, 0.3, 0.4, 0.4, 0.4), box(0.9, 0.9, 0.9, 0.95, 0.95, 0.95))));
+        assertFalse(
+                NormalOcclusionTest.apply(
+                        existing,
+                        scalaBoxes(box(0.3, 0.3, 0.3, 0.4, 0.4, 0.4), box(0.9, 0.9, 0.9, 0.95, 0.95, 0.95))));
     }
 
     @Test
