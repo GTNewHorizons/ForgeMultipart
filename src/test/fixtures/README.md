@@ -87,3 +87,14 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `c003d02407d901271f42e182b5036ed3c295c2acbf416603513d2bec5b8210d0`). Class-file SHA-256 is
 `0b9d9dba78a25b0c0867fe545bc6c6400be272c418d755ef72f46dde6294c75e`, stored as
 `src/test/resources/compat/ReferenceScalaItemMultiPart.class.b64`.
+
+### `ReferenceScalaEdgePart`
+
+`scala/codechicken/multipart/compat/ReferenceScalaEdgePart.scala` mixes in `TEdgePart` without overriding what it
+supplies, so its compiled forwarder calls `TEdgePart$class.conductsRedstone` and its constructor calls
+`TEdgePart$class.$init$`. OpenComputers links against `$init$`.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `f2f1870`
+(SHA-256 `cec40ee4c94f89fadf29e3f4860c68ca7d55caf12634d950a3eb5ecfb272a01b`). Class-file SHA-256 is
+`76e4d3875ae9246ed2277f0470b22f596885282386ed179a42e5f571711ae5e0`, stored as
+`src/test/resources/compat/ReferenceScalaEdgePart.class.b64`.
