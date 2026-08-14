@@ -73,3 +73,17 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `97469dae5152f5040db6106022e8176a1b84814e700c7dfca89f1364e11cf6af`). Class-file SHA-256 is
 `80255098990ee61d2c96f70c7020b3bede4f2654786c0c8a3b7618d5060923c7`, stored as
 `src/test/resources/compat/ReferenceScalaIconHitEffects.class.b64`.
+
+### `ReferenceScalaItemMultiPart`
+
+`scala/codechicken/multipart/compat/ReferenceScalaItemMultiPart.scala` mixes in `TItemMultiPart` without overriding
+anything it supplies, so its compiled forwarders call all three `TItemMultiPart$class` statics: `getHitDepth`,
+`onItemUse` and `$init$`. ProjRed depends on them.
+
+Its `newPart` records each attempted position and returns null, which is the short-circuit that keeps placement from
+touching the world, so the fixture can be driven with null stack, player and world.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `7843f13`
+(SHA-256 `c003d02407d901271f42e182b5036ed3c295c2acbf416603513d2bec5b8210d0`). Class-file SHA-256 is
+`0b9d9dba78a25b0c0867fe545bc6c6400be272c418d755ef72f46dde6294c75e`, stored as
+`src/test/resources/compat/ReferenceScalaItemMultiPart.class.b64`.
