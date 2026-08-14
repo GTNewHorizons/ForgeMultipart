@@ -2,6 +2,7 @@ package codechicken.multipart;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -9,6 +10,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.Proxy;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -36,7 +38,7 @@ class IDWriterCharacterizationTest {
     private static byte[] encode(IDWriter writer, int value) {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         MCDataOutput output = new MCDataOutputWrapper(new DataOutputStream(bytes));
-        writer.write().apply(output, value);
+        writer.write(output, value);
         return bytes.toByteArray();
     }
 
@@ -58,9 +60,17 @@ class IDWriterCharacterizationTest {
                     }
                 });
 
-        int value = (Integer) writer.read().apply(input);
+        int value = writer.read(input);
         assertEquals(0, data.available(), "The selected reader must consume its whole carrier");
         return value;
+    }
+
+    @Test
+    void rejectsUseBeforeSetMax() {
+        IDWriter writer = new IDWriter();
+
+        assertThrows(IllegalStateException.class, () -> writer.write(null, 0));
+        assertThrows(IllegalStateException.class, () -> writer.read(null));
     }
 
     private static byte[] hex(String value) {

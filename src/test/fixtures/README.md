@@ -1,7 +1,21 @@
-# Precompiled compatibility fixtures
+# Compatibility fixtures
 
-Sources below this directory document binary consumers compiled against the untouched `1.7.12` reference dev jar. They are not part of a Gradle source set and must not be recompiled against the current project during normal tests.
+Files below this directory are frozen baselines, not a Gradle source set. They must be reviewed when they change
+rather than regenerated automatically, otherwise an accidental change silently redefines the baseline.
 
-`ReferenceScalaPartialOcclusion.scala` was compiled with Scala 2.11.5 against reference revision `f10595d062bfc1e6dd57a5320fb5b48c383a4f38` and dev jar SHA-256 `bc6e06a01ca8a50b7532aa7d173895c9e89bd2989e43ed977e9eddd3adba57a5`. Its class-file SHA-256 is `c29f2fe296d0a50352b1de1d12ab7a95ac75848a14352ddae06b7aa9640d404a`.
+## `abi/`
 
-The class is stored as `src/test/resources/compat/ReferenceScalaPartialOcclusion.class.b64` so the repository retains a fixed binary compiled against the reference API. The test decodes and defines that class directly; compiling the documented source against the port would invalidate the compatibility check.
+`gtnh-daily-678-consumers.txt` is the constant-pool scan of every mod jar in GTNH daily `2026-08-14+678`, listing
+every downstream reference into `codechicken/multipart` and `codechicken/microblock`. Regenerate with
+`tools/AbiScan.java` and diff against this file at every public-API phase; a member present here but absent from the
+port is a linkage break in a shipping mod. See `JAVA_MIGRATION_ABI_INVENTORY.md` for the analysis.
+
+## Precompiled binary consumers
+
+When a port changes descriptors that the ABI inventory shows are load-bearing, freeze a consumer compiled against the
+reference dev jar here as a class file and load it directly in a test. Recompiling a consumer against the port would
+hide exactly the linkage failure the fixture exists to catch.
+
+None are currently retained. `ReferenceScalaPartialOcclusion` was removed together with the `JPartialOcclusion$class`
+bridge once the inventory showed no downstream consumer of that helper. The trait helpers that do need this treatment
+are listed in `JAVA_MIGRATION_ABI_INVENTORY.md`.

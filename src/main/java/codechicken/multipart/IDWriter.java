@@ -2,97 +2,50 @@ package codechicken.multipart;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
-import scala.Function1;
-import scala.Function2;
-import scala.runtime.AbstractFunction1;
-import scala.runtime.AbstractFunction2;
-import scala.runtime.BoxedUnit;
 
 /** Class for reading and writing IDs, widening the carrier data type as necessary. */
 public class IDWriter {
 
-    private Function2<MCDataOutput, Object, BoxedUnit> write;
-    private Function1<MCDataInput, Object> read;
-
-    @Deprecated
-    public Function2<MCDataOutput, Object, BoxedUnit> write() {
-        return write;
-    }
-
-    @Deprecated
-    public void write_$eq(Function2<MCDataOutput, Object, BoxedUnit> write) {
-        this.write = write;
-    }
-
-    @Deprecated
-    public Function1<MCDataInput, Object> read() {
-        return read;
-    }
-
-    @Deprecated
-    public void read_$eq(Function1<MCDataInput, Object> read) {
-        this.read = read;
-    }
-
-    public void write(MCDataOutput data, int id) {
-        write.apply(data, id);
-    }
-
-    public int read(MCDataInput data) {
-        return (Integer) read.apply(data);
-    }
+    private int width;
 
     public void setMax(int value) {
         // The reference Scala implementation widens negative values as signed values.
         long maximum = value;
         if (maximum > 0xffffL) {
-            write_$eq(new AbstractFunction2<MCDataOutput, Object, BoxedUnit>() {
-
-                @Override
-                public BoxedUnit apply(MCDataOutput data, Object id) {
-                    data.writeInt((Integer) id);
-                    return BoxedUnit.UNIT;
-                }
-            });
-            read_$eq(new AbstractFunction1<MCDataInput, Object>() {
-
-                @Override
-                public Object apply(MCDataInput data) {
-                    return data.readInt();
-                }
-            });
+            width = 4;
         } else if (maximum > 0xffL) {
-            write_$eq(new AbstractFunction2<MCDataOutput, Object, BoxedUnit>() {
-
-                @Override
-                public BoxedUnit apply(MCDataOutput data, Object id) {
-                    data.writeShort((Integer) id);
-                    return BoxedUnit.UNIT;
-                }
-            });
-            read_$eq(new AbstractFunction1<MCDataInput, Object>() {
-
-                @Override
-                public Object apply(MCDataInput data) {
-                    return data.readUShort();
-                }
-            });
+            width = 2;
         } else {
-            write_$eq(new AbstractFunction2<MCDataOutput, Object, BoxedUnit>() {
+            width = 1;
+        }
+    }
 
-                @Override
-                public BoxedUnit apply(MCDataOutput data, Object id) {
-                    data.writeByte((Integer) id);
-                    return BoxedUnit.UNIT;
-                }
-            });
-            read_$eq(new AbstractFunction1<MCDataInput, Object>() {
+    public void write(MCDataOutput data, int id) {
+        switch (width) {
+            case 1:
+                data.writeByte(id);
+                break;
+            case 2:
+                data.writeShort(id);
+                break;
+            case 4:
+                data.writeInt(id);
+                break;
+            default:
+                throw new IllegalStateException("setMax was not called before writing an ID");
+        }
+    }
 
-                @Override
-                public Object apply(MCDataInput data) {
-                    return (int) data.readUByte();
-                }
-            });
+    public int read(MCDataInput data) {
+        switch (width) {
+            case 1:
+                return data.readUByte();
+            case 2:
+                return data.readUShort();
+            case 4:
+                return data.readInt();
+            default:
+                throw new IllegalStateException("setMax was not called before reading an ID");
         }
     }
 }
