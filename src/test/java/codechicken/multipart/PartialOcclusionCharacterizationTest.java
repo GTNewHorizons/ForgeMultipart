@@ -65,6 +65,13 @@ class PartialOcclusionCharacterizationTest {
     }
 
     @Test
+    void javaInterfaceDefaultsToRequiredVisibility() {
+        JPartialOcclusion part = Collections::emptyList;
+
+        assertFalse(part.allowCompleteOcclusion());
+    }
+
+    @Test
     void fullyOverlappingPartsLoseTheirVisibleVoxel() {
         PartialOcclusionTest test = new PartialOcclusionTest(2);
         test.fill(0, Collections.singletonList(voxel(0, 0, 0)), false);
