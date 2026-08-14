@@ -1,6 +1,13 @@
 // Add your dependencies here
 
 dependencies {
+    api('com.github.GTNewHorizons:GTNHLib:0.11.37:dev')
+
+    testImplementation(platform("org.junit:junit-bom:5.11.4"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
+
     implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.12:dev")
     compileOnly("com.github.GTNewHorizons:Angelica:2.1.19:dev")
     compileOnly("com.github.GTNewHorizons:Postea:1.2.5:dev") {transitive = false}
