@@ -58,3 +58,18 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `1cb57d8728f06b3d283b0bca8ce9f92a58f4c2b8cc835fa4f7ee3de6338c27ec`). Class-file SHA-256 is
 `a95dfa131f57e6e6efdba25e989154899d9b1f9a5cbff7a1e6b4374ec9c2b0b2`, stored as
 `src/test/resources/compat/ReferenceScalaFacePart.class.b64`.
+
+### `ReferenceScalaIconHitEffects`
+
+`scala/codechicken/multipart/compat/ReferenceScalaIconHitEffects.scala` mixes in `TIconHitEffects` without overriding
+anything it or `JIconHitEffects` supplies, so its compiled forwarders call all five statics across both bridges:
+`TIconHitEffects$class.addHitEffects`, `.addDestroyEffects`, `.$init$`, and `JIconHitEffects$class.getBreakingIcon`,
+`.$init$`. ForgeRelocationFMP, OpenComputers and ProjRed depend on all of them.
+
+It records the last side passed to `getBrokenIcon` so the test can prove delegation actually happened rather than only
+that the class loaded.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `57130a6`
+(SHA-256 `97469dae5152f5040db6106022e8176a1b84814e700c7dfca89f1364e11cf6af`). Class-file SHA-256 is
+`80255098990ee61d2c96f70c7020b3bede4f2654786c0c8a3b7618d5060923c7`, stored as
+`src/test/resources/compat/ReferenceScalaIconHitEffects.class.b64`.
