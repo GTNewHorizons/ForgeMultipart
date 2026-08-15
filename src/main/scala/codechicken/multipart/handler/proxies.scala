@@ -86,7 +86,7 @@ class MultipartProxy_serverImpl {
       MultipartSPH
     )
 
-    WorldExtensionManager.registerWorldExtension(TickScheduler)
+    WorldExtensionManager.registerWorldExtension(TickScheduler$.MODULE$)
     TileChunkLoadHook.init()
 
     MultipartCompatiblity.load()

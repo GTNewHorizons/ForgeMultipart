@@ -740,3 +740,59 @@ removed. The Java loop produces no replacement class.
 - Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors, covering real part registration and
   instantiation of `mc_torch` and `mcr_face` plus composite tile generation.
 - Ray tracing, rendering and particle paths need a client and stay on the manual checklist.
+
+## 2026-08-14 — TickScheduler Java port
+
+No jar in the pack references this class, so the ABI constraint was minimal, but the reference shape was preserved
+anyway for consistency with the other ports.
+
+### Observable behavior
+
+No known divergence. Ticks scheduled while the world is mid-tick are still queued and applied after processing rather
+than during it, an existing entry for the same part is still only overridden when going from random to scheduled,
+random-update parts still reschedule themselves 800 to 1600 ticks out, chunks are still dropped from the active set
+once their list empties, and only non-random entries are still written to chunk NBT.
+
+`processTicks` filtered a `ListBuffer` with a side-effecting predicate that fires the part callbacks and mutates the
+entry. The Java version iterates and rebuilds the list in the same order, so callback order and the reschedule
+mutation are unchanged.
+
+### The singleton carries behavior here
+
+Unlike the other companion singletons in this migration, `TickScheduler$` is not a pure forwarder. The object extends
+`WorldExtensionInstantiator` and `WorldExtensionManager.registerWorldExtension` is handed the instance itself, so the
+two instantiator hooks have to live on the singleton. It stays a Java class extending `WorldExtensionInstantiator`
+with `MODULE$`, delegating into the statics.
+
+### Supported JVM API
+
+- `TickScheduler$` and `TickScheduler$PartTickEntry` are descriptor-identical to the reference, including
+  `PartTickEntry`'s Scala-style `time()`, `time_$eq`, `random()` and `random_$eq` accessor pairs and both
+  constructors.
+- `TickScheduler` adds only a private constructor.
+- `WorldTickScheduler` and `ChunkTickScheduler` were Scala `private class` and are now package-private static nested
+  classes, keeping their `TickScheduler$WorldTickScheduler` and `TickScheduler$ChunkTickScheduler` binary names.
+
+### Recompiled Scala consumers
+
+One call site. `WorldExtensionManager.registerWorldExtension(TickScheduler)` passed the object as a value and must now
+pass `TickScheduler$.MODULE$`.
+
+`TRandomUpdateTick` is a Scala trait extending `TMultiPart`, so at bytecode level it is a bare interface that does not
+extend the class. The Java code casts where the reference relied on Scala's view of the type, the same pattern already
+recorded for `JIconHitEffects`.
+
+### Compiler artifacts
+
+Accepted divergence: the five `$$anonfun$` classes under `WorldTickScheduler.postTick` and `ChunkTickScheduler`'s
+`processTicks`, `saveData` and `loadData` are removed. The Java loops produce no replacement classes.
+
+### Validation
+
+- Complete plain-JVM suite: 90 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors. This exercises the port directly rather than
+  incidentally: the scheduler is registered as a world extension during startup, so `createWorldExtension`, `load`,
+  and the `preTick`/`postTick` pair all run for every server tick of the suite.
+- Scheduled and random tick firing over time, and the chunk NBT round trip, are not asserted by any test and stay on
+  the manual checklist.
