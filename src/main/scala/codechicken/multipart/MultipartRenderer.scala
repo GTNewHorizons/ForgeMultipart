@@ -25,7 +25,7 @@ import com.gtnewhorizons.angelica.api.ThreadSafeISBRH
 object MultipartRenderer
     extends TileEntitySpecialRenderer
     with ISimpleBlockRenderingHandler {
-  TileMultipart.renderID = RenderingRegistry.getNextAvailableRenderId
+  TileMultipart.renderID_$eq(RenderingRegistry.getNextAvailableRenderId)
 
   override def renderTileEntityAt(
       t: TileEntity,
@@ -79,7 +79,7 @@ object MultipartRenderer
             Int
           ] && hitInfo._1 >= 0 && hitInfo._1 < tmpart.partList.size
         )
-          tmpart.partList(hitInfo._1).drawBreaking(renderer)
+          tmpart.partList.apply(hitInfo._1).drawBreaking(renderer)
       }
       return false
     }

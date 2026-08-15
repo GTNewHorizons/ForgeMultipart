@@ -88,7 +88,9 @@ class MicroblockPlacement(
   val oppMod = player.isControlDown
   val internal = d < 1 && htile != null
   val doExpand =
-    internal && !gtile._2 && !player.isSneaking && !(oppMod && useOppMod) && pp
+    internal && !gtile._2.asInstanceOf[
+      Boolean
+    ] && !player.isSneaking && !(oppMod && useOppMod) && pp
       .expand(slot, hit.sideHit)
   val side = hit.sideHit
 
@@ -101,7 +103,7 @@ class MicroblockPlacement(
       return null
 
     if (doExpand) {
-      val hpart = htile.partList(ExtendedMOP.getData[(Int, _)](hit)._1)
+      val hpart = htile.partList.apply(ExtendedMOP.getData[(Int, _)](hit)._1)
       if (hpart.getType == mcrClass.getName) {
         val mpart = hpart.asInstanceOf[CommonMicroblock]
         if (mpart.material == material && mpart.getSize + size < 8)

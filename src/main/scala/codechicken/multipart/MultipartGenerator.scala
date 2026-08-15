@@ -81,13 +81,15 @@ object MultipartGenerator extends ScratchBitSet {
       pos: BlockCoord,
       part: TMultiPart
   ): TileMultipart = {
-    val (tile, converted) = TileMultipart.getOrConvertTile2(world, pos)
+    val gtile = TileMultipart.getOrConvertTile2(world, pos)
+    val tile = gtile._1
+    val converted = gtile._2.asInstanceOf[Boolean]
     val bitset = setTraits(part, world.isRemote)
 
     var ntile = tile
     if (ntile != null) {
       if (converted) { // perform client conversion
-        ntile.partList(0).invalidateConvertedTile()
+        ntile.partList.apply(0).invalidateConvertedTile()
         world.setBlock(pos.x, pos.y, pos.z, MultipartProxy.block, 0, 0)
         silentAddTile(world, pos, ntile)
         PacketCustom.sendToChunk(
@@ -96,8 +98,8 @@ object MultipartGenerator extends ScratchBitSet {
           pos.x >> 4,
           pos.z >> 4
         )
-        ntile.partList(0).onConverted()
-        ntile.writeAddPart(ntile.partList(0))
+        ntile.partList.apply(0).onConverted()
+        ntile.writeAddPart(ntile.partList.apply(0))
       }
 
       val tileTraits = tileTraitMap(tile.getClass)

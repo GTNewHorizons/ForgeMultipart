@@ -43,7 +43,8 @@ object EdgePlacement extends PlacementProperties {
     val part = PostMicroClass.create(pmt.world.isRemote, pmt.material)
     part.setShape(pmt.size, pmt.hit.sideHit >> 1)
     if (pmt.doExpand) {
-      val hpart = pmt.htile.partList(ExtendedMOP.getData[(Int, _)](pmt.hit)._1)
+      val hpart =
+        pmt.htile.partList.apply(ExtendedMOP.getData[(Int, _)](pmt.hit)._1)
       if (hpart.getType == PostMicroClass.getName) {
         val mpart = hpart.asInstanceOf[Microblock]
         if (mpart.material == pmt.material && mpart.getSize + pmt.size < 8) {

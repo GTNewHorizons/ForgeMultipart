@@ -1,6 +1,8 @@
 package codechicken.multipart.scalatraits
 
 import codechicken.multipart.TMultiPart
+import scala.runtime.AbstractFunction1
+import scala.runtime.BoxedUnit
 import codechicken.multipart.INeighborTileChange
 import codechicken.multipart.TileMultipart
 import codechicken.lib.vec.BlockCoord
@@ -48,10 +50,14 @@ trait TTileChangeTile extends TileMultipart {
       return
 
     val weak = diff == 2
-    operate { p =>
-      if (p.isInstanceOf[INeighborTileChange])
-        p.asInstanceOf[INeighborTileChange].onNeighborTileChanged(side, weak)
-    }
+    // TileMultipart.operate is declared in Java, so the function must be built explicitly rather than as a lambda.
+    operate(new AbstractFunction1[TMultiPart, BoxedUnit] {
+      def apply(p: TMultiPart): BoxedUnit = {
+        if (p.isInstanceOf[INeighborTileChange])
+          p.asInstanceOf[INeighborTileChange].onNeighborTileChanged(side, weak)
+        BoxedUnit.UNIT
+      }
+    })
   }
 
   override def getWeakChanges() = weakTileChanges

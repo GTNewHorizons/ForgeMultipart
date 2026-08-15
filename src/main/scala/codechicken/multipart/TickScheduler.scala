@@ -213,7 +213,7 @@ object TickScheduler extends WorldExtensionInstantiator {
           chunk.chunkTileEntityMap.get(new ChunkPosition(pos.x, pos.y, pos.z))
         if (tile.isInstanceOf[TileMultipart])
           tickList += new PartTickEntry(
-            tile.asInstanceOf[TileMultipart].partList(tag.getByte("i")),
+            tile.asInstanceOf[TileMultipart].partList.apply(tag.getByte("i")),
             tag.getLong("time"),
             false
           )

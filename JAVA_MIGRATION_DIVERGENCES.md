@@ -613,3 +613,82 @@ overloads build.
   registration needs FML's active mod container, so real startup is the only place both factory overloads actually
   run, and the suite resolves a part registered through each.
 - Error paths that log remain uncovered headless, as before, because the multipart logger is null until preInit.
+
+## 2026-08-14 — TileMultipart Java port
+
+The central tile. Twelve jars reference it and about twenty-five of its members. `TileMultipartClient` was split into
+its own Scala file and deliberately **not** converted: it is registered with the ASM generator through
+`registerTrait`, so converting it is Phase 5 `registerJavaTrait` work with different machinery.
+
+### Observable behavior
+
+No known divergence. Parts are still appended in order, the list is still replaced rather than mutated so a previously
+published `Seq` never changes under a caller, `operate` still skips parts whose tile is null, ticking still starts on
+the first ticking part and stops when the last one leaves, `getLightValue` is still max-or-zero while
+`getExplosionResistance` is still max-or-throws, occlusion still requires agreement in both directions, and
+`canReplacePart` still excludes the outgoing part while rejecting a part already present.
+
+`handlePacket` case 254 resolves the tile twice, once for the receiver and once for the argument, because the
+reference used a by-name local def that re-evaluated `TileCache.findTile` at each use. Argument order is preserved.
+
+The `assert` calls on part count, client removal and client addition become explicit `AssertionError` throws with the
+same messages, since Scala's `assert` is always enabled here and Java's is not.
+
+### Storage
+
+`partList` remains a `scala.collection.immutable.List` published through `partList()Lscala/collection/Seq;`, which
+five jars link against. Mutations copy to a Java list, mutate, and republish through `JavaConversions`, matching the
+reference's allocate-a-new-Seq semantics exactly. No performance decision is taken here; that is Phase 4 work and
+needs profiling first.
+
+`operate` keeps its `(Lscala/Function1;)V` descriptor and internal callers still go through it, wrapping their action
+in an `AbstractFunction1`. That preserves both the virtual dispatch, so any trait overriding `operate` still sees
+every call, and the reference's per-call allocation.
+
+### Preserved Scala-typed descriptors
+
+- `partList()Lscala/collection/Seq;` and `partList_$eq(Lscala/collection/Seq;)V`
+- `operate(Lscala/Function1;)V`
+- `getOrConvertTile2(...)Lscala/Tuple2;`
+- `loadParts(Lscala/collection/Iterable;)V`
+- `rayTraceAll` still stores a `scala.Tuple2` into `ExtendedMOP.data`, which `EdgeMicroblock` reads back through
+  `getData[(Int, _)]`.
+
+### Removed API
+
+`protected$worldObj(TileMultipart)`, the public accessor Scala emitted so the `dropItems` closure could reach the
+protected field. It is a compiler artifact and no jar references it. `TileMultipartClient` lost nothing, including its
+generated super accessor for `markRender`, which Scala regenerated correctly against the Java superclass.
+
+### Recompiled Scala consumers
+
+The largest source-only divergence so far. Scala reads the Java signatures rather than a ScalaSignature, so:
+
+- `tile.partList(i)` no longer parses as an index; it must be `tile.partList.apply(i)`. Eleven in-repo call sites
+  were updated.
+- `TileMultipart.renderID = x` must become `renderID_$eq(x)`.
+- `getOrConvertTile2` returns `Tuple2[TileMultipart, Object]` rather than `(TileMultipart, Boolean)`, so `_2` needs an
+  explicit cast. Two in-repo call sites.
+- `operate { p => ... }` no longer accepts a lambda, because Scala 2.11 will not adapt `TMultiPart => Unit` to
+  `Function1[TMultiPart, BoxedUnit]`. The one in-repo caller, `TTileChangeTile`, now builds an `AbstractFunction1`.
+
+Binary compatibility is unaffected in all four cases.
+
+### Compiler artifacts
+
+Accepted divergence: all 31 `TileMultipart$$anonfun$*` classes are removed, replaced by one Java anonymous class for
+the `operate` adapter.
+
+### Validation
+
+- `TileMultipartCharacterizationTest`: 12 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 90 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors. This is the load-bearing check: the ASM
+  generator builds composite tiles that extend this class and mix Scala traits into it, and the suite still generates
+  a `TSlottedTile` composite and two microblock classes.
+- Every public member of the reference is still present except `protected$worldObj`, verified by name-level diff, and
+  `partList`, `operate`, `jPartList`, `getOrConvertTile2`, `multiPartChange`, `rayTraceAll` and `dropItems` were
+  checked descriptor by descriptor.
+- World-dependent paths, NBT round trips through `createFromNBT`, and desc packets are not covered by tests and stay
+  on the manual checklist.

@@ -54,11 +54,11 @@ object BlockMultipart {
       return false
 
     val (index, mop) = reduceMOP(hit)
-    if (tile.partList(index).drawHighlight(mop, player, frame))
+    if (tile.partList.apply(index).drawHighlight(mop, player, frame))
       return true
 
-    tile
-      .partList(index)
+    tile.partList
+      .apply(index)
       .collisionRayTrace(
         RayTracer.getStartVec(player),
         RayTracer.getEndVec(player)
@@ -156,8 +156,8 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
 
     val (index, mop) = reduceMOP(hit)
     if (world.isRemote) {
-      tile
-        .partList(index)
+      tile.partList
+        .apply(index)
         .addDestroyEffects(mop, Minecraft.getMinecraft.effectRenderer)
       return true
     }
@@ -225,7 +225,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
     if (tile != null) {
       val (index, mop) = reduceMOP(hit)
       if (index < tile.partList.size)
-        tile.partList(index).addHitEffects(mop, effectRenderer)
+        tile.partList.apply(index).addHitEffects(mop, effectRenderer)
     }
 
     return true
@@ -272,7 +272,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
         return null
       }
       val (index, mop) = reduceMOP(hit)
-      return tile.partList(index).pickItem(mop)
+      return tile.partList.apply(index).pickItem(mop)
     }
     return null
   }
@@ -288,7 +288,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
     val tile = getTile(world, x, y, z)
     if (hit != null && tile != null) {
       val (index, mop) = reduceMOP(hit)
-      return tile.partList(index).getStrength(mop, player) / 30f
+      return tile.partList.apply(index).getStrength(mop, player) / 30f
     }
 
     return 1 / 100f
@@ -340,7 +340,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
       return false
 
     val (index, mop) = reduceMOP(hit)
-    return tile.partList(index).activate(player, mop, player.getHeldItem)
+    return tile.partList.apply(index).activate(player, mop, player.getHeldItem)
   }
 
   override def onBlockClicked(
@@ -359,7 +359,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
       return
 
     val (index, mop) = reduceMOP(hit)
-    tile.partList(index).click(player, mop, player.getHeldItem)
+    tile.partList.apply(index).click(player, mop, player.getHeldItem)
   }
 
   override def isProvidingStrongPower(
