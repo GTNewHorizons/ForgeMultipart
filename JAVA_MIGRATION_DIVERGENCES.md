@@ -846,3 +846,54 @@ nested inner closures, are removed. The Java loops produce no replacement classe
 - Almost everything else in this class needs a player, a ray trace or a renderer. Block breaking, selection boxes,
   collision, pick block, activation, particles and light are all on the manual checklist and are the reason that
   checklist exists.
+
+## 2026-08-15 — Marker interface Java port
+
+Six interfaces that carry no implementation: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`,
+`TRandomUpdateTick`, `ISidedHollowConnect` and `IMicroMaterialRender`.
+
+### Observable behavior
+
+No known divergence. Five of the six were already pure abstract interfaces in bytecode with no `$class` helper, so
+their conversion is a source-language change with no bytecode consequence at all. The sixth is discussed below.
+
+### Supported JVM API
+
+All six are member-identical and descriptor-identical to the reference. Every implementor and mixin was diffed as
+well — `Microblock`, `RedstoneTorchPart`, `TorchPart`, `HollowMicroblock`, `TSlottedTile`, `TTileChangeTile` and
+`TRandomDisplayTickTile` are unchanged member for member, so no concrete class gained or lost a forwarder.
+
+`TSlottedPart` and `TRandomUpdateTick` extended `TMultiPart` in Scala source. A trait extending a class is a bare
+interface in bytecode, carrying none of the class's members, so the Java interfaces are bare too and match the
+reference exactly. This is the same pattern as `JIconHitEffects` and `TileMultipartClient`; the port makes it explicit
+in the source rather than changing it.
+
+`IMicroMaterialRender` keeps the Scala accessor names `world`, `x`, `y` and `z`. `TMultiPart` declares all five
+members under exactly these names, which is what implements the interface for every part. Renaming any of them to a
+bean accessor would silently unimplement it, so the names are pinned by a characterization test.
+
+### Removed API
+
+`TRandomUpdateTick$class`, with its `onWorldJoin` and `$init$` statics. It is the only class removed from the jar by
+this port; the full class list is otherwise identical.
+
+`onWorldJoin` **cannot** become an interface default. `TMultiPart` declares `onWorldJoin`, and a superclass method
+always beats an interface default on the JVM, so the default would never run and the failure would be silent. It stays
+abstract, and each implementor declares it and calls `TickScheduler.loadRandomTick` itself, which is what
+`RedstoneTorchPart` — the only implementor in this codebase — already did. The Scaladoc already carried this warning
+for Java implementors; it now applies to Scala implementors too.
+
+No jar in the pack references `TRandomUpdateTick` in any form, and the frozen baseline contains exactly the eight
+`$class` helpers listed in the inventory, which does not include this one. Per the `IDWriter` precedent, no
+compatibility bridge was written. The consequence to accept: a Scala class mixing in `TRandomUpdateTick` and relying
+on the trait's `onWorldJoin` must now declare it, or it will resolve to `TMultiPart`'s no-op and never register for
+random ticks. This is a recompiled-Scala-consumer break with no shipping consumer.
+
+### Validation
+
+- Complete plain-JVM suite: 99 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors.
+- Public members, descriptors and the full emitted class list diffed against a reference jar built at `3e68e67`.
+- Random tick firing over time still needs a world and stays on the manual checklist, as does torch display-tick
+  rendering and hollow-cover connection sizing.

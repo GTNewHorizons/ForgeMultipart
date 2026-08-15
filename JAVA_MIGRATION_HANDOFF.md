@@ -10,7 +10,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 
-Branch: `algent/java`. Base: `master`. 39 commits so far.
+Branch: `algent/java`. Base: `master`. 41 commits so far.
 
 ## The one rule that matters
 
@@ -56,7 +56,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **90 plain-JVM tests, 5 Forge server tests, all passing.**
+Current baseline: **99 plain-JVM tests, 5 Forge server tests, all passing.**
 
 ### ABI diff against the reference
 
@@ -112,8 +112,8 @@ frozen bytes, so recompiling against the port would defeat the point.
 **Default methods vs superclass.** Emit a Java `default` only when **no class in an implementor's superclass chain
 declares the same member**. A superclass method always beats an interface default on the JVM, and the failure is
 silent. `TFacePart`, `TEdgePart`, `Saw`, `JIconHitEffects.getBreakingIcon` and `IMicroMaterial`'s three members passed
-this test. `TCuboidPart`, `TNormalOcclusion`, `TIconHitEffects` and `TItemMultiPart.onItemUse` failed it and had to
-stay abstract with explicit forwarders in implementors.
+this test. `TCuboidPart`, `TNormalOcclusion`, `TIconHitEffects`, `TItemMultiPart.onItemUse` and
+`TRandomUpdateTick.onWorldJoin` failed it and had to stay abstract with explicit forwarders in implementors.
 
 **Audit existing `super` call sites, not just missing overrides.** `PostMicroblock` already overrode `occlusionTest`
 and ended with `super.occlusionTest(npart)`, which used to route through the trait. After the port it reached the
@@ -148,13 +148,18 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`.
 
-56 Java files, 61 Scala files, ~6,815 Scala lines left.
+Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
+`ISidedHollowConnect`, `IMicroMaterialRender`.
+
+62 Java files, 55 Scala files, ~6,733 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
-**Low risk, good next steps.** `TileCache`, `MultipartHelper`, `PacketScheduler`, `ControlKeyModifier`, the small
-marker traits (`TSlottedPart`, `IRedstonePart`, `INeighborTileChange`, `IRandomDisplayTick`, `TRandomUpdateTick`,
-`ISidedHollowConnect`, `IMicroMaterialRender`), and the two `package.scala` objects.
+**Low risk, good next steps.** `TileCache`, `MultipartHelper`, `PacketScheduler`, `ControlKeyModifier`, and the two
+`package.scala` objects.
+
+`IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
+`RedstoneInteractions`, whose `MODULE$` is load-bearing, so it is its own piece of work at medium risk.
 
 **Medium.** The `handler` packages on both sides, `MultipartRenderer`, `MicroRecipe`, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
