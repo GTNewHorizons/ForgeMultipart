@@ -958,3 +958,55 @@ that overrides `convertMulti(T)`, exactly as it did under Scala's `asInstanceOf[
 - Public members, descriptors and the full emitted class list diffed against a reference jar built at `0fdf9e5`.
 - What stays manual: a description packet actually arriving at a watching client. The functional test builds and sends
   one with no players connected, so the wire format and the client's handling of it are still unasserted.
+
+## 2026-08-15 — TileCache Java port
+
+The client-side tile recovery cache. **Zero downstream references**: no jar links against any member, and guidenh's
+reflective name list does not include it. That makes this the first port free to change shape rather than preserve it,
+on the `IDWriter` precedent.
+
+### Observable behavior
+
+No known divergence. `add` still stores the tile unflagged and `remove` still replaces that entry with a flagged one
+rather than dropping it, both keyed by a fresh `BlockCoord` built from the tile's own coordinates. `findTile` still
+prefers the world's tile, still warns only when the cached entry is not flagged removed, and still throws
+`RuntimeException("DC: Client multipart @" + c + " not found")` when the cache has nothing.
+
+The reference's trailing `case _ => null` in `findTile` is unreachable — `Some(FlaggedTile(t, rem))` matches whatever
+the flag is — so a tile flagged removed is returned just like any other, silently. The Java port makes that explicit
+with a comment instead of a dead branch, and `stillReturnsATileThatWasFlaggedRemoved` pins it.
+
+### Changed API
+
+All of it is unreferenced, and each change removes a Scala type from a signature no Java caller could use naturally:
+
+| Member | Reference | Port |
+| --- | --- | --- |
+| `map()` | `scala.collection.mutable.Map` | `java.util.Map` |
+| `add`, `remove` | returned `scala.Option` (the displaced entry) | `void` |
+| `apply(BlockCoord)` | `scala.Option<FlaggedTile>` | `FlaggedTile`, null when absent |
+
+`findTile` and `clear` are unchanged. No internal caller used any of the discarded return values: `TileMultipart` calls
+`add`/`remove`/`findTile` and `MultipartEventHandler` calls `clear`.
+
+### Removed API
+
+- `TileCache$` and `TileCache$FlaggedTile$`, the two companion singletons. Nothing references either in bytecode or by
+  name, which is the `IconHitEffects$` case rather than the `MultipartHelper$` one.
+- `FlaggedTile`'s case-class machinery: `copy`, `copy$default$1`, `copy$default$2`, `canEqual`, `equals`, `hashCode`,
+  `toString`, `productPrefix`, `productArity`, `productElement`, `productIterator`, and the `scala.Product` and
+  `scala.Serializable` interfaces. It is only ever a map *value*, never compared, hashed, printed or destructured, so
+  none of it was load-bearing. `t()` and `removed()` are kept under their generated names.
+
+### Validation
+
+- Complete plain-JVM suite: 114 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 13 tests, 0 failures, 0 errors, 3 of them new. `findTile` needs a world, so all
+  three branches are covered there rather than headless.
+- Class list and members diffed against a reference jar built at `b92d4b7`. Two classes removed, both companions.
+- One characterization assertion changed with the port: the test's `entryAt` adapter stopped unwrapping a
+  `scala.Option`. It was written as the single place the collection types are named precisely so this diff would be two
+  lines. Every behavioral assertion is unchanged and passed before and after.
+- What stays manual: the recovery path itself. It only fires when a client tile is evicted from its chunk before its
+  update packet arrives, which no test reproduces.

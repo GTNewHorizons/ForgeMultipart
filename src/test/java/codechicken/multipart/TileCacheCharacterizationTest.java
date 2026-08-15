@@ -109,8 +109,7 @@ class TileCacheCharacterizationTest {
     // The two adapters below are the only places the cache's collection types are named.
 
     private static TileCache.FlaggedTile entryAt(BlockCoord coord) {
-        scala.Option<TileCache.FlaggedTile> entry = TileCache.apply(coord);
-        return entry.isDefined() ? entry.get() : null;
+        return TileCache.apply(coord);
     }
 
     private static int cacheSize() {
