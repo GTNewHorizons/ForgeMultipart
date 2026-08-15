@@ -796,3 +796,53 @@ Accepted divergence: the five `$$anonfun$` classes under `WorldTickScheduler.pos
   and the `preTick`/`postTick` pair all run for every server tick of the suite.
 - Scheduled and random tick firing over time, and the chunk NBT round trip, are not asserted by any test and stay on
   the manual checklist.
+
+## 2026-08-14 — BlockMultipart Java port
+
+The Block face of the API. No jar references any member of it; it appears only as the return type of
+`MultipartProxy.block()`, which ProjRed and buildcraft-compat call, and by name in Waila and guidenh reflection.
+
+### Observable behavior
+
+No known divergence. Every override still resolves the tile through `getTile`, which continues to return null both
+when the tile is not a multipart tile and when its part list is empty, so the null branches and the empty-tile branches
+stay merged exactly as before. `isAir` still reports true for a missing tile, `getExplosionResistance` still returns 0
+rather than reaching the throwing max on an empty tile, and the redstone queries still flip the side with `side ^ 1`.
+
+`reduceMOP` still returns the struck part's index alongside a rebased `ExtendedMOP` carrying that part's own data and
+the original distance.
+
+### Supported JVM API
+
+- `BlockMultipart$` is descriptor-identical to the reference, including `reduceMOP`'s `scala.Tuple2` return.
+- `BlockMultipart` differs by exactly one descriptor, discussed below. `addCollisionBoxesToList` keeps its descriptor;
+  only its generic signature changes from Scala's `List<?>` to the raw `List` that vanilla's `Block` actually
+  declares, which is the more faithful override.
+- The four static forwarders `getTile`, `getClientTile`, `reduceMOP` and `drawHighlight` are unchanged.
+
+### Removed API
+
+`hasTileEntity$default$1()`, the accessor Scala emits for the default argument on `hasTileEntity(meta: Int = 0)`.
+Java has no default arguments, so it disappears. It is a compiler artifact of the default parameter, not API, and no
+jar references any member of this class.
+
+### TileMultipartClient is a bare interface here
+
+`getClientTile` returns `TileMultipartClient`, which is a Scala trait extending `TileMultipart`, so in bytecode it is
+an interface carrying none of the class's members. `addHitEffects` casts to `TileMultipart` to reach the part list.
+This is the third occurrence of the pattern, after `JIconHitEffects` and `TRandomUpdateTick`.
+
+### Compiler artifacts
+
+Accepted divergence: the four `$$anonfun$` classes under `getDrops` and `addCollisionBoxesToList`, including the two
+nested inner closures, are removed. The Java loops produce no replacement classes.
+
+### Validation
+
+- Complete plain-JVM suite: 90 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors. The block is registered during startup and is
+  the block every generated multipart tile is placed against, so registration and `hasTileEntity` run for real.
+- Almost everything else in this class needs a player, a ray trace or a renderer. Block breaking, selection boxes,
+  collision, pick block, activation, particles and light are all on the manual checklist and are the reason that
+  checklist exists.
