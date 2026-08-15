@@ -105,8 +105,8 @@ class MultipartProxy_clientImpl extends MultipartProxy_serverImpl {
     PacketCustom.assignHandler(MultipartCPH.channel, MultipartCPH)
     PacketCustom.assignHandler(MultipartCPH.registryChannel, MultipartCPH)
 
-    FMLCommonHandler.instance().bus().register(ControlKeyHandler)
-    ClientRegistry.registerKeyBinding(ControlKeyHandler)
+    FMLCommonHandler.instance().bus().register(ControlKeyHandler.INSTANCE)
+    ClientRegistry.registerKeyBinding(ControlKeyHandler.INSTANCE)
   }
 
   @SideOnly(Side.CLIENT)

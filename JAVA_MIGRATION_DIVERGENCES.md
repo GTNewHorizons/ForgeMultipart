@@ -1069,3 +1069,62 @@ one. The two `PacketScheduler$$anonfun$` closure classes go with them; the Java 
   abstract on `TScheduledPacketPart`, asserting the member set instead. Every behavioral assertion is unchanged.
 - What stays manual: the client-world guard. `schedulePacket` throws only when `world.isRemote`, which neither harness
   can produce — the plain JVM cannot build a `World` and the dedicated server is never remote.
+
+## 2026-08-15 — ControlKeyModifer and ControlKeyHandler Java port
+
+The placement-modifier key: a server-side map of which players hold it, and the client key binding that keeps that map
+in sync. **Zero downstream references**, and not among guidenh's reflective names.
+
+The misspelling in `ControlKeyModifer` is the published name and is kept. The file was named `ControlKeyModifier.scala`
+while the object inside it was `ControlKeyModifer`; only the file name is corrected. Renaming the type would be an API
+change with no forcing reason, so it is left for a deliberate decision rather than smuggled into a port.
+
+### Observable behavior
+
+No known divergence. `isControlDown` still branches on whether the player's world is remote, still reports
+`isClientPressing` on a client and the recorded map value on a server, and an unrecorded player still reads as not
+holding. `ControlKeyHandler.tick` still fires only on a change, still checks the net handler before sending, and still
+sets the client flag before writing packet 1.
+
+The reference's map was `HashMap().withDefaultValue(false)`; the port uses a plain `HashMap` and treats an absent key
+as false at the single read site, which is the only place the default was ever observable.
+
+### Changed and removed API
+
+| Member | Reference | Port |
+| --- | --- | --- |
+| `isControlDown(EntityPlayer)` | static | **unchanged**, the documented Java entry point |
+| `isClientPressing()` | static | unchanged |
+| `isClientPressing_$eq(boolean)` | static | `setClientPressing(boolean)` |
+| `map()` | `scala.collection.mutable.Map<EntityPlayer, Object>` | `java.util.Map<EntityPlayer, Boolean>` |
+| `playerControlValue(EntityPlayer)` | static, returned `ControlKeyValue` | removed |
+
+Removed classes: `ControlKeyModifer$`, `ControlKeyModifer$ControlKeyValue` and `ControlKeyHandler$`. Nothing
+references any of them in bytecode or by reflective name.
+
+`ControlKeyValue` and `playerControlValue` existed only to give Scala `player.isControlDown` sugar through an implicit
+conversion. They are meaningless from Java, and the reference already shipped `isControlDown(EntityPlayer)` explicitly
+"for Java users". The one in-repo user, `MicroblockPlacement`, now calls that static directly.
+
+### ControlKeyHandler is now an ordinary class with a singleton
+
+The reference was a Scala `object` extending `KeyBinding`, so the instance the key registry and the event bus both
+needed was `ControlKeyHandler$.MODULE$`, and `ControlKeyHandler` was a class of static forwarders — including
+forwarders for twelve inherited `KeyBinding` members. The port makes `ControlKeyHandler` itself the `KeyBinding`
+subclass with a single `INSTANCE`, and `MultipartProxy_clientImpl` passes `ControlKeyHandler.INSTANCE`.
+
+Consequence to note: referencing `ControlKeyHandler` at all now loads `KeyBinding`, where before only the companion
+did. Both are reached solely from the client proxy's `postInit`, so nothing changes in practice, and the class carries
+`@SideOnly(Side.CLIENT)`.
+
+### Validation
+
+- Complete plain-JVM suite: 120 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 21 tests, 0 failures, 0 errors, 3 of them new. `isControlDown` needs a real
+  player to pick its branch, so they run against a Forge `FakePlayer` on a server world, which takes the server branch.
+- Class list and members diffed against a reference jar built from the pre-port `src/main`.
+- No characterization assertion changed with the port.
+- What stays manual, and it is most of the client half: the key binding appearing in the controls screen, the packet
+  actually reaching the server on press and release, and `isControlDown` reporting the pressed state on a client world.
+  No harness has a client, so `isClientPressing` is never exercised.
