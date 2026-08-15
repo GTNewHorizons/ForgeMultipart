@@ -1010,3 +1010,62 @@ All of it is unreferenced, and each change removes a Scala type from a signature
   lines. Every behavioral assertion is unchanged and passed before and after.
 - What stays manual: the recovery path itself. It only fires when a client tile is evicted from its chunk before its
   update packet arrives, which no test reproduces.
+
+## 2026-08-15 — PacketScheduler Java port
+
+`PacketScheduler`, `IScheduledPacketPart` and `TScheduledPacketPart`. **Zero downstream references** and, unusually,
+zero implementors in this codebase either: the whole subsystem is a third-party extension point that no shipping mod
+in the pack uses.
+
+### Observable behavior
+
+No known divergence. `schedulePacket` still refuses a client world with `IllegalArgumentException`, still ORs repeated
+masks for the same part, and `sendScheduled` still skips parts whose tile is null, still writes the mask at the part's
+own width before calling `writeScheduled`, and still clears the schedule at the end.
+
+It also still fails rather than writing nothing for a mask width outside 1, 2, 4 and 8. The reference matched with no
+fallback and raised `scala.MatchError`; the port throws `IllegalArgumentException`. Both are `RuntimeException`, which
+is what the characterization asserts, and there is no consumer to notice the type. The map is still **not** cleared
+when that throw happens, because the reference had no `try`/`finally` and the port does not add one.
+
+### Supported JVM API
+
+- `IScheduledPacketPart` is member- and descriptor-identical to the reference.
+- `PacketScheduler.schedulePacket(TMultiPart, long)` is unchanged.
+- `TScheduledPacketPart` keeps `read` **abstract**. `TMultiPart` declares `read`, so a default would be shadowed by the
+  superclass and a part would silently read a description instead of a mask.
+
+### Changed API
+
+`TScheduledPacketPart.writeScheduled` and `readScheduled` became interface defaults with empty bodies. They were
+abstract on the reference interface with the empty bodies held in `TScheduledPacketPart$class`, which is to say a Scala
+implementor already got them for free and only a Java implementor had to write them out. Making them defaults restores
+the trait's source-level semantics for Java implementors rather than changing them. `TMultiPart` declares neither, so
+the default-versus-superclass rule permits it.
+
+Added `TScheduledPacketPart.readMask(TScheduledPacketPart, MCDataInput)`, a Java 8 interface static carrying the mask
+dispatch that `TScheduledPacketPart$class.read` used to hold. Because `read` cannot be a default, this is what makes
+the interface worth mixing in: implementors write a one-line `read` that delegates to it. The javadoc carries the
+snippet.
+
+`sendScheduled` is public. The reference declared it `private[multipart]`, which reaches `codechicken.multipart.handler`
+where the only caller lives; Java has no scope that spans a package and its siblings, so package-private would not
+compile and public is the only option.
+
+### Removed API
+
+`PacketScheduler$` with its `MODULE$`, and `TScheduledPacketPart$class`. Neither is referenced by any jar in the pack,
+in bytecode or by reflective name, so both fall under the `IconHitEffects$` case rather than the `MultipartHelper$`
+one. The two `PacketScheduler$$anonfun$` closure classes go with them; the Java loop produces no replacement.
+
+### Validation
+
+- Complete plain-JVM suite: 118 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 18 tests, 0 failures, 0 errors, 5 of them new for this port.
+- Class list and members diffed against a reference jar built at `3ad25f5`.
+- Two characterization adjustments, both anticipated: the functional test's `sendScheduled` helper stopped naming
+  `PacketScheduler$.MODULE$`, and the structural test stopped asserting that `writeScheduled` and `readScheduled` are
+  abstract on `TScheduledPacketPart`, asserting the member set instead. Every behavioral assertion is unchanged.
+- What stays manual: the client-world guard. `schedulePacket` throws only when `world.isRemote`, which neither harness
+  can produce — the plain JVM cannot build a `World` and the dedicated server is never remote.

@@ -94,7 +94,7 @@ class PacketSchedulerFunctionalTest {
 
     // The only place sendScheduled's owner is named.
     private static void sendScheduled() {
-        codechicken.multipart.PacketScheduler$.MODULE$.sendScheduled();
+        PacketScheduler.sendScheduled();
     }
 
     private static RecordingPart boundPart(int maskWidth) {

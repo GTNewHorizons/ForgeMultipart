@@ -10,7 +10,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 
-Branch: `algent/java`. Base: `master`. 46 commits so far.
+Branch: `algent/java`. Base: `master`. 48 commits so far.
 
 ## The one rule that matters
 
@@ -56,7 +56,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **114 plain-JVM tests, 13 Forge server tests, all passing.**
+Current baseline: **118 plain-JVM tests, 18 Forge server tests, all passing.**
 
 ### ABI diff against the reference
 
@@ -146,6 +146,15 @@ into an assertion: returning normally proves the guard short-circuited, and `ass
 proves the other branch did reach it. Use `LinkageError`, not the exact type — the first attempt raises
 `ExceptionInInitializerError` and every later one raises `NoClassDefFoundError`, so test order would otherwise matter.
 
+**Where a trait member cannot be a default, use an interface static.** `TScheduledPacketPart.read` is shadowed by
+`TMultiPart.read`, so the dispatch that lived in the `$class` helper became
+`TScheduledPacketPart.readMask(part, packet)`, with a one-line forwarder documented in the javadoc. Same shape as a
+`$class` bridge, but idiomatic and callable from Java.
+
+**`private[multipart]` becomes public, not package-private.** It reaches `codechicken.multipart.handler` too, and Java
+has no scope spanning a package and its siblings. `PacketScheduler.sendScheduled` hit this; `MultipartGenerator` and
+`MicroblockGenerator` will too.
+
 **Java 8 target.** No `List.of`, no `var`, no switch expressions in main or test sources.
 
 **Two test classes sharing global registry state** must guard their registrations, and the registries' error paths call
@@ -160,16 +169,13 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
-`ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper` and `TileCache`.
+`ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache` and `PacketScheduler`.
 
-65 Java files, 53 Scala files, ~6,595 Scala lines left (non-blank; that is the metric this figure has always used).
+68 Java files, 52 Scala files, ~6,527 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
-**Low risk, good next steps.** `PacketScheduler`, `ControlKeyModifier`, and the two `package.scala` objects.
-
-`PacketScheduler` is the least trivial of these: `TScheduledPacketPart` overrides `TMultiPart.read` as `final`, so it
-hits the default-versus-superclass rule and cannot carry a default.
+**Low risk, good next steps.** `ControlKeyModifier` and the two `package.scala` objects.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing, so it is its own piece of work at medium risk.

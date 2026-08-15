@@ -13,7 +13,6 @@ import java.util.TreeSet;
 import org.junit.jupiter.api.Test;
 
 import codechicken.lib.data.MCDataInput;
-import codechicken.lib.data.MCDataOutput;
 
 /**
  * schedulePacket refuses a client world and everything else here needs a bound tile, so the behavior lives in the Forge
@@ -26,28 +25,49 @@ class PacketSchedulerCharacterizationTest {
     void theCallbackInterfaceDeclaresThreeAbstractMembersAndExtendsNothing() {
         assertTrue(IScheduledPacketPart.class.isInterface());
         assertEquals(0, IScheduledPacketPart.class.getInterfaces().length);
-        assertAllAbstract(
-                IScheduledPacketPart.class,
-                "writeScheduled(long,codechicken.lib.data.MCDataOutput)void",
-                "readScheduled(long,codechicken.lib.data.MCDataInput)void",
-                "maskWidth()int");
-    }
 
-    @Test
-    void thePartTraitExtendsTheCallbackInterfaceAndAddsRead() {
-        assertTrue(TScheduledPacketPart.class.isInterface());
-        assertArrayEqualsAsSet(TScheduledPacketPart.class.getInterfaces(), IScheduledPacketPart.class);
-        assertAllAbstract(
-                TScheduledPacketPart.class,
-                "read(codechicken.lib.data.MCDataInput)void",
-                "writeScheduled(long,codechicken.lib.data.MCDataOutput)void",
-                "readScheduled(long,codechicken.lib.data.MCDataInput)void");
+        for (Method method : IScheduledPacketPart.class.getDeclaredMethods()) {
+            assertTrue(Modifier.isAbstract(method.getModifiers()), method + " must stay abstract");
+        }
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "writeScheduled(long,codechicken.lib.data.MCDataOutput)void",
+                                "readScheduled(long,codechicken.lib.data.MCDataInput)void",
+                                "maskWidth()int")),
+                instanceSignatures(IScheduledPacketPart.class));
     }
 
     /**
-     * TMultiPart declares read, so a superclass method would beat any default the interface tried to supply. The trait
-     * kept its implementation in the $class helper, which only Scala implementors reach; a part that does not declare
-     * read resolves it to TMultiPart's, which reads a description rather than a mask.
+     * The two callbacks the trait supplied empty bodies for are now interface defaults, which is what mixing the Scala
+     * trait in already gave a Scala implementor. read stays abstract for the reason below.
+     */
+    @Test
+    void thePartTraitExtendsTheCallbackInterfaceAndAddsRead() {
+        assertTrue(TScheduledPacketPart.class.isInterface());
+        assertEquals(
+                new TreeSet<>(Arrays.asList(IScheduledPacketPart.class.getName())),
+                names(TScheduledPacketPart.class.getInterfaces()));
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "read(codechicken.lib.data.MCDataInput)void",
+                                "writeScheduled(long,codechicken.lib.data.MCDataOutput)void",
+                                "readScheduled(long,codechicken.lib.data.MCDataInput)void")),
+                instanceSignatures(TScheduledPacketPart.class));
+    }
+
+    @Test
+    void theOptionalCallbacksDoNothingUnlessOverridden() {
+        SilentPart part = new SilentPart();
+
+        part.writeScheduled(0xffL, null);
+        part.readScheduled(0xffL, null);
+    }
+
+    /**
+     * TMultiPart declares read, so a superclass method would beat any default the interface tried to supply. A part
+     * that does not declare read resolves it to TMultiPart's, which reads a description rather than a mask.
      */
     @Test
     void readMustStayAbstractBecauseTMultiPartDeclaresIt() throws Exception {
@@ -60,18 +80,17 @@ class PacketSchedulerCharacterizationTest {
                 "An implementor that does not declare read falls back to TMultiPart, not to the interface");
     }
 
-    private static void assertAllAbstract(Class<?> type, String... expectedMembers) {
-        Set<String> actual = new TreeSet<>();
+    /** Declared instance methods only, so the static mask reader is not counted as part of the contract. */
+    private static Set<String> instanceSignatures(Class<?> type) {
+        Set<String> signatures = new TreeSet<>();
         for (Method method : type.getDeclaredMethods()) {
-            assertTrue(Modifier.isAbstract(method.getModifiers()), method + " must stay abstract");
+            if (Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
             assertTrue(Modifier.isPublic(method.getModifiers()), method + " must stay public");
-            actual.add(signature(method));
+            signatures.add(signature(method));
         }
-        assertEquals(new TreeSet<>(Arrays.asList(expectedMembers)), actual);
-    }
-
-    private static void assertArrayEqualsAsSet(Class<?>[] actual, Class<?>... expected) {
-        assertEquals(new TreeSet<>(names(expected)), new TreeSet<>(names(actual)));
+        return signatures;
     }
 
     private static Set<String> names(Class<?>[] types) {
@@ -105,11 +124,5 @@ class PacketSchedulerCharacterizationTest {
         public int maskWidth() {
             return 1;
         }
-
-        @Override
-        public void writeScheduled(long mask, MCDataOutput packet) {}
-
-        @Override
-        public void readScheduled(long mask, MCDataInput packet) {}
     }
 }
