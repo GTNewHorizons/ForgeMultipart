@@ -10,7 +10,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 
-Branch: `algent/java`. Base: `master`. 41 commits so far.
+Branch: `algent/java`. Base: `master`. 43 commits so far.
 
 ## The one rule that matters
 
@@ -56,7 +56,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **99 plain-JVM tests, 5 Forge server tests, all passing.**
+Current baseline: **107 plain-JVM tests, 10 Forge server tests, all passing.**
 
 ### ABI diff against the reference
 
@@ -135,6 +135,17 @@ Java class loses `apply` sugar and must be referenced as `X$.MODULE$` when passe
 `Boolean` in Scala arrive as `Object` and need casting; and Scala 2.11 will not adapt a lambda to
 `Function1[_, BoxedUnit]`, so `operate { p => ... }` needs an explicit `AbstractFunction1`.
 
+**A companion object can be load-bearing without a single bytecode reference.** The inventory's 17 `MODULE$` list is
+not the whole test — check the reflective string constants too. `MultipartHelper$` is in neither the `MODULE$` list nor
+any consumer's constant pool as a type, but guidenh names it as a string, so it was kept. `IconHitEffects$` was in
+neither and was dropped. Check both lists before deleting a companion.
+
+**Classes that cannot class-initialize headless make good probes.** `MultipartSaveLoad` reflects into `TileEntity`'s
+static maps through `ObfMapping` and always throws under a plain JVM. That turns "did this branch reach the loader?"
+into an assertion: returning normally proves the guard short-circuited, and `assertThrows(LinkageError.class, ...)`
+proves the other branch did reach it. Use `LinkageError`, not the exact type — the first attempt raises
+`ExceptionInInitializerError` and every later one raises `NoClassDefFoundError`, so test order would otherwise matter.
+
 **Java 8 target.** No `List.of`, no `var`, no switch expressions in main or test sources.
 
 **Two test classes sharing global registry state** must guard their registrations, and the registries' error paths call
@@ -149,14 +160,14 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
-`ISidedHollowConnect`, `IMicroMaterialRender`.
+`ISidedHollowConnect`, `IMicroMaterialRender`, and `MultipartHelper`.
 
-62 Java files, 55 Scala files, ~6,733 Scala lines left (non-blank; that is the metric this figure has always used).
+64 Java files, 54 Scala files, ~6,636 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
-**Low risk, good next steps.** `TileCache`, `MultipartHelper`, `PacketScheduler`, `ControlKeyModifier`, and the two
-`package.scala` objects.
+**Low risk, good next steps.** `TileCache`, `PacketScheduler`, `ControlKeyModifier`, and the two `package.scala`
+objects.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing, so it is its own piece of work at medium risk.

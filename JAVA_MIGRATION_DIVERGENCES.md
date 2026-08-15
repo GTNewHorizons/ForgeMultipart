@@ -897,3 +897,64 @@ random ticks. This is a recompiled-Scala-consumer break with no shipping consume
 - Public members, descriptors and the full emitted class list diffed against a reference jar built at `3e68e67`.
 - Random tick firing over time still needs a world and stays on the manual checklist, as does torch display-tick
   rendering and hollow-cover connection sizing.
+
+## 2026-08-15 — MultipartHelper Java port
+
+The NBT and description-packet entry point. Two of its statics are linked against by shipping jars, and guidenh
+reflects on both `MultipartHelper` and `MultipartHelper$` by name.
+
+### Observable behavior
+
+No known divergence. The id guard still returns null before assigning `MultipartSaveLoad.loadingWorld`, so a tag that
+is not a saved multipart still leaves the loading world untouched. `sendDescPacket` still resolves the chunk from the
+tile's own coordinates and still sends nothing when `getDescPacket` returns null, which it does when the iterator
+yields no `TileMultipart`.
+
+`createTileFromParts` now builds one `JavaConversions` wrapper and passes it to both `generateCompositeTile` and
+`loadParts`, where the Scala applied the implicit conversion separately at each call site. Both wrappers were views
+over the same `java.lang.Iterable`, so this is one allocation fewer and the same traversal.
+
+### Supported JVM API
+
+- `MultipartHelper` is public-member-identical and descriptor-identical to the reference, including
+  `createTileFromParts`'s `java.lang.Iterable` parameter, which is easy to misread as Scala's.
+- `MultipartHelper$IPartTileConverter` is identical, including the `clazz()` accessor Scala generated for its `val`.
+- `MultipartHelper$` keeps `MODULE$`, its private constructor and all four instance forwarders, identical.
+- The full emitted class list is unchanged: nothing was added or removed.
+
+`MultipartHelper$` was kept deliberately. It is not among the 17 `MODULE$` singletons the inventory found read from
+bytecode, and no jar links against it, but guidenh names it as a reflective string constant. The inventory warns that
+removing a companion breaks those consumers even where no bytecode reference exists, so this one stays. This is the
+opposite call to `IconHitEffects$`, which was dropped because nothing referenced it in bytecode *or* by name.
+
+### Differences that are not API
+
+- `MultipartHelper` gains a private constructor, as every converted Scala `object` has.
+- `MultipartHelper$`'s class initializer loses its `ACC_PUBLIC` flag: Scala emits `public static {}`, `javac` emits
+  `static {}`. The JVM invokes `<clinit>` implicitly and it cannot be named by any caller.
+- `IPartTileConverter.convertMulti` returns `Collections.emptyList()` or `Collections.singletonList(part)` instead of a
+  `scala.collection.convert.Wrappers$SeqWrapper` over a Scala `Seq`. The declared type was always `java.lang.Iterable`
+  and no consumer implements or inspects the concrete type, so this is an implementation detail, and it removes a
+  wrapper allocation per converted tile.
+- The two commented-out blocks the reference carried — the `PlayerInstance.playersInChunk` reflection and the
+  multi-tile `sendDescPackets` — are not reproduced as dead code. The reason they were removed, a missing forge access
+  transformer, is recorded in the class javadoc instead.
+
+### The cast in convert is still checked
+
+`convert(TileEntity)` calls `convertMulti((T) tile)`, and erasure turns that cast into `(TileEntity)`, which cannot
+fail. The `ClassCastException` a mismatched tile produces comes from the synthetic bridge method on the *subclass*
+that overrides `convertMulti(T)`, exactly as it did under Scala's `asInstanceOf[T]`. The mechanism is unchanged, and
+`convertFailsOnATileTheConverterDoesNotAccept` pins it because it looks like erasure should have swallowed it.
+
+### Validation
+
+- Complete plain-JVM suite: 107 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 10 tests, 0 failures, 0 errors, 5 of them new for this port. They cover
+  everything the plain-JVM suite cannot reach: tile construction through the ASM generator, the NBT round trip through
+  the save/load hooks, `registerTileConverter` appending to a Scala `MutableList`, and `sendDescPacket` against a
+  loaded chunk.
+- Public members, descriptors and the full emitted class list diffed against a reference jar built at `0fdf9e5`.
+- What stays manual: a description packet actually arriving at a watching client. The functional test builds and sends
+  one with no players connected, so the wire format and the client's handling of it are still unasserted.
