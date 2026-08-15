@@ -101,7 +101,7 @@ class MultipartProxy_clientImpl extends MultipartProxy_serverImpl {
   @SideOnly(Side.CLIENT)
   override def postInit() {
     super.postInit()
-    RenderingRegistry.registerBlockHandler(MultipartRenderer)
+    RenderingRegistry.registerBlockHandler(MultipartRenderer$.MODULE$)
     PacketCustom.assignHandler(MultipartCPH.channel, MultipartCPH)
     PacketCustom.assignHandler(MultipartCPH.registryChannel, MultipartCPH)
 
@@ -112,7 +112,7 @@ class MultipartProxy_clientImpl extends MultipartProxy_serverImpl {
   @SideOnly(Side.CLIENT)
   override def onTileClassBuilt(t: Class[_ <: TileEntity]) {
     super.onTileClassBuilt(t)
-    ClientRegistry.bindTileEntitySpecialRenderer(t, MultipartRenderer)
+    ClientRegistry.bindTileEntitySpecialRenderer(t, MultipartRenderer$.MODULE$)
   }
 }
 

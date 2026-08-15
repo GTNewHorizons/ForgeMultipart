@@ -1168,3 +1168,62 @@ no Scala consumer did.
 - Test churn, both expected for a removal rather than a port: `PackageObjectCharacterizationTest` was deleted with its
   subject, and `ProxyLoggerFunctionalTest` lost only its alias-identity assertion. What survives is the assertion worth
   keeping — that both proxies publish a non-null logger during preInit, which is what the inlined call sites now read.
+
+## 2026-08-15 — MultipartRenderer Java port
+
+The client rendering callbacks. No jar links against any member, but guidenh reflects on **both** `MultipartRenderer`
+and `MultipartRenderer$` by name, resolving `renderWorldBlock` as a static first and falling back to the companion's
+`MODULE$`. Both classes are therefore kept, in the `TickScheduler$` shape: the companion holds the implementation
+because Forge registers that instance itself, and the plain class is static forwarders.
+
+### Observable behavior
+
+No known divergence. The render id is still claimed in the singleton's initialiser, which preserves the reference's
+timing: a Scala object runs its body on first access, and the first access is the client proxy's `postInit`.
+`renderWorldBlock` still returns false for a non-multipart tile, for an empty part list, and after drawing a breaking
+overlay; `renderTileEntityAt` still returns early unless the tile has dynamic parts; `getRenderId` still reads
+`TileMultipart.renderID`.
+
+The reference wrote the dynamic-part guard with a non-short-circuiting `|`. The port uses `||`. Both operands are
+side-effect-free getters, so this cannot differ.
+
+The breaking-overlay branch moved into a private helper. The reference nested a pattern match inside an `if`; the hit
+data is a `scala.Tuple2` that arrives erased, so the port checks the tuple and then the boxed index before unboxing,
+which is what the match compiled to. `BlockMultipart` already reads the same data the same way.
+
+### Supported JVM API
+
+The emitted class list is **unchanged** — nothing added, nothing removed. All five rendering callbacks keep their
+exact signatures on `MultipartRenderer`, `MODULE$` keeps its type and flags on `MultipartRenderer$`, and both classes
+keep class-level `@SideOnly(Side.CLIENT)`, so both are still stripped on a dedicated server.
+
+`MultipartRenderer$` still extends `TileEntitySpecialRenderer` and implements `ISimpleBlockRenderingHandler`. Forge
+rejects the registration outright if either is missing, and the characterization asserts both.
+
+### Differences that are not API
+
+- `MultipartRenderer` loses `func_147498_b`, `func_147496_a` and `func_147497_a`, the forwarders Scala generates for
+  inherited `TileEntitySpecialRenderer` members. Same category as the twelve `KeyBinding` forwarders dropped from
+  `ControlKeyHandler`: artifacts of the object-forwarder mechanism, not API, and unreferenced.
+- `MultipartRenderer$`'s class initialiser loses `ACC_PUBLIC`, as every converted companion has.
+- The unused `com.gtnewhorizons.angelica.api.ThreadSafeISBRH` import is dropped. It appears nowhere else in the
+  codebase and annotated nothing; no behavior depended on it. Worth a second look independently — if the intent was to
+  mark this ISBRH thread-safe for Angelica, that annotation was never actually applied in the reference either.
+
+### Scala's uniform access hid a field-versus-method difference
+
+`renderer.hasOverrideBlockTexture` reads identically in Scala whether it is a field or a no-arg method. It is a method
+on `RenderBlocks`, and the port did not compile until it became `hasOverrideBlockTexture()`. This is a compile-time
+failure rather than a silent one, but it will recur in every remaining renderer conversion.
+
+### Validation
+
+- Complete plain-JVM suite: 125 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 22 tests, 0 failures, 0 errors. It does not exercise this class and cannot:
+  the server never loads it.
+- Class list and members diffed against a reference jar built from the pre-port `src/main`.
+- No characterization assertion changed with the port.
+- What stays manual, and it is everything this class actually does: static block rendering, dynamic part rendering,
+  the breaking overlay on the struck part, inventory rendering, and the render id being claimed exactly once. None of
+  it can run without a client, so all of it is on the checklist.
