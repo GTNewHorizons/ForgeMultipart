@@ -559,3 +559,57 @@ replacement classes.
   startup calls `setupIDMap`, `calcMaxCuttingStrength` and the default content registration.
 - Error paths remain uncovered by tests: they call the microblock logger, which is null until `MicroblockProxy.preInit`
   runs, so they cannot execute headless. They are unchanged from the reference.
+
+## 2026-08-14 — MultiPartRegistry Java port
+
+Covers `MultiPartRegistry`, `MultiPartRegistry$` and the three nested interfaces. Twelve jars reference the type and
+Schematica reaches the singleton reflectively.
+
+### Observable behavior
+
+No known divergence. `beforeServerStart` still sorts the type map by name so ids are indexes into it, part ids still
+round trip through the shared `IDWriter`, converters are still grouped per block with the first non-null result
+winning, registration still refuses to run once the registry is closed and still requires an active mod container, a
+duplicate part id still throws, and `writePartID` and `getModContainer` still throw rather than returning null for an
+unknown name.
+
+### Preserved Scala-typed descriptors
+
+Both remain, because ForgeRelocationFMP and ProjRed link against them:
+
+- `registerParts(Lscala/Function2;Lscala/collection/Seq;)V`
+- `registerParts(Lcodechicken/multipart/MultiPartRegistry$IPartFactory2;Lscala/collection/Seq;)V`
+
+The `Seq` overload drains through `JavaConversions.seqAsJavaList`. The `Function2` overload applies the function with
+a boxed `Boolean`, matching what the Scala closure received.
+
+### Array overloads become Java varargs
+
+`registerParts(IPartFactory, String[])` and `registerParts(IPartFactory2, String[])` are declared `String...`. The
+descriptor is unchanged, verified against the reference dev jar; `ACC_VARARGS` is a compiler flag and does not affect
+linkage. This was needed because `MicroblockClass` called the Scala varargs form with a single string, which no longer
+resolves against a plain array parameter. It also makes the Java call sites more natural without adding API.
+
+### Changed and removed API
+
+- `readIDMap` returns `java.util.List<String>` instead of `scala.collection.Seq<String>`, as with
+  `MicroMaterialRegistry`. It is `private[multipart]` in Scala, so it has no static forwarder, and no jar references
+  it.
+- The mangled public accessors Scala emitted so its closures could reach private state
+  (`codechicken$multipart$MultiPartRegistry$$typeMap()` and the four others) are gone. No jar references them.
+
+### Compiler artifacts
+
+Accepted divergence: the eight `MultiPartRegistry$$anonfun$*` classes and `MultiPartRegistry$$anon$1` are replaced by
+two Java anonymous classes, `MultiPartRegistry$1` and `$2`, which are the two `IPartFactory2` adapters the deprecated
+overloads build.
+
+### Validation
+
+- `MultiPartRegistryCharacterizationTest`: 5 tests, 0 failures, 0 errors, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 78 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors. This is the layer that matters for this class:
+  registration needs FML's active mod container, so real startup is the only place both factory overloads actually
+  run, and the suite resolves a part registered through each.
+- Error paths that log remain uncovered headless, as before, because the multipart logger is null until preInit.
