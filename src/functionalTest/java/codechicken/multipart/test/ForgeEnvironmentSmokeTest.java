@@ -7,17 +7,28 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.lang.reflect.Proxy;
 import java.util.BitSet;
 
+import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.data.MCDataInput;
+import codechicken.lib.data.MCDataOutput;
+import codechicken.lib.data.MCDataOutputWrapper;
 import codechicken.microblock.FaceMicroClass$;
 import codechicken.microblock.HollowMicroClass$;
 import codechicken.microblock.Microblock;
 import codechicken.microblock.MicroblockGenerator;
+import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.TFacePart;
+import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.asm.MultipartMixinFactory;
 import codechicken.multipart.scalatraits.TSlottedTile;
@@ -63,6 +74,63 @@ class ForgeEnvironmentSmokeTest {
         assertTrue(hollow instanceof TFacePart);
         assertEquals(0x10, ((TFacePart) hollow).redstoneConductionMap());
         assertFalse(((TFacePart) hollow).solid(0));
+    }
+
+    /**
+     * Part registration needs FML's active mod container, so none of this is reachable from a plain JVM test. Startup
+     * exercises both overloads downstream depends on: Content registers through the deprecated IPartFactory array form,
+     * and each microblock class registers through the IPartFactory2 varargs form.
+     */
+    @Test
+    void registryResolvesPartsRegisteredThroughBothFactoryOverloads() throws Exception {
+        assertTrue(MultiPartRegistry.loaded(), "Registration must be closed once the server has started");
+
+        // mc_torch comes from the deprecated IPartFactory array overload.
+        TMultiPart torch = MultiPartRegistry.loadPart("mc_torch", null);
+        assertNotNull(torch);
+        assertEquals("mc_torch", torch.getType());
+
+        // mcr_face comes from the IPartFactory2 varargs overload. Its factory reads the tag, so it needs a real one;
+        // an absent material name resolves to the missing-material placeholder rather than failing.
+        TMultiPart face = MultiPartRegistry.loadPart("mcr_face", new NBTTagCompound());
+        assertNotNull(face);
+        assertEquals("mcr_face", face.getType());
+
+        assertNotNull(MultiPartRegistry.getModContainer("mc_torch"));
+        assertNotNull(MultiPartRegistry.getModContainer("mcr_face"));
+    }
+
+    @Test
+    void partIdsRoundTripThroughTheRegistryCarrier() {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        MCDataOutput output = new MCDataOutputWrapper(new DataOutputStream(bytes));
+        TMultiPart torch = MultiPartRegistry.loadPart("mc_torch", null);
+        MultiPartRegistry.writePartID(output, torch);
+
+        TMultiPart read = MultiPartRegistry.readPart(input(bytes.toByteArray()));
+
+        assertNotNull(read);
+        assertEquals("mc_torch", read.getType());
+    }
+
+    /** CodeChickenLib has no stream-backed MCDataInput, so the carrier reads are proxied. */
+    private static MCDataInput input(byte[] bytes) {
+        DataInputStream data = new DataInputStream(new ByteArrayInputStream(bytes));
+        return (MCDataInput) Proxy.newProxyInstance(
+                MCDataInput.class.getClassLoader(),
+                new Class<?>[] { MCDataInput.class },
+                (proxy, method, arguments) -> {
+                    switch (method.getName()) {
+                        case "readUByte":
+                            return (short) data.readUnsignedByte();
+                        case "readUShort":
+                            return data.readUnsignedShort();
+                        case "readInt":
+                            return data.readInt();
+                        default:
+                            throw new AssertionError("Unexpected read method: " + method.getName());
+                    }
+                });
     }
 
     @Test
