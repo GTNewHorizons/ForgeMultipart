@@ -692,3 +692,51 @@ the `operate` adapter.
   checked descriptor by descriptor.
 - World-dependent paths, NBT round trips through `createFromNBT`, and desc packets are not covered by tests and stay
   on the manual checklist.
+
+## 2026-08-14 — TMultiPart Java port
+
+The base class every part extends. Five jars extend it and about twenty of its members are referenced.
+
+### Observable behavior
+
+No known divergence. The class is almost entirely no-op defaults; the only real implementation is
+`collisionRayTrace`, which still offsets each sub part by the tile coordinates, rebuilds them as `IndexedCuboid6`
+carrying the original `data`, and delegates to `RayTracer.rayTraceCuboids` with the same block coordinate and block
+type. `x`, `y` and `z` still throw `NullPointerException` when the part is unbound, and `world` still returns null
+rather than throwing.
+
+`getSubParts` was traversed through `JavaConversions` purely to get Scala's `map`; `rayTraceCuboids` already took a
+`java.util.List`, so the Java loop builds that list directly and the conversion disappears.
+
+### Supported JVM API
+
+This is the cleanest result so far. Diffed against a reference dev jar built at `cacc9a3`:
+
+- Every descriptor is identical, checked across all members rather than a sample.
+- No public member lost and none added.
+- `@SideOnly(Side.CLIENT)` appears on the same seven members.
+- `getTile()` and the no-argument `addDestroyEffects` remain the only deprecated members. `javap` reports a higher
+  raw count because javac emits both the `Deprecated` attribute and the annotation where Scala emitted one form; the
+  marked members are identical.
+- `tile` keeps its `tile()` and `tile_$eq(TileMultipart)` accessor pair, so Scala callers can still write
+  `part.tile = t`.
+
+### Recompiled Scala consumers
+
+None. No in-repo Scala call site needed changing, which is the first port where that has been true of a type this
+widely used. Scala resolves the empty-paren Java accessors the same way it resolved the Scala ones, and assignment to
+`tile` still desugars to `tile_$eq`.
+
+### Compiler artifacts
+
+Accepted divergence: `TMultiPart$$anonfun$1`, the closure from the `getSubParts.map` in `collisionRayTrace`, is
+removed. The Java loop produces no replacement class.
+
+### Validation
+
+- Complete plain-JVM suite: 90 tests, 0 failures, 0 errors, including the twelve `TileMultipart` cases that drive
+  parts through `bind`, `doesTick`, `occlusionTest`, `getLightValue` and `explosionResistance`.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 5 tests, 0 failures, 0 errors, covering real part registration and
+  instantiation of `mc_torch` and `mcr_face` plus composite tile generation.
+- Ray tracing, rendering and particle paths need a client and stay on the manual checklist.
