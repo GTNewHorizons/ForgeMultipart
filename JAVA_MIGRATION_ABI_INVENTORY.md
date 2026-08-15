@@ -156,3 +156,51 @@ object breaks these even where no bytecode reference exists.
 3. Bridge effort should be spent on the 8 `$class` helpers, 17 `MODULE$` singletons, and 5 Scala-typed descriptors
    listed above. Every other converted file can drop its Scala bridge after checking this inventory, as `IDWriter` can.
 4. Add the reflective names to the manual compatibility checklist; the automated ABI diff cannot see them.
+
+## guidenh's reflective surface, from source
+
+The constant-pool scan can see the names guidenh reflects on but not the members it looks up. This section is read
+from the checked-out source at `6137525`, in
+`src/main/java/com/hfstudio/guidenh/integration/forgemultipart/ForgeMultipartHelpers.java`. **None of this is visible
+to the ABI diff**; a break here is silent until a user opens a guide page.
+
+The dispatch helper is `invokeStaticOrSingletonMethod(class, companion, method, args...)`. It tries a **static** method
+on the plain class first, and only on `INVOCATION_MISSING` falls back to reading `companion.MODULE$` and invoking the
+method on it. So for most entries the companion is a fallback. The exceptions below are the ones that matter.
+
+| Owner | Member reflected on | Reached via |
+| --- | --- | --- |
+| `MultipartHelper` | `createTileFromNBT(World, NBTTagCompound)` | static; companion is fallback |
+| `MultipartRenderer` | `renderWorldBlock(IBlockAccess, int, int, int, Block, int, RenderBlocks)` | static; companion is fallback |
+| `MultipartGenerator` | `generateCompositeTile(TileEntity, Iterable, boolean)` | **companion only** — see below |
+| `BlockMicroMaterial` | `register(material)`, plus a constructor of arity 2 `(Block, int)` or 1 `(Block)` | static; companion is fallback |
+| `MicroMaterialRegistry` | `getMaterial(int)` | static; companion is fallback |
+| `MicroblockGenerator$` | `create(MicroblockClass, int, boolean)` | **companion only**, matched by exact parameter types |
+| `TileMultipart` | `partList()`, `partList_$eq(scala.collection.Seq)`, `loadParts(...)`, `notifyTileChange()`, `markRender()` | instance |
+| `Microblock` | `microClass()`, `material()`, `shape()` | instance |
+| `TMultiPart` | `getDrops()` | instance |
+| `IMicroMaterial` | `block()`, `meta()` | instance |
+
+Types used only for `isInstanceOf`: `BlockMultipart`, `TileMultipart`, `TileMultipartClient`, `Microblock`,
+`MicroblockClient`, `BlockMicroMaterial`.
+
+### Three constraints this adds
+
+1. **`MultipartGenerator$.MODULE$` is load-bearing through reflection.** `generateCompositeTile` is `private[multipart]`
+   in Scala, so no static forwarder is emitted on `MultipartGenerator` and guidenh's static attempt always misses. It
+   reaches the method only through the companion. A Phase 6/7 port that keeps the class but drops the companion, or
+   promotes the method to a public static and removes it from the companion, breaks guidenh silently.
+
+2. **`MicroblockGenerator$.create` is matched by exact parameter types**, including `pts[0].getName()` string-compared
+   against `"codechicken.microblock.MicroblockClass"`. That pins `create(MicroblockClass, int, boolean)` on the
+   companion and pins `MicroblockClass`'s fully qualified name. Widening a parameter or renaming the class breaks the
+   lookup even though every call site still links.
+
+3. **`TileMultipart.partList_$eq(scala.collection.Seq)` is reflectively load-bearing.** It is a Scala `var` setter with
+   no Java-facing equivalent, so a Java-first port that drops it in favour of a list mutator would break guidenh
+   invisibly. The current port keeps it, verified by `javap`. `resolvePartList` also falls back to a public *field*
+   named `partList`, which never existed — Scala emits the field private — so that path is dead in the reference too.
+
+`MultipartHelper$` is retained on the strength of the fallback path alone: the static is found first today, so the
+companion is never reached in practice. That is a weaker justification than the two "companion only" entries above,
+but the cost of keeping a four-method forwarder is negligible against a silent break.
