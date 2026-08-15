@@ -10,7 +10,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 
-Branch: `algent/java`. Base: `master`. 50 commits so far.
+Branch: `algent/java`. Base: `master`. 52 commits so far.
 
 ## The one rule that matters
 
@@ -56,7 +56,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **120 plain-JVM tests, 21 Forge server tests, all passing.**
+Current baseline: **120 plain-JVM tests, 22 Forge server tests, all passing.**
 
 ### ABI diff against the reference
 
@@ -159,6 +159,10 @@ has no scope spanning a package and its siblings. `PacketScheduler.sendScheduled
 `FakePlayerFactory.getMinecraft(worldServer)` needs no connection and its world is not remote, which is the branch a
 server takes. It made `ControlKeyModifer.isControlDown` testable. The client branch of anything stays manual.
 
+**A Scala package object cannot be ported.** It compiles to a class named `package`, and that is a Java keyword, so
+no Java source can declare or name it. Both were removed by inlining their single member. Any future one has the same
+three options: leave it in Scala, invent a Java type to hold its members, or inline it.
+
 **Java 8 target.** No `List.of`, no `var`, no switch expressions in main or test sources.
 
 **Two test classes sharing global registry state** must guard their registrations, and the registries' error paths call
@@ -175,12 +179,13 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
 
-70 Java files, 51 Scala files, ~6,471 Scala lines left (non-blank; that is the metric this figure has always used).
+Both `package.scala` objects are gone, removed rather than ported.
+
+70 Java files, 49 Scala files, ~6,467 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
-**Low risk, good next steps.** The two `package.scala` objects. After those the low-risk list is empty and the
-next work is the medium group.
+**The low-risk queue is empty.** Pick the next piece deliberately rather than off the top of a list.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing, so it is its own piece of work at medium risk.

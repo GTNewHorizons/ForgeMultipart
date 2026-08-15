@@ -9,6 +9,7 @@ import scala.collection.mutable.{Map => MMap}
 import net.minecraft.block.Block
 import net.minecraft.item.Item
 import java.lang.Exception
+import codechicken.microblock.handler.MicroblockProxy
 import cpw.mods.fml.common.event.FMLInterModComms.IMCMessage
 import net.minecraft.item.ItemStack
 import BlockMicroMaterial.createAndRegister
@@ -27,7 +28,8 @@ object ConfigContent {
       else
         loadLines(cfgFile)
     } catch {
-      case e: IOException => logger.error("Error parsing config", e)
+      case e: IOException =>
+        MicroblockProxy.logger.error("Error parsing config", e)
     }
   }
 
@@ -95,8 +97,10 @@ object ConfigContent {
           loadLine(s)
         } catch {
           case e: Exception =>
-            logger.error("Invalid line in microblocks.cfg: " + s)
-            logger.error(e.getMessage)
+            MicroblockProxy.logger.error(
+              "Invalid line in microblocks.cfg: " + s
+            )
+            MicroblockProxy.logger.error(e.getMessage)
         }
       }
     } while (s != null)
@@ -114,12 +118,12 @@ object ConfigContent {
           createAndRegister(block, m)
         } catch {
           case e: IllegalStateException =>
-            logger.error(
+            MicroblockProxy.logger.error(
               "Unable to register micro material: " +
                 materialKey(block, m) + "\n\t" + e.getMessage
             )
           case e: Exception =>
-            logger.error(
+            MicroblockProxy.logger.error(
               "Unable to register micro material: " + materialKey(block, m),
               e
             )
@@ -128,7 +132,7 @@ object ConfigContent {
     }
 
     nameMap.foreach(e =>
-      logger.warn(
+      MicroblockProxy.logger.warn(
         "Unable to add micro material for block with unlocalised name " + e._1 + " as it doesn't exist"
       )
     )
@@ -137,7 +141,7 @@ object ConfigContent {
   def handleIMC(messages: Seq[IMCMessage]) {
     messages.filter(_.key == "microMaterial").foreach { msg =>
       def error(s: String) {
-        logger.error(
+        MicroblockProxy.logger.error(
           "Invalid microblock IMC message from " + msg.getSender + ": " + s
         )
       }

@@ -185,7 +185,9 @@ object MultipartGenerator extends ScratchBitSet {
       traitName != null
     ) {
       if (map.contains(s_interface))
-        logger.error("Trait already registered for " + s_interface)
+        MultipartProxy.logger.error(
+          "Trait already registered for " + s_interface
+        )
       else {
         map.put(s_interface, traitName)
         MultipartMixinFactory.registerTrait(traitName)

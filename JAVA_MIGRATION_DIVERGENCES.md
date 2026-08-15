@@ -1128,3 +1128,43 @@ did. Both are reached solely from the client proxy's `postInit`, so nothing chan
 - What stays manual, and it is most of the client half: the key binding appearing in the controls screen, the packet
   actually reaching the server on press and release, and `isControlDown` reporting the pressed state on a client world.
   No harness has a client, so `isClientPressing` is never exercised.
+
+## 2026-08-15 — Package objects removed rather than ported
+
+`codechicken.multipart.package` and `codechicken.microblock.package`. This entry records a **removal**, not a
+conversion, because a conversion is impossible.
+
+### Why they have no Java form
+
+A Scala package object compiles to a class literally named `package`, plus its `package$` companion. `package` is a
+Java keyword, so no Java source can declare or even name those types. The characterization test had to reach both of
+them through `Class.forName`, which is the whole argument in one line.
+
+That left three options: leave two six-line Scala files in the tree forever, invent a Java type to hold the member, or
+remove the indirection. Each package object held exactly one member — `def logger = MultipartProxy.logger` and
+`def logger = MicroblockProxy.logger` — so the third is the honest one. The alias existed only to let Scala code inside
+the package write `logger` unqualified; Java has no such sugar, and the proxies already publish the value.
+
+### Observable behavior
+
+None changed. The functional characterization asserted before the removal that each alias returned the *very instance*
+its proxy holds, so replacing `logger` with `MultipartProxy.logger` / `MicroblockProxy.logger` at the call sites is an
+identity substitution. The eight call sites are `ConfigContent` (7) and `MultipartGenerator` (1); both classes are
+descriptor-identical after the change, since only method bodies moved.
+
+### Removed API
+
+`codechicken/multipart/package`, `codechicken/multipart/package$`, `codechicken/microblock/package` and
+`codechicken/microblock/package$`. Exactly those four classes leave the jar and nothing else changes. No jar in the
+pack references any of them, in bytecode or by reflective name — no Java consumer *could* reference them by name, and
+no Scala consumer did.
+
+### Validation
+
+- Complete plain-JVM suite: 120 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Java 8 Forge dedicated-server suite: 22 tests, 0 failures, 0 errors.
+- Class list diffed against a reference jar built from the pre-removal `src/main`: exactly four classes removed.
+- Test churn, both expected for a removal rather than a port: `PackageObjectCharacterizationTest` was deleted with its
+  subject, and `ProxyLoggerFunctionalTest` lost only its alias-identity assertion. What survives is the assertion worth
+  keeping — that both proxies publish a non-null logger during preInit, which is what the inlined call sites now read.
