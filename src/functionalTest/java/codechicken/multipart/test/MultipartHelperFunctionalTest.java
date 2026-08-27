@@ -1,5 +1,6 @@
 package codechicken.multipart.test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -17,16 +18,20 @@ import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
+import net.minecraft.world.chunk.Chunk;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.packet.PacketCustom;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
+import codechicken.multipart.handler.MultipartSPH;
 import codechicken.multipart.handler.MultipartSaveLoad;
 import codechicken.multipart.minecraft.ButtonPart;
 import codechicken.multipart.minecraft.TorchPart;
+import io.netty.buffer.ByteBuf;
 import scala.collection.JavaConversions;
 
 /**
@@ -55,9 +60,7 @@ class MultipartHelperFunctionalTest {
     @Test
     void rebuildsAnOrderedSlottedTileFromItsOwnNbtAndPublishesTheLoadingWorld() {
         World world = world();
-        TMultiPart torch = new TorchPart(5);
-        TMultiPart button = new ButtonPart(1);
-        TileMultipart saved = MultipartHelper.createTileFromParts(Arrays.asList(torch, button));
+        TileMultipart saved = mixedTile();
 
         NBTTagCompound tag = new NBTTagCompound();
         saved.writeToNBT(tag);
@@ -79,6 +82,26 @@ class MultipartHelperFunctionalTest {
         assertSame(tile.jPartList().get(0), tile.partMap(0));
         assertSame(tile.jPartList().get(1), tile.partMap(4));
         assertSame(world, MultipartSaveLoad.loadingWorld());
+    }
+
+    @Test
+    void writesTheExactMixedPartChunkDescriptionPacket() {
+        World world = world();
+        Chunk chunk = world.getChunkFromChunkCoords(1, 2);
+        TileMultipart tile = mixedTile();
+        tile.xCoord = 18;
+        tile.yCoord = 200;
+        tile.zCoord = 35;
+
+        PacketCustom packet = MultipartSPH.getDescPacket(chunk, Collections.<TileEntity>singletonList(tile).iterator());
+        ByteBuf buffer = packet.getByteBuf();
+        byte[] actual = new byte[buffer.writerIndex()];
+        buffer.getBytes(0, actual);
+
+        // type | chunk x/z | tile count | local x/y/z | part count | torch id/meta | button id/meta
+        assertArrayEquals(
+                new byte[] { 2, 0, 0, 0, 1, 0, 0, 0, 2, 0, 1, 2, 0, 0, 0, (byte) 200, 3, 2, 3, 5, 0, 1 },
+                actual);
     }
 
     /** The id guard runs before anything else, so a foreign tag must not disturb the loading world. */
@@ -123,6 +146,10 @@ class MultipartHelperFunctionalTest {
         World world = MinecraftServer.getServer().worldServers[0];
         assertNotNull(world);
         return world;
+    }
+
+    private static TileMultipart mixedTile() {
+        return MultipartHelper.createTileFromParts(Arrays.asList(new TorchPart(5), new ButtonPart(1)));
     }
 
     /** Matches only its own tile class, so registering it cannot affect any real chunk load. */

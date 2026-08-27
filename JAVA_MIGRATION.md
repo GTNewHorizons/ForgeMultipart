@@ -23,15 +23,15 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 ## Current status
 
-The binary and source-level consumer audits are complete. Phase 0 still lacks exact description-packet fixtures and a
-pre-optimization profile. The low-coupling Phase 3 queue is complete; before entering measured hot-path or generated
-tile work, the immediate milestone is the audit-derived compatibility gate below.
+The binary and source-level consumer audits are complete. Phase 0 still lacks a pre-optimization profile. The
+low-coupling Phase 3 queue is complete; before entering measured hot-path work, the immediate milestone is the
+remaining generated-tile portion of the audit-derived compatibility gate below.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
 companion again exposes that exact private field as a live view of the canonical Java `HashMap`, and a test performs
-Schematica's reflective lookup. The remaining source-only member guards and `TileMultipart` ordering/move lifecycle
-are also frozen; compact mixed-part NBT and description-packet fixtures are next.
+Schematica's reflective lookup. The remaining source-only member guards, `TileMultipart` ordering/move lifecycle, and
+compact mixed-part NBT/description packet are also frozen; generated-trait and pass-through fixtures are next.
 
 Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
 than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
@@ -305,8 +305,8 @@ Do this before another source conversion:
   `registerMaterial` lookup.
 - [x] Freeze `TileMultipart` order and lifecycle observations: `parts`/`id` NBT, `partList`/`jPartList`, `partMap`, slot
   rebinding, add/remove/replace callback order, moving the live tile, and `onMoved`.
-- [ ] Add compact mixed-part NBT and description-packet fixtures. Use representative fake parts in the existing test
-  harness; do not add all downstream mods as test dependencies.
+- [x] Add compact mixed-part NBT and description-packet fixtures. The existing torch/button parts provide the needed
+  distinct IDs, order, slots and payload without adding downstream mods or a test-only part registry.
 - [ ] Freeze one generated Scala trait, one Java trait, and representative pass-through interfaces before changing
   built-in tile traits or either generator.
 
@@ -394,7 +394,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 130 plain-JVM tests and 24 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 130 plain-JVM tests and 25 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -620,4 +620,7 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Reproduced MatterManipulator's live-tile relocation shape. Removing the tile first calls `onWorldSeparate` for each
   part in list order; after reinsertion, `onMoved` calls each part's `onMoved` and default `onWorldJoin`, again in list
   order. The original generated tile, part instances, order, slot map and tile references survive.
-- The expanded baseline is 130 plain-JVM tests and 24 Forge server tests, all passing.
+- Froze the complete logical chunk-description payload around the same torch/button pair: packet type, chunk
+  coordinates, tile count, nibble-relative X/Z, full Y, part count, sorted runtime part IDs, part order and both meta
+  bytes. CodeChickenLib's deferred Deflater transport step is deliberately outside this FMP fixture.
+- The expanded baseline is 130 plain-JVM tests and 25 Forge server tests, all passing.

@@ -445,8 +445,9 @@ The Java port may add faster indexed storage, but all published views, serializa
 packet consumers must observe one consistent order.
 
 Current-branch verification: `MultipartHelperFunctionalTest` freezes ordered two-part NBT reconstruction and slot
-rebinding. `TileMultipartLifecycleFunctionalTest` freezes add/remove callbacks and the MatterManipulator-shaped live
-move, including ordered `onWorldSeparate` before ordered `onMoved`/`onWorldJoin`, without replacing the generated tile.
+rebinding plus the exact logical chunk-description framing and part payload. `TileMultipartLifecycleFunctionalTest`
+freezes add/remove callbacks and the MatterManipulator-shaped live move, including ordered `onWorldSeparate` before
+ordered `onMoved`/`onWorldJoin`, without replacing the generated tile.
 
 ### Material IDs and packets
 
@@ -495,7 +496,8 @@ behavior:
 3. Keep the completed `TileMultipart` list/map/slot and live-move characterization green before optimizing storage or
    iteration.
 4. Characterize pass-through interfaces and ProjectRed's external Scala trait before changing either generator.
-5. Add mixed NBT/packet fixtures before converting microblocks and Minecraft part implementations.
+5. Keep the completed compact mixed NBT/chunk-description fixture green; add subsystem-specific payload cases when
+   converting microblocks or Minecraft part implementations.
 6. Treat Scala runtime removal as downstream coordination work after the Java port, not as a requirement of it.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
