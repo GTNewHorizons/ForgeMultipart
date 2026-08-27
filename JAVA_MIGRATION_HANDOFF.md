@@ -57,7 +57,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **126 plain-JVM tests, 22 Forge server tests, all passing at their last completed runs.**
+Current baseline: **130 plain-JVM tests, 22 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -197,9 +197,12 @@ Both `package.scala` objects are gone, removed rather than ported. `MultipartRen
 canonical Java map, and `MultiPartRegistryCharacterizationTest` reproduces Schematica's reflective lookup and proves
 both views reach the same factory.
 
-Next close the remaining audit-derived test gap: exact reflection/mixin fields, tile list/order/move lifecycle, compact
-mixed NBT/packet fixtures, and representative generated-trait/pass-through fixtures. The checklist is in the
-"Immediate compatibility gate" section of `JAVA_MIGRATION.md`.
+The source-only member guards are also complete: GuideNH's mixin fields, Et Futurum's button arrays, Iguana's saw
+field, and Galacticraft's name-only registration lookup are pinned by `ConsumerReflectionCompatibilityTest`.
+
+Next characterize tile list/order/move lifecycle, followed by compact mixed NBT/packet fixtures and representative
+generated-trait/pass-through fixtures. The checklist is in the "Immediate compatibility gate" section of
+`JAVA_MIGRATION.md`.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing. After the compatibility gate and an initial profile, port the

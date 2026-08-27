@@ -411,6 +411,10 @@ requirements:
 
 These need targeted runtime tests or explicit downstream patches. They cannot be proven safe by `javap` ABI diffing.
 
+**Current branch:** `ConsumerReflectionCompatibilityTest` now freezes the GuideNH, Et Futurum, Iguana, and
+Galacticraft member shapes above. Schematica's registry lookup has its own live-view regression test. The manual client
+checks remain necessary for end-to-end integration behavior.
+
 ## Data and ordering contracts
 
 ### Core NBT and identity

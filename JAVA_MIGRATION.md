@@ -30,7 +30,8 @@ tile work, the immediate milestone is the audit-derived compatibility gate below
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
 companion again exposes that exact private field as a live view of the canonical Java `HashMap`, and a test performs
-Schematica's reflective lookup. The remaining source-only member guards are next.
+Schematica's reflective lookup. The remaining source-only member guards are also frozen; tile ordering and lifecycle
+characterization is next.
 
 Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
 than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
@@ -299,7 +300,7 @@ Do this before another source conversion:
 
 - [x] Restore Schematica's reflective `MultiPartRegistry$` type-map view with its exact field name and Scala mutable-map
   shape, backed by the canonical Java registry state; add a regression test that performs Schematica's actual lookup.
-- [ ] Add exact member-level guards for GuideNH's `BlockMicroMaterial.block/meta` mixin fields, Et Futurum's mutable
+- [x] Add exact member-level guards for GuideNH's `BlockMicroMaterial.block/meta` mixin fields, Et Futurum's mutable
   `ButtonPart.metaSideMap/sideMetaMap`, Iguana's `ItemSaw.harvestLevel`, and Galacticraft's name-only
   `registerMaterial` lookup.
 - [ ] Freeze `TileMultipart` order and lifecycle observations: `parts`/`id` NBT, `partList`/`jPartList`, `partMap`, slot
@@ -393,7 +394,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 126 plain-JVM tests and 22 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 130 plain-JVM tests and 22 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -604,3 +605,9 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   canonical Java registry map. The wrapper adds no copied state or synchronization path.
 - Proved through the reflected Scala view that Schematica can resolve a factory and that the Java registry immediately
   sees the same entry. The focused registry suite and all 126 plain-JVM tests pass.
+- Added four source-consumer structural guards without adding downstream mods as test dependencies. They pin GuideNH's
+  two `BlockMicroMaterial` mixin targets, Et Futurum's mutable static button-orientation arrays, and Iguana's reflected
+  `ItemSaw.harvestLevel` field.
+- Reproduced Galacticraft's name-only method scan and froze its dangerous assumption: exactly one public
+  `MicroMaterialRegistry.registerMaterial` method may exist, it must accept `(IMicroMaterial, String)`, and
+  `BlockMicroMaterial(Block, int)` must remain reflectively constructible. All 130 plain-JVM tests pass.
