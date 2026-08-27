@@ -23,9 +23,9 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 ## Current status
 
-The binary and source-level consumer audits are complete. Phase 0 still lacks a pre-optimization profile. The
-low-coupling Phase 3 queue and the audit-derived immediate compatibility gate are complete. The next milestone is a
-focused CPU/allocation baseline before entering measured hot-path work.
+The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
+and focused pre-optimization profile are complete. Phase 4 can now begin with the measured `TileMultipart` traversal
+path; see `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -123,13 +123,18 @@ Exception-table metadata does not impose a meaningful steady-state cost merely b
 
 The source and bytecode audit identified allocation patterns that are more plausible performance targets:
 
-- `TileMultipart.updateEntity()` creates a Scala closure for each ticking multipart tile on each tick, then traverses through `operate(Function1)` and Scala collection machinery.
-- `TRedstoneTile` power and connection queries create closures and `scala.runtime.IntRef` boxes in frequently queried code.
+- The Java port's `TileMultipart.updateEntity()` still traverses through `operate(Function1)`, whose current
+  `parts()` helper materializes an `ArrayList`, backing array, Scala iterator and Java-conversion wrappers per call.
+- `TRedstoneTile` power and connection queries create closures and `scala.runtime.IntRef` boxes in frequently queried
+  code.
 - Several Scala 2.11 collection, range, and `JavaConversions` paths create closure objects, boxed primitives, iterators, or temporary collections.
 - `TSlottedTile.canAddPart` and several `MicroRecipe` searches use exception-based non-local returns.
 - Rendering code in `TileMultipart` already uses cached arrays and `while` loops in important paths. It should be preserved as evidence of deliberate optimization, not mechanically rewritten into streams or higher-level collection pipelines.
 
-These are static findings, not proof of their share of frame or tick time. Capture profiles and allocation data before and after each relevant migration phase.
+The focused Forge/JFR baseline confirms both risks. With eight parts, `updateEntity` and `operate` allocate about 184
+bytes per call, while a three-query redstone iteration allocates 80.5 bytes. CPU samples identify the same collection,
+boxing and closure paths. These are focused measurements, not whole-pack TPS; retain the workload and re-profile after
+each relevant migration phase. See `JAVA_MIGRATION_PROFILE.md`.
 
 ### Runtime code generation is architectural, not incidental
 
@@ -249,7 +254,8 @@ If a characterization test captures a confirmed bug that the port intentionally 
 - [x] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
 - [x] Write the first characterization suite against the untouched Scala implementation.
 - [x] Create a remaining manual compatibility checklist for rendering, input, and other behavior that cannot be asserted reliably by the automated harness. See `JAVA_MIGRATION_MANUAL_CHECKS.md`.
-- [ ] Capture representative CPU and allocation profiles before optimization work.
+- [x] Capture representative CPU and allocation profiles before optimization work. See
+  `JAVA_MIGRATION_PROFILE.md`.
 - [x] Start a divergence log.
 
 Exit condition: there is a reproducible behavior and ABI baseline, the test layers run in CI or an equivalent repeatable command, and the initial suite passes against the Scala implementation.
@@ -323,10 +329,11 @@ and the already-ported registry again supports Schematica.
 - [ ] Use fastutil only where profiling and data shape justify it.
 - [ ] Re-profile the same scenarios and record both improvements and regressions.
 
-Status: not started. This phase does not begin until the immediate compatibility gate and an initial profile are
-complete. The first sensible implementation unit is the whole `IRedstonePart.scala` file: its six related traits and
-load-bearing `RedstoneInteractions$` must be characterized and ported together. Do not optimize `TileMultipart`
-storage merely because the source audit found allocations; its list/order/lifecycle contracts must be frozen first.
+Status: ready to start. The compatibility gate and initial profile are complete. First freeze `operate` behavior when
+callbacks add or remove parts, then remove the measured per-traversal `ArrayList`/array/wrapper materialization while
+retaining the public Scala `Seq` and `operate(Function1)` ABI. Re-run the focused profile immediately. The next broader
+unit is the whole `IRedstonePart.scala` file: its six related traits and load-bearing `RedstoneInteractions$` must be
+characterized and ported together.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -631,4 +638,8 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Froze a server-only pass-through interface with primitive/reference overloads. The generated tile forwards to one
   implementing part, rejects a second implementor, preserves and rebinds its delegate through `copyFrom`, and clears
   the generated implementation field on removal.
+- Added an opt-in Forge/JFR workload and captured the first focused CPU/allocation baseline. With eight parts,
+  `updateEntity` and `operate` allocate 184.0 and 183.9 bytes per call; generated redstone's three-query iteration
+  allocates 80.5 bytes. CPU and allocation sites point to `TileMultipart.parts()` collection copies and Scala
+  redstone `IntRef`/closure traversal. Full methodology and rerun commands are in `JAVA_MIGRATION_PROFILE.md`.
 - The expanded baseline is 130 plain-JVM tests and 28 Forge server tests, all passing.

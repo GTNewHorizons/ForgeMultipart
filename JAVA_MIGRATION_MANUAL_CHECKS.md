@@ -46,5 +46,6 @@ release that includes those ports.
 
 ## Not yet covered anywhere
 
-- CPU and allocation profiles before and after the hot-path work. Phase 4 has not started, so no baseline exists.
+- A focused pre-optimization CPU/allocation baseline now exists in `JAVA_MIGRATION_PROFILE.md`. A representative
+  full-pack capture and the matching post-optimization comparison still need to be performed.
 - NBT and packet layout fixtures beyond the material id carrier. Phase 0 still lists this as open.

@@ -35,7 +35,11 @@ tasks.register(functionalTestSet.jarTaskName, Jar) {
 
 def functionalTestRunProperty = "forgemultipart.withFunctionalTests"
 def withFunctionalTests = providers.gradleProperty(functionalTestRunProperty).map { it.toBoolean() }.orElse(false).get()
+def profileRunProperty = "forgemultipart.profileFunctionalTests"
+def profileFunctionalTests = providers.gradleProperty(profileRunProperty).map { it.toBoolean() }.orElse(false).get()
 def functionalTestReportDirectory = layout.projectDirectory.dir("run/server/junit-out")
+def functionalTestProfileRecording = layout.projectDirectory.file("run/server/forgemultipart-baseline.jfr")
+def functionalTestProfileResults = layout.projectDirectory.file("run/server/forgemultipart-profile.txt")
 def addFunctionalTestsToRun = { JavaExec task ->
     task.dependsOn(functionalTestSet.jarTaskName)
     task.classpath(
@@ -48,9 +52,15 @@ tasks.register("runFunctionalTestServer", GradleBuild) {
     description = "Runs the Java 8 Forge server with the ForgeMultipart functional test mod"
     setTasks(["runServer"])
     startParameter.projectProperties.put(functionalTestRunProperty, "true")
+    if (profileFunctionalTests) {
+        startParameter.projectProperties.put(profileRunProperty, "true")
+    }
 
     doFirst {
         delete(functionalTestReportDirectory)
+        if (profileFunctionalTests) {
+            delete(functionalTestProfileRecording, functionalTestProfileResults)
+        }
     }
     doLast {
         def reports = fileTree(functionalTestReportDirectory).matching { include("TEST-*.xml") }.files
@@ -71,6 +81,10 @@ tasks.register("runFunctionalTestServer", GradleBuild) {
             throw new GradleException(
                 "ForgeMultipart functional tests failed: ${tests} tests, ${failures} failures, ${errors} errors")
         }
+        if (profileFunctionalTests
+            && (!functionalTestProfileRecording.asFile.isFile() || !functionalTestProfileResults.asFile.isFile())) {
+            throw new GradleException("ForgeMultipart profile produced incomplete output")
+        }
     }
 }
 
@@ -78,6 +92,12 @@ if (withFunctionalTests) {
     tasks.withType(JavaExec).configureEach { task ->
         if (task.name == "runServer") {
             addFunctionalTestsToRun(task)
+            if (profileFunctionalTests) {
+                task.jvmArgs(
+                    "-XX:+FlightRecorder",
+                    "-XX:StartFlightRecording=filename=forgemultipart-baseline.jfr,settings=profile,dumponexit=true")
+                task.systemProperty(profileRunProperty, "true")
+            }
         }
     }
 }

@@ -72,6 +72,10 @@ public final class ForgeMultipartFunctionalTestMod {
         MinecraftServer server = MinecraftServer.getServer();
         server.addChatMessage(new ChatComponentText("Running ForgeMultipart functional tests..."));
 
+        if (Boolean.getBoolean("forgemultipart.profileFunctionalTests")) {
+            ForgeMultipartProfileWorkload.run();
+        }
+
         TestExecutionSummary summary = runTests();
         if (summary.getTestsFoundCount() == 0) {
             throw new IllegalStateException("No ForgeMultipart functional tests were discovered");

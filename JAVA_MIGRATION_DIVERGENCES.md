@@ -662,8 +662,10 @@ same messages, since Scala's `assert` is always enabled here and Java's is not.
 
 `partList` remains a `scala.collection.immutable.List` published through `partList()Lscala/collection/Seq;`, which
 five jars link against. Mutations copy to a Java list, mutate, and republish through `JavaConversions`, matching the
-reference's allocate-a-new-Seq semantics exactly. No performance decision is taken here; that is Phase 4 work and
-needs profiling first.
+reference's allocate-a-new-Seq semantics exactly. The focused Phase 4 baseline later found that the Java port's
+`parts()` read helper also materializes an `ArrayList`, backing array, iterator and conversion wrappers on every
+traversal. That read-side cost is not required by the reference and is the next measured optimization target; see
+`JAVA_MIGRATION_PROFILE.md`.
 
 `operate` keeps its `(Lscala/Function1;)V` descriptor and internal callers still go through it, wrapping their action
 in an `AbstractFunction1`. That preserves both the virtual dispatch, so any trait overriding `operate` still sees
