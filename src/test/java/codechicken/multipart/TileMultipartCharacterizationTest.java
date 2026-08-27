@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 
 import net.minecraft.entity.Entity;
 
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.Test;
 
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
+import scala.runtime.AbstractFunction1;
+import scala.runtime.BoxedUnit;
 
 /**
  * Covers the part of TileMultipart that does not need a world: list storage, the operate guard, and the pure predicates
@@ -96,6 +99,65 @@ class TileMultipartCharacterizationTest {
 
         assertEquals(1, kept.chunkLoads);
         assertEquals(0, detached.chunkLoads, "A part with a null tile must be skipped");
+    }
+
+    @Test
+    void operateDoesNotVisitPartsAddedByItsCallback() {
+        TileMultipart tile = new TileMultipart();
+        CountingPart first = new CountingPart("first");
+        CountingPart second = new CountingPart("second");
+        CountingPart added = new CountingPart("added");
+        List<String> visited = new ArrayList<>();
+        tile.addPart_do(first);
+        tile.addPart_do(second);
+
+        tile.operate(action(part -> {
+            visited.add(part.getType());
+            if (part == first) {
+                tile.addPart_do(added);
+            }
+        }));
+
+        assertEquals(Arrays.asList("first", "second"), visited);
+        assertEquals(Arrays.asList(first, second, added), tile.jPartList());
+    }
+
+    @Test
+    void operateSkipsAPartDetachedByAnEarlierCallback() {
+        TileMultipart tile = new TileMultipart();
+        CountingPart first = new CountingPart("first");
+        CountingPart detached = new CountingPart("detached");
+        CountingPart last = new CountingPart("last");
+        List<String> visited = new ArrayList<>();
+        tile.addPart_do(first);
+        tile.addPart_do(detached);
+        tile.addPart_do(last);
+
+        tile.operate(action(part -> {
+            visited.add(part.getType());
+            if (part == first) {
+                tile.partList_$eq(seq(first, last));
+                detached.tile_$eq(null);
+            }
+        }));
+
+        assertEquals(Arrays.asList("first", "last"), visited);
+        assertEquals(Arrays.asList(first, last), tile.jPartList());
+    }
+
+    @Test
+    void operateAcceptsAMutableSeqThroughThePublishedSetter() {
+        TileMultipart tile = new TileMultipart();
+        CountingPart first = new CountingPart("first");
+        CountingPart second = new CountingPart("second");
+        tile.addPart_do(first);
+        tile.addPart_do(second);
+        tile.partList_$eq(JavaConversions.asScalaBuffer(new ArrayList<>(tile.jPartList())));
+
+        tile.onChunkLoad();
+
+        assertEquals(1, first.chunkLoads);
+        assertEquals(1, second.chunkLoads);
     }
 
     @Test
@@ -180,6 +242,17 @@ class TileMultipartCharacterizationTest {
     private static Seq<TMultiPart> seq(TMultiPart... parts) {
         List<TMultiPart> list = new ArrayList<>(Arrays.asList(parts));
         return JavaConversions.asScalaBuffer(list).toList();
+    }
+
+    private static AbstractFunction1<TMultiPart, BoxedUnit> action(Consumer<TMultiPart> action) {
+        return new AbstractFunction1<TMultiPart, BoxedUnit>() {
+
+            @Override
+            public BoxedUnit apply(TMultiPart part) {
+                action.accept(part);
+                return BoxedUnit.UNIT;
+            }
+        };
     }
 
     private static class CountingPart extends TMultiPart {
