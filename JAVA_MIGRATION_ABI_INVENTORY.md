@@ -1,5 +1,8 @@
 # Downstream ABI inventory
 
+For runtime behavior, data formats, lifecycle use, and member-level reflection found in consumer source, see
+[`JAVA_MIGRATION_CONSUMER_AUDIT.md`](JAVA_MIGRATION_CONSUMER_AUDIT.md).
+
 Completes the Phase 0 item "Inventory downstream mods that compile against or reflect into ForgeMultipart".
 
 Method: constant-pool scan of every mod jar in a real pack, not a source search. Bytecode is the only oracle that
@@ -20,7 +23,7 @@ any member that disappears from the port but appears in the baseline is a linkag
 
 | Category | Count |
 | --- | ---: |
-| Consumer jars | 28 of 240 |
+| Consumer jars | 27 of 240 |
 | Types extended or implemented downstream | 35 |
 | Referenced members with exact descriptors | 255 |
 | Other referenced types | 76 |
@@ -57,7 +60,7 @@ Two distinct consumer shapes:
 
 ### 1. Which existing downstream binaries must keep working without recompilation?
 
-The 28 jars above. The compatibility budget is dominated by four: ProjRed, extrautilities, OpenComputers, ProjectBlue.
+The 27 jars above. The compatibility budget is dominated by four: ProjRed, extrautilities, OpenComputers, ProjectBlue.
 ProjRed alone accounts for 141 of the touching classes and is the only consumer exercising the trait-generation path.
 
 ### 2. Are third-party Scala traits registered through `registerScalaTrait`?

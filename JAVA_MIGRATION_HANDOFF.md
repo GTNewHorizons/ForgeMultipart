@@ -90,7 +90,7 @@ java tools/AbiScan.java "<instance>/.minecraft/mods" ForgeMultipart
 ```
 
 Needs JDK 17+. The frozen baseline is `src/test/fixtures/abi/gtnh-daily-678-consumers.txt`, from GTNH daily
-`2026-08-14+678` (241 jars, 28 consumers). Diff against it; anything present there but absent from the port is a
+`2026-08-14+678` (241 jars, 27 consumers). Diff against it; anything present there but absent from the port is a
 linkage break in a shipping mod.
 
 ### Building a frozen Scala consumer fixture
