@@ -19,6 +19,8 @@ import org.junit.platform.launcher.listeners.SummaryGeneratingListener;
 import org.junit.platform.launcher.listeners.TestExecutionSummary;
 import org.junit.platform.reporting.legacy.xml.LegacyXmlReportGeneratingListener;
 
+import codechicken.microblock.MicroblockGenerator;
+import codechicken.multipart.MultipartGenerator;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
@@ -39,6 +41,7 @@ public final class ForgeMultipartFunctionalTestMod {
     static boolean postInitialized;
     static boolean serverAboutToStart;
     static boolean serverStarted;
+    static int externalScalaMicroblockTraitId;
 
     @Mod.EventHandler
     public void preInit(FMLPreInitializationEvent event) {
@@ -47,6 +50,9 @@ public final class ForgeMultipartFunctionalTestMod {
 
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
+        MultipartGenerator.registerPassThroughInterface(GeneratorPassThroughFixture.class.getName(), false, true);
+        externalScalaMicroblockTraitId = MicroblockGenerator
+                .registerTrait("codechicken.multipart.test.ExternalScalaMicroblockFixture");
         initialized = true;
     }
 

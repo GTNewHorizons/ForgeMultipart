@@ -24,14 +24,15 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits are complete. Phase 0 still lacks a pre-optimization profile. The
-low-coupling Phase 3 queue is complete; before entering measured hot-path work, the immediate milestone is the
-remaining generated-tile portion of the audit-derived compatibility gate below.
+low-coupling Phase 3 queue and the audit-derived immediate compatibility gate are complete. The next milestone is a
+focused CPU/allocation baseline before entering measured hot-path work.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
 companion again exposes that exact private field as a live view of the canonical Java `HashMap`, and a test performs
-Schematica's reflective lookup. The remaining source-only member guards, `TileMultipart` ordering/move lifecycle, and
-compact mixed-part NBT/description packet are also frozen; generated-trait and pass-through fixtures are next.
+Schematica's reflective lookup. The remaining source-only member guards, `TileMultipart` ordering/move lifecycle,
+compact mixed-part NBT/description packet, generated Scala and Java traits, and a server-only pass-through interface
+are also frozen.
 
 Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
 than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
@@ -294,7 +295,7 @@ retained, as are both registries, the central part/tile types, scheduler/helper 
 
 Exit condition: leaf code is Java and no longer generates avoidable Scala closures or collection adapters.
 
-### Immediate compatibility gate — current next milestone
+### Immediate compatibility gate — complete
 
 Do this before another source conversion:
 
@@ -307,7 +308,7 @@ Do this before another source conversion:
   rebinding, add/remove/replace callback order, moving the live tile, and `onMoved`.
 - [x] Add compact mixed-part NBT and description-packet fixtures. The existing torch/button parts provide the needed
   distinct IDs, order, slots and payload without adding downstream mods or a test-only part registry.
-- [ ] Freeze one generated Scala trait, one Java trait, and representative pass-through interfaces before changing
+- [x] Freeze one generated Scala trait, one Java trait, and representative pass-through interfaces before changing
   built-in tile traits or either generator.
 
 Exit condition: every source-only constraint that can silently fail has an automated structural/behavioral guard,
@@ -394,7 +395,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 130 plain-JVM tests and 25 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 130 plain-JVM tests and 28 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -623,4 +624,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Froze the complete logical chunk-description payload around the same torch/button pair: packet type, chunk
   coordinates, tile count, nibble-relative X/Z, full Y, part count, sorted runtime part IDs, part order and both meta
   bytes. CodeChickenLib's deferred Deflater transport step is deliberately outside this FMP fixture.
-- The expanded baseline is 130 plain-JVM tests and 25 Forge server tests, all passing.
+- Froze representative generated-trait behavior. The existing `TSlottedTile` fixture pins built-in Scala trait class
+  caching and field initialization; a ProjectRed-shaped external Scala microblock trait pins registration by name,
+  trait initialization and method dispatch; and `TPartialOcclusionTile` pins Java-trait rewriting and override
+  dispatch through the generated tile.
+- Froze a server-only pass-through interface with primitive/reference overloads. The generated tile forwards to one
+  implementing part, rejects a second implementor, preserves and rebinds its delegate through `copyFrom`, and clears
+  the generated implementation field on removal.
+- The expanded baseline is 130 plain-JVM tests and 28 Forge server tests, all passing.

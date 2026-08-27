@@ -495,10 +495,17 @@ behavior:
    fields, before converting their owners.
 3. Keep the completed `TileMultipart` list/map/slot and live-move characterization green before optimizing storage or
    iteration.
-4. Characterize pass-through interfaces and ProjectRed's external Scala trait before changing either generator.
+4. Keep the completed pass-through and ProjectRed-shaped external Scala-trait characterization green before changing
+   either generator.
 5. Keep the completed compact mixed NBT/chunk-description fixture green; add subsystem-specific payload cases when
    converting microblocks or Minecraft part implementations.
 6. Treat Scala runtime removal as downstream coordination work after the Java port, not as a requirement of it.
+
+Current-branch generator verification: `ForgeEnvironmentSmokeTest` pins cached built-in `TSlottedTile` generation,
+an external Scala microblock trait registered by name like ProjectRed's `LightMicroblock`, Java
+`TPartialOcclusionTile` rewriting and override dispatch, and server-only pass-through forwarding, overloading,
+single-implementor selection, copying/rebinding, and removal cleanup. Full downstream mixed tiles and client-side
+selection remain Phase 7 integration cases.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
 changes, while each externally observed behavior has a named consumer and a focused way to prove compatibility.

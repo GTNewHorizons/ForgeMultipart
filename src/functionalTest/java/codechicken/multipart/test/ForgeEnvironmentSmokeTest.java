@@ -13,6 +13,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.Proxy;
 import java.util.BitSet;
+import java.util.Collections;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
@@ -22,11 +23,14 @@ import org.junit.jupiter.api.Test;
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import codechicken.lib.data.MCDataOutputWrapper;
+import codechicken.lib.vec.Cuboid6;
 import codechicken.microblock.FaceMicroClass$;
 import codechicken.microblock.HollowMicroClass$;
 import codechicken.microblock.Microblock;
 import codechicken.microblock.MicroblockGenerator;
+import codechicken.multipart.JPartialOcclusion;
 import codechicken.multipart.MultiPartRegistry;
+import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TFacePart;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
@@ -34,6 +38,8 @@ import codechicken.multipart.asm.MultipartMixinFactory;
 import codechicken.multipart.scalatraits.TSlottedTile;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
+import scala.collection.JavaConversions;
+import scala.collection.Seq;
 import scala.collection.immutable.Nil$;
 
 class ForgeEnvironmentSmokeTest {
@@ -74,6 +80,23 @@ class ForgeEnvironmentSmokeTest {
         assertTrue(hollow instanceof TFacePart);
         assertEquals(0x10, ((TFacePart) hollow).redstoneConductionMap());
         assertFalse(((TFacePart) hollow).solid(0));
+    }
+
+    @Test
+    void generatedMicroblockInitializesAndDispatchesAnExternalScalaTrait() throws Exception {
+        BitSet traits = new BitSet();
+        traits.set(FaceMicroClass$.MODULE$.baseTraitId());
+        traits.set(ForgeMultipartFunctionalTestMod.externalScalaMicroblockTraitId);
+        Seq<Object> arguments = JavaConversions.asScalaBuffer(Collections.<Object>singletonList(0)).toList();
+
+        Microblock microblock = (Microblock) MicroblockGenerator.construct(traits, arguments);
+        Class<?> trait = Class.forName("codechicken.multipart.test.ExternalScalaMicroblockFixture");
+
+        assertTrue(trait.isInterface());
+        assertTrue(trait.isInstance(microblock));
+        assertTrue(microblock.shouldRenderDynamic());
+        assertEquals(41, microblock.getLightValue());
+        assertEquals(41, ((Number) microblock.getClass().getMethod("fixtureState").invoke(microblock)).intValue());
     }
 
     /**
@@ -148,5 +171,87 @@ class ForgeEnvironmentSmokeTest {
         assertNotSame(first, second);
         assertSame(first.getClass(), second.getClass());
         assertEquals(27, ((TSlottedTile) first).v_partMap().length);
+    }
+
+    @Test
+    void generatedJavaTraitOverridesPartialOcclusion() throws Exception {
+        PartialPart existing = new PartialPart(voxel(0));
+        TileMultipart tile = MultipartHelper.createTileFromParts(Collections.singletonList(existing));
+        Class<?> trait = Class.forName("codechicken.multipart.scalatraits.TPartialOcclusionTile");
+
+        assertTrue(trait.isInterface(), "The registered Java mixin class is rewritten to a trait interface");
+        assertTrue(trait.isInstance(tile));
+        assertEquals(
+                boolean.class,
+                tile.getClass().getMethod("partialOcclusionTest", scala.collection.Seq.class).getReturnType());
+        assertTrue(tile.canAddPart(new PartialPart(voxel(1))));
+        assertFalse(tile.canAddPart(new PartialPart(voxel(0))));
+    }
+
+    @Test
+    void generatedServerPassThroughDelegatesCopiesAndAllowsOnlyOneImplementor() throws Exception {
+        PassThroughPart part = new PassThroughPart();
+        TileMultipart tile = MultipartHelper.createTileFromParts(Collections.singletonList(part));
+
+        assertTrue(tile instanceof GeneratorPassThroughFixture);
+        GeneratorPassThroughFixture api = (GeneratorPassThroughFixture) tile;
+        assertEquals(12, api.transform(5));
+        assertEquals("part:value", api.transform("value"));
+        assertSame(part, api.implementation());
+        assertFalse(tile.canAddPart(new PassThroughPart()));
+
+        TileMultipart copy = (TileMultipart) tile.getClass().getDeclaredConstructor().newInstance();
+        copy.from(tile);
+        assertSame(part, ((GeneratorPassThroughFixture) copy).implementation());
+        assertSame(copy, part.tile());
+
+        copy.partRemoved(part, 0);
+        assertTrue(copy.canAddPart(new PassThroughPart()), "Removing the delegate must clear the generated impl field");
+    }
+
+    private static Cuboid6 voxel(int x) {
+        return new Cuboid6(x / 8d, 0, 0, (x + 1) / 8d, 1 / 8d, 1 / 8d);
+    }
+
+    private static final class PartialPart extends TMultiPart implements JPartialOcclusion {
+
+        private final Cuboid6 box;
+
+        private PartialPart(Cuboid6 box) {
+            this.box = box;
+        }
+
+        @Override
+        public String getType() {
+            return "partial_fixture";
+        }
+
+        @Override
+        public Iterable<Cuboid6> getPartialOcclusionBoxes() {
+            return Collections.singletonList(box);
+        }
+    }
+
+    private static final class PassThroughPart extends TMultiPart implements GeneratorPassThroughFixture {
+
+        @Override
+        public String getType() {
+            return "pass_through_fixture";
+        }
+
+        @Override
+        public int transform(int value) {
+            return value + 7;
+        }
+
+        @Override
+        public String transform(String value) {
+            return "part:" + value;
+        }
+
+        @Override
+        public TMultiPart implementation() {
+            return this;
+        }
     }
 }

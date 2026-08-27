@@ -57,7 +57,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **130 plain-JVM tests, 25 Forge server tests, all passing at their last completed runs.**
+Current baseline: **130 plain-JVM tests, 28 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -207,8 +207,13 @@ sequence (`onWorldSeparate`, then `onMoved`/`onWorldJoin`) while preserving the 
 The same ordered torch/button pair now supplies a compact NBT fixture and an exact logical chunk-description fixture.
 The latter pins FMP's framing and payload before CodeChickenLib applies deferred transport compression.
 
-Next freeze representative generated Scala/Java traits and pass-through interfaces. The checklist is in the
-"Immediate compatibility gate" section of `JAVA_MIGRATION.md`.
+The immediate compatibility gate is complete. `ForgeEnvironmentSmokeTest` now freezes built-in and external Scala
+trait generation, Java-trait rewriting/dispatch, generated-class reuse, and a server-only pass-through interface's
+overloads, single-implementor rule, copy/rebind behavior, and removal cleanup.
+
+Next capture a focused CPU/allocation baseline for `TileMultipart.updateEntity`, `TileMultipart.operate`, and redstone
+queries. Use the measurements to select the first Phase 4 change rather than assuming the statically visible
+allocations dominate.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing. After the compatibility gate and an initial profile, port the
@@ -231,6 +236,8 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   Every port since `TCuboidPart` has deferred something to it, and `BlockMultipart` leans on it hardest: breaking, selection boxes, collision, pick block, activation, particles and
   light are covered by nothing automated. Run it in a real client before this branch goes near a release.
 - No CPU or allocation profiles exist. Phase 4 has not started, so there is no baseline to compare against.
+- The server side of flag-sensitive pass-through registration is automated; client-side exclusion still belongs to
+  the packaged-client/manual compatibility run.
 - Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
   the compact core tile/part fixture is complete.
 - `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation, and `operate` still
