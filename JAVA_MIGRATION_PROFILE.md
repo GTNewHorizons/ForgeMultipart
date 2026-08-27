@@ -1,4 +1,4 @@
-# Java migration — focused performance baseline
+# Java migration — focused performance baseline and first result
 
 This is the reproducible pre-optimization baseline for Phase 4. It runs inside the real deobfuscated Forge dedicated
 server, using the same generated tiles as the functional suite. It is intentionally focused rather than a claim about
@@ -73,10 +73,34 @@ is the more stable regression metric.
 
 ## Decision
 
-The first Phase 4 implementation should target `TileMultipart` traversal, but only after one focused test freezes its
-mutation semantics: iteration observes the captured part order, skips a part whose tile was cleared before its turn,
-and does not visit a part added during the callback. Then remove the per-call `ArrayList`/array/wrapper materialization
-while retaining the public Scala `Seq` and `operate(Function1)` ABI, and re-run this exact profile.
+The first Phase 4 implementation targeted `TileMultipart` traversal after focused tests froze its mutation semantics:
+iteration observes the captured part order, skips a part whose tile was cleared before its turn, and does not visit a
+part added during the callback. The implementation retains the public Scala `Seq` and `operate(Function1)` ABI.
 
-After that comparison, characterize and port the complete `IRedstonePart.scala` unit and eliminate the measured
-redstone `IntRef`/closure paths without splitting its load-bearing `RedstoneInteractions$` singleton.
+## Traversal result captured 2026-08-27
+
+`operate` now captures `partList` directly. The normal immutable Scala `List` path walks its existing head/tail chain,
+which creates no iterator, Java wrapper, array, or copied collection. The published setter still accepts any Scala
+`Seq`; unusual implementations use the reference-style iterator fallback rather than being forced into the fast-path
+representation.
+
+The retained post-change report is from the same machine, JVM, arguments, warm-up, and 50,000,000-iteration workload:
+
+| Phase | Baseline elapsed | Result elapsed | Baseline B/op | Result B/op | Throughput change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `updateEntity` | 2.970 s | 0.682 s | 184.0 | 0.05 | 4.36x |
+| `operate` | 3.004 s | 0.700 s | 183.9 | 0.0 | 4.29x |
+| `redstoneQueries` | 3.689 s | 7.286 s | 80.5 | 80.4 | control only |
+
+A repeat produced 0.732 s / 0.687 s for `updateEntity` / `operate`, with the same 0.05 / 0.0 B/op. The result therefore
+removes effectively all measured traversal allocation and raises throughput from roughly 16.7 million to 68–73
+million calls/s. The post-change JFR hot-method view no longer contains `TileMultipart.parts()`,
+`AbstractCollection.toArray`, or the Java-conversion wrappers in these paths.
+
+The unchanged redstone allocation is the useful control. Its timing was consistently slower in both post-change runs,
+but its code did not change and it now starts several seconds earlier because the preceding phases finish faster; do
+not attribute that timing difference to this traversal change. Re-baseline the redstone unit immediately before its
+own implementation comparison.
+
+Next characterize and port the complete `IRedstonePart.scala` unit and eliminate the measured redstone
+`IntRef`/closure paths without splitting its load-bearing `RedstoneInteractions$` singleton.

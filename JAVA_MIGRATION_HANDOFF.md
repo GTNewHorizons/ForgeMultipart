@@ -10,9 +10,9 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_CONSUMER_AUDIT.md` | How every consumer uses FMP at runtime: data, lifecycle, reflection, and generated tiles |
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
-| `JAVA_MIGRATION_PROFILE.md` | The focused pre-optimization baseline, findings, and exact rerun command |
+| `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 62 commits including the profile-baseline commit.
+Branch: `algent/java`. Base: `master`. 64 commits including the first profiled optimization.
 
 ## The one rule that matters
 
@@ -220,14 +220,15 @@ The immediate compatibility gate is complete. `ForgeEnvironmentSmokeTest` now fr
 trait generation, Java-trait rewriting/dispatch, generated-class reuse, and a server-only pass-through interface's
 overloads, single-implementor rule, copy/rebind behavior, and removal cleanup.
 
-The focused CPU/allocation baseline is complete. It measures about 184 allocated bytes per eight-part
-`updateEntity`/`operate` call and 80.5 bytes per generated redstone three-query iteration. JFR attributes the first pair
-to `TileMultipart.parts()` collection conversion/copying and the redstone path to Scala iteration, `IntRef`, and
-generated closures. Full results and rerun commands are in `JAVA_MIGRATION_PROFILE.md`.
+The first profiled optimization is complete. Focused tests freeze `operate` behavior when callbacks add or detach
+parts, and its normal immutable-`List` path now traverses the captured list directly without changing the public Scala
+`Seq`/`Function1` ABI. The same profile fell from about 184 B/call to 0.05 B/call for `updateEntity` and 0 B/call for
+`operate`, with roughly 4.3x higher throughput. Full results and rerun commands are in
+`JAVA_MIGRATION_PROFILE.md`.
 
-Next freeze `operate` behavior when callbacks add or remove parts, then remove its measured per-call collection
-materialization without changing the Scala `Seq`/`Function1` ABI. Re-run the same profile before starting the complete
-`IRedstonePart.scala` unit.
+Next characterize and port the complete `IRedstonePart.scala` unit. Re-baseline that phase immediately before the
+implementation comparison, then remove its measured Scala iteration, `IntRef`, and generated-closure costs without
+splitting `RedstoneInteractions$`.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing. After the compatibility gate and an initial profile, port the
@@ -255,8 +256,8 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   the packaged-client/manual compatibility run.
 - Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
   the compact core tile/part fixture is complete.
-- `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation. The Java port's `parts()`
-  additionally materializes an `ArrayList` and backing array per traversal; the profile confirms it as the first Phase
-  4 target. Preserve the reference's captured-immutable-sequence mutation behavior while removing that port artifact.
+- `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation. `operate` no longer calls
+  the Java port's copying `parts()` helper, but less frequent read and mutation paths still do. Optimize those only if
+  a representative profile identifies them; their mutable snapshots are intentional at mutation sites.
 - Phase 1 never properly started. GTNHLib is currently commented out in `dependencies.gradle`; it had been added at
   `api` scope to satisfy a test compile rather than because a migration change needed it.

@@ -669,7 +669,20 @@ traversal. That read-side cost is not required by the reference and is the next 
 
 `operate` keeps its `(Lscala/Function1;)V` descriptor and internal callers still go through it, wrapping their action
 in an `AbstractFunction1`. That preserves both the virtual dispatch, so any trait overriding `operate` still sees
-every call, and the reference's per-call allocation.
+every call, and the reference's callback-adapter call shape.
+
+### 2026-08-27 Phase 4 traversal optimization
+
+The initial Java port implemented every read through `parts()`, which copied the Scala `Seq` into a Java `ArrayList`.
+The focused profile measured about 184 allocated bytes for every eight-part `operate` call. `operate` now captures the
+published sequence itself and walks the normal immutable Scala `List` through its existing head/tail chain. Other
+`Seq` implementations accepted through `partList_$eq` retain an iterator fallback.
+
+This restores the reference's captured-sequence behavior: a callback-added part is not visited, and an original part
+detached before its turn is skipped by the existing null-tile guard. The public member descriptors and virtual call
+path are unchanged. The matching profile measured 0 B/call for direct `operate`, 0.05 B/call through `updateEntity`,
+and roughly 4.3x higher throughput. Three new plain-JVM tests cover addition, detachment, and the non-list fallback;
+the complete 133-test plain-JVM and 28-test Forge server suites pass.
 
 ### Preserved Scala-typed descriptors
 

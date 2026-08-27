@@ -87,11 +87,28 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         return doesTick;
     }
 
+    @SuppressWarnings("unchecked")
     public void operate(Function1<TMultiPart, BoxedUnit> f) {
-        for (TMultiPart p : parts()) {
-            if (p.tile() != null) {
-                f.apply(p);
+        Seq<TMultiPart> current = partList;
+        if (!(current instanceof scala.collection.immutable.List)) {
+            scala.collection.Iterator<TMultiPart> iterator = current.iterator();
+            while (iterator.hasNext()) {
+                applyIfBound(f, iterator.next());
             }
+            return;
+        }
+
+        scala.collection.immutable.List<TMultiPart> list = (scala.collection.immutable.List<TMultiPart>) current;
+        while (!list.isEmpty()) {
+            TMultiPart p = list.head();
+            list = (scala.collection.immutable.List<TMultiPart>) list.tail();
+            applyIfBound(f, p);
+        }
+    }
+
+    private static void applyIfBound(Function1<TMultiPart, BoxedUnit> f, TMultiPart p) {
+        if (p.tile() != null) {
+            f.apply(p);
         }
     }
 
