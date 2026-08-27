@@ -7,6 +7,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | --- | --- |
 | `JAVA_MIGRATION.md` | The plan, phase state, and a running findings log |
 | `JAVA_MIGRATION_ABI_INVENTORY.md` | Which downstream mods use what. **The authority on whether anything is load-bearing** |
+| `JAVA_MIGRATION_CONSUMER_AUDIT.md` | How every consumer uses FMP at runtime: data, lifecycle, reflection, and generated tiles |
 | `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 
@@ -14,8 +15,8 @@ Branch: `algent/java`. Base: `master`. 54 commits so far.
 
 ## The one rule that matters
 
-**Check `JAVA_MIGRATION_ABI_INVENTORY.md` before writing a compatibility bridge.** Several were written speculatively
-early on and later deleted. The inventory is generated from real bytecode, not guesswork, and it is the authority.
+**Check both consumer audits before changing a compatibility surface.** The ABI inventory is the authority on what
+must link; the source-level audit is the authority on behavior, serialized data, reflection, and mixin field access.
 
 ## Workflow per type
 
@@ -191,8 +192,18 @@ Both `package.scala` objects are gone, removed rather than ported. `MultipartRen
 
 **The low-risk queue is empty.** Pick the next piece deliberately rather than off the top of a list.
 
+**Immediate blocker: repair the already-ported registry for Schematica.** Schematica 1.12.6 reflects
+`MultiPartRegistry$.codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The current
+Java port has only a private Java `HashMap` on `MultiPartRegistry`, so that integration is broken. Restore an exact
+compatibility view backed by the canonical Java state and freeze Schematica's lookup in a test before any new port.
+
+Then close the small audit-derived test gap: exact reflection/mixin fields, tile list/order/move lifecycle, compact
+mixed NBT/packet fixtures, and representative generated-trait/pass-through fixtures. The checklist is in the
+"Immediate compatibility gate" section of `JAVA_MIGRATION.md`.
+
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
-`RedstoneInteractions`, whose `MODULE$` is load-bearing, so it is its own piece of work at medium risk.
+`RedstoneInteractions`, whose `MODULE$` is load-bearing. After the compatibility gate and an initial profile, port the
+whole file as one medium-risk unit; do not split its mutually dependent behavior into smaller commits.
 
 **Medium.** The `handler` packages on both sides, `MultipartRenderer`, `MicroRecipe`, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,

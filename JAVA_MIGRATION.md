@@ -23,15 +23,24 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 ## Current status
 
-Phase 0 is complete apart from broad NBT/packet fixtures and performance baselines. Phase 3 is in progress and is
-where the work currently sits. Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to
-satisfy a test compile rather than because a migration change needed it, and no Forge mod dependency was declared, so
-that entry should be revisited rather than treated as done. Phase 8 is answered and deferred.
+The binary and source-level consumer audits are complete. Phase 0 still lacks broad NBT/packet fixtures and a
+pre-optimization profile. The low-coupling Phase 3 queue is complete; before entering measured hot-path or generated
+tile work, the immediate milestone is the audit-derived compatibility gate below.
+
+That audit found one existing regression on this branch: Schematica 1.12.6 reflects the original private
+`MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
+Java registry port moved the state to a private Java `HashMap` on `MultiPartRegistry`, so Schematica's integration
+currently disables itself. Restoring and testing that compatibility view is the next task.
+
+Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
+than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
+real migration change needs it. Phase 8 is answered and deferred.
 
 The working rules established while converting, which apply to every remaining area:
 
-- Check `JAVA_MIGRATION_ABI_INVENTORY.md` before writing a compatibility bridge. Several were written speculatively and
-  later deleted; the inventory is the authority on what is load-bearing.
+- Check both consumer audits before changing a compatibility surface. `JAVA_MIGRATION_ABI_INVENTORY.md` is the
+  authority on binary linkage; `JAVA_MIGRATION_CONSUMER_AUDIT.md` is the authority on runtime behavior, data formats,
+  reflection, and mixin field access.
 - Emit a Java `default` method only when no class in an implementor's superclass chain declares the same member.
   Otherwise leave it abstract and add explicit forwarders, because a superclass method always beats an interface
   default and the failure is silent.
@@ -230,8 +239,10 @@ If a characterization test captures a confirmed bug that the port intentionally 
 
 - [x] Produce and retain a reference dev jar from `f10595d` or the selected migration base.
 - [x] Dump the public/protected JVM API and important generated tile class shapes.
-- [x] Inventory downstream mods that compile against or reflect into ForgeMultipart. See `JAVA_MIGRATION_ABI_INVENTORY.md`.
-- [ ] Record part IDs, NBT layouts, packet layouts, registration order, and side/lifecycle behavior.
+- [x] Inventory downstream mods that compile against or reflect into ForgeMultipart. See
+  `JAVA_MIGRATION_ABI_INVENTORY.md` and `JAVA_MIGRATION_CONSUMER_AUDIT.md`.
+- [x] Record source-level consumers of part IDs, NBT, packets, registration order, reflection, and lifecycle behavior.
+- [ ] Freeze representative part IDs, NBT trees, packet bytes, registration order, and lifecycle behavior as tests.
 - [x] Add a Java-8-compatible JUnit/Jupiter setup to the existing Gradle `test` task.
 - [x] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
 - [x] Write the first characterization suite against the untouched Scala implementation.
@@ -270,21 +281,36 @@ Exit condition: new code can use a clean Java API while existing supported binar
 ### Phase 3 — Convert low-coupling code
 
 - [x] Characterize each related leaf group before converting it.
-- [ ] Convert constants, value holders, simple utilities, registries, packet data helpers, and leaf classes first.
-- [ ] Replace `JavaConversions` with explicit Java collections or controlled adapters.
+- [x] Convert the identified constants, value holders, simple utilities, registries, packet data helpers, and leaf
+  classes.
+- [x] Replace `JavaConversions` in converted files with explicit Java collections or controlled adapters.
 - [x] Preserve iteration order and null behavior.
 - [x] Keep mixed Scala/Java compilation working throughout the phase.
 
-Status: this is the phase currently in progress. Converted so far, each with characterization committed separately
-first and a frozen reference-compiled consumer where a bridge is load-bearing: `IDWriter`, `PartialOcclusionTest` and
-`JPartialOcclusion`, `TCuboidPart` and `JCuboidPart`, the `TNormalOcclusion` unit including `NormalOcclusionTest` and
-`NormallyOccludedPart`, `TFacePart`, the `TIconHitEffects` unit including `IconHitEffects` and `JIconHitEffects`,
-`TItemMultiPart` and `JItemMultiPart`, `TEdgePart`, `Saw`, and `MicroMaterialRegistry` with its two nested interfaces.
-
-All eight load-bearing `$class` helpers identified by the ABI inventory are now Java with their bridges retained.
-`JavaConversions` is removed from every converted file; the remaining uses are in files not yet converted.
+Status: **complete.** The low-risk queue is empty. All eight load-bearing `$class` helpers are Java with their bridges
+retained, as are both registries, the central part/tile types, scheduler/helper utilities, `BlockMultipart`, and
+`MultipartRenderer`. The exact completed list is maintained in `JAVA_MIGRATION_HANDOFF.md`.
 
 Exit condition: leaf code is Java and no longer generates avoidable Scala closures or collection adapters.
+
+### Immediate compatibility gate — current next milestone
+
+Do this before another source conversion:
+
+- [ ] Restore Schematica's reflective `MultiPartRegistry$` type-map view with its exact field name and Scala mutable-map
+  shape, backed by the canonical Java registry state; add a regression test that performs Schematica's actual lookup.
+- [ ] Add exact member-level guards for GuideNH's `BlockMicroMaterial.block/meta` mixin fields, Et Futurum's mutable
+  `ButtonPart.metaSideMap/sideMetaMap`, Iguana's `ItemSaw.harvestLevel`, and Galacticraft's name-only
+  `registerMaterial` lookup.
+- [ ] Freeze `TileMultipart` order and lifecycle observations: `parts`/`id` NBT, `partList`/`jPartList`, `partMap`, slot
+  rebinding, add/remove/replace callback order, moving the live tile, and `onMoved`.
+- [ ] Add compact mixed-part NBT and description-packet fixtures. Use representative fake parts in the existing test
+  harness; do not add all downstream mods as test dependencies.
+- [ ] Freeze one generated Scala trait, one Java trait, and representative pass-through interfaces before changing
+  built-in tile traits or either generator.
+
+Exit condition: every source-only constraint that can silently fail has an automated structural/behavioral guard,
+and the already-ported registry again supports Schematica.
 
 ### Phase 4 — Convert measured hot paths
 
@@ -294,6 +320,11 @@ Exit condition: leaf code is Java and no longer generates avoidable Scala closur
 - [ ] Replace non-local returns in slot/recipe scans with ordinary Java control flow.
 - [ ] Use fastutil only where profiling and data shape justify it.
 - [ ] Re-profile the same scenarios and record both improvements and regressions.
+
+Status: not started. This phase does not begin until the immediate compatibility gate and an initial profile are
+complete. The first sensible implementation unit is the whole `IRedstonePart.scala` file: its six related traits and
+load-bearing `RedstoneInteractions$` must be characterized and ported together. Do not optimize `TileMultipart`
+storage merely because the source audit found allocations; its list/order/lifecycle contracts must be frozen first.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -305,6 +336,8 @@ Exit condition: identified steady-state Scala allocation sites are removed with 
 - [ ] Convert remaining traits in small related groups.
 - [ ] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
 - [ ] Preserve pass-through interface behavior.
+- [ ] For the pilot, explicitly cover OpenComputers' `TSlottedTile.v_partMap` rebinding, AE2's
+  `TIInventoryTile.rebuildSlotMap`, and ProjectRed/Extra Utilities `TRedstoneTile` behavior.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
 
@@ -324,6 +357,8 @@ Exit condition: normal runtime implementation is Java; any remaining Scala is is
 - [ ] Translate the existing compiler/generator into readable Java while preserving emitted class shapes and cache keys.
 - [ ] Evaluate GTNHLib ASM helpers where they reduce boilerplate without altering semantics.
 - [ ] Keep Scala-trait registration while deprecated bridges or supported external Scala traits require it.
+- [ ] Run ProjectRed's `LightMicroblock` external Scala-trait fixture and pass-through-interface fixtures against the
+  ported generator.
 - [ ] Decide separately whether a future generator design can avoid custom bytecode generation. Do not couple that experiment to the source-language port.
 
 Exit condition: the composition subsystem is maintainable Java with behavior and generated ABI verified against the reference.
@@ -357,7 +392,10 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
-The repository currently has no test sources or test dependencies. The GTNH Gradle convention and Scala plugin provide a normal Gradle test path, so no custom framework is needed for deterministic logic. Minecraft 1.7.10 does not provide the modern GameTest framework, therefore game-dependent coverage needs a small Forge integration harness rather than pretending all Minecraft behavior can run in an ordinary unit test.
+The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
+baseline is 125 plain-JVM tests and 22 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
+framework.
 
 ### Layer 1 — Plain JVM characterization tests
 
@@ -415,27 +453,38 @@ Coverage percentage is not the goal. The required evidence for an area is:
 - The tests demonstrably pass against the old Scala area before any Java replacement begins.
 - The same tests pass unchanged against the Java implementation, except for separately documented bug fixes.
 
-## Open decisions
+## Decisions
 
-These decisions should be made from ecosystem evidence rather than assumed during translation:
+Resolved from the consumer audits:
 
-1. Which existing downstream binaries must keep working without recompilation?
-2. Are third-party Scala traits registered through `registerScalaTrait`, or is that path only used internally?
-3. How long should deprecated Scala bridges remain supported?
-4. Is complete Scala runtime removal required for the first Java release, or is Java-maintainable source the first milestone?
-5. Which known bugs are intentionally fixed during the port, and which are preserved until compatibility is established?
-6. Which GTNHLib release is the minimum supported version for the target pack?
-7. After the Java port is stable, is there enough benefit to redesign runtime tile composition, or should the Java ASM generator remain?
+1. All 27 binaries in the target pack must keep working without recompilation; UtilitiesInExcess is an additional
+   forward-compatibility target.
+2. Third-party Scala trait registration is public in practice: ProjectRed registers `LightMicroblock`.
+3. Java-maintainable source is the first-release milestone. Scala runtime removal is deferred because shipping mods
+   link Scala descriptors, trait helpers, companions, and external trait generation.
 
-## Rough effort expectation
+Still open, and only to be decided when they become necessary:
 
-These are order-of-magnitude estimates for one developer familiar with Forge 1.7.10, excluding long ecosystem validation:
+1. How long deprecated Scala bridges remain supported after the initial Java release.
+2. Which known bugs are intentionally fixed during the port rather than after compatibility is established.
+3. Which GTNHLib release is the minimum supported version once code actually needs it.
+4. Whether runtime tile composition merits redesign after the Java port is stable.
 
-- Targeted performance cleanup while retaining Scala: roughly 3–7 focused days.
-- Java implementation while retaining deprecated Scala ABI bridges and the current composition model: roughly 4–8 weeks.
-- Full Java implementation plus safe Scala runtime removal and broader compatibility work: roughly 8–14+ weeks.
+## Effort tracking
 
-These ranges were formed before designing the characterization suite and should now be treated as lower bounds. The tests add deliberate work before each conversion but should replace a substantial amount of later regression debugging. Revise the estimates after the first low-coupling subsystem completes the full characterize-port-compare cycle and after Phase 0 determines how much of the Scala ABI and Scala trait mechanism is used externally.
+The old pre-audit calendar ranges are retired. They mixed the Java source port, ecosystem validation, performance
+work, and optional Scala-runtime removal into estimates that are no longer useful. Track the remaining work by
+completed compatibility gates instead:
+
+1. Repair the Schematica registry view and finish the source-only reflection/member guards.
+2. Freeze tile ordering, lifecycle, NBT, packet, and generator behavior with compact representative fixtures.
+3. Capture the first focused CPU/allocation baseline and port the complete redstone unit.
+4. Convert a representative generated tile-trait group, then the remaining trait groups.
+5. Convert the multipart/microblock core while keeping the frozen data and consumer contracts green.
+6. Update the ASM/runtime generator, then run packaged-pack and manual release validation.
+
+Estimate calendar time again after gates 1 and 2. They expose the real cost of hidden consumer contracts and the
+generated-trait compatibility work. Scala-runtime removal remains a later project and is not part of this estimate.
 
 ## Findings log
 

@@ -35,6 +35,12 @@ release that includes those ports.
 | --- | --- | --- |
 | Load the pack with ProjRed installed and place illumar lamp microblocks | The lamps generate, render and light correctly | `MicroblockGenerator.registerTrait` Scala trait path |
 | Place and break OpenComputers, ProjectBlue and AE2 parts | No `NoSuchMethodError` or `AbstractMethodError` in the log | retained `$class` bridges |
+| Load and render a schematic containing an ordered mixed multipart tile | Every part appears in the preview in the saved order; the integration does not silently disable itself | Schematica private registry-map reflection and tile NBT reconstruction |
+| Open a GuideNH scene containing a multipart tile and export its part/material data | The preview, material data and part statistics are complete | companion reflection, `partList_$eq`, and `BlockMicroMaterial` mixin fields |
+| Place FMP buttons on every supported face with Et Futurum loaded | Button orientation matches the fixed vanilla behavior | reflected mutable `ButtonPart` side/meta arrays |
+| Toggle an OpenComputers print that shares a block with another slotted part | Its slots are rebuilt without losing, hiding or disconnecting either part | external mutation of `TSlottedTile.v_partMap` plus `bindPart` |
+| Move the same composite tile once through ForgeRelocationFMP and once through MatterManipulator | Coordinates, part-to-tile references, generated interfaces and rendering remain correct after `onMoved` | live multipart move lifecycle |
+| Inspect a mixed multipart tile with Waila | Providers receive every saved part ID and show the expected part data | reflected block identity and tile NBT `parts`/`id` layout |
 | Load a world saved before the port | All microblocks and covers keep their material and shape | `MicroMaterialRegistry` id map |
 | Join a server whose material set differs from the client | The client is disconnected with the missing material list, not a crash | `readIDMap` |
 

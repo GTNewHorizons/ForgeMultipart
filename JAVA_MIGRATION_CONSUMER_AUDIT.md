@@ -351,6 +351,10 @@ effective public API**. A Java `Map` replacement will silently disable Schematic
 is retained or Schematica is patched and deployed first. This is a higher-risk constraint than the constant-pool
 inventory alone shows.
 
+**Current branch:** this is already broken by the Java `MultiPartRegistry` port. The canonical state is now a private
+Java `HashMap` on `MultiPartRegistry`, while `MultiPartRegistry$` has no field with the reflected name. Restoring and
+testing a compatibility view is the immediate migration blocker.
+
 ### UtilitiesInExcess — future replacement, already a substantial consumer
 
 UtilitiesInExcess is not in the `+700` JAR scan but is in scope because it is intended to replace Extra Utilities.

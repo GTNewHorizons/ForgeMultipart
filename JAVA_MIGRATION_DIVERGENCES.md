@@ -567,11 +567,22 @@ Schematica reaches the singleton reflectively.
 
 ### Observable behavior
 
-No known divergence. `beforeServerStart` still sorts the type map by name so ids are indexes into it, part ids still
+Registry behavior itself has no known divergence. `beforeServerStart` still sorts the type map by name so ids are indexes into it, part ids still
 round trip through the shared `IDWriter`, converters are still grouped per block with the first non-null result
 winning, registration still refuses to run once the registry is closed and still requires an active mod container, a
 duplicate part id still throws, and `writePartID` and `getModContainer` still throw rather than returning null for an
 unknown name.
+
+### Known reflective regression, discovered 2026-08-27
+
+The full consumer-source audit found a constraint that the bytecode scan missed. Schematica 1.12.6 obtains the private
+field `codechicken$multipart$MultiPartRegistry$$typeMap` from `MultiPartRegistry$` and casts its value to
+`scala.collection.mutable.Map`. The Java port moved the canonical map to a private `java.util.HashMap` on
+`MultiPartRegistry`, and `MultiPartRegistry$` exposes no compatibility field, so Schematica currently disables its FMP
+integration during reflective initialization.
+
+This is not an accepted divergence. Restore an exact reflective compatibility view backed by the canonical Java
+registry state and add a test reproducing Schematica's field lookup before continuing the migration.
 
 ### Preserved Scala-typed descriptors
 
@@ -595,8 +606,10 @@ resolves against a plain array parameter. It also makes the Java call sites more
 - `readIDMap` returns `java.util.List<String>` instead of `scala.collection.Seq<String>`, as with
   `MicroMaterialRegistry`. It is `private[multipart]` in Scala, so it has no static forwarder, and no jar references
   it.
-- The mangled public accessors Scala emitted so its closures could reach private state
-  (`codechicken$multipart$MultiPartRegistry$$typeMap()` and the four others) are gone. No jar references them.
+- The mangled public accessor methods Scala emitted so its closures could reach private state
+  (`codechicken$multipart$MultiPartRegistry$$typeMap()` and the four others) are gone. No jar links those methods.
+  This original check did not cover Schematica's reflective access to the separate private backing field described
+  above.
 
 ### Compiler artifacts
 
