@@ -57,7 +57,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **125 plain-JVM tests, 22 Forge server tests, all passing.**
+Current baseline: **126 plain-JVM tests, 22 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -192,12 +192,12 @@ Both `package.scala` objects are gone, removed rather than ported. `MultipartRen
 
 **The low-risk queue is empty.** Pick the next piece deliberately rather than off the top of a list.
 
-**Immediate blocker: repair the already-ported registry for Schematica.** Schematica 1.12.6 reflects
-`MultiPartRegistry$.codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The current
-Java port has only a private Java `HashMap` on `MultiPartRegistry`, so that integration is broken. Restore an exact
-compatibility view backed by the canonical Java state and freeze Schematica's lookup in a test before any new port.
+**The Schematica registry blocker is repaired.** `MultiPartRegistry$` again has the exact private field
+`codechicken$multipart$MultiPartRegistry$$typeMap` with a Scala mutable-map descriptor. It is a live wrapper over the
+canonical Java map, and `MultiPartRegistryCharacterizationTest` reproduces Schematica's reflective lookup and proves
+both views reach the same factory.
 
-Then close the small audit-derived test gap: exact reflection/mixin fields, tile list/order/move lifecycle, compact
+Next close the remaining audit-derived test gap: exact reflection/mixin fields, tile list/order/move lifecycle, compact
 mixed NBT/packet fixtures, and representative generated-trait/pass-through fixtures. The checklist is in the
 "Immediate compatibility gate" section of `JAVA_MIGRATION.md`.
 

@@ -14,6 +14,7 @@ import codechicken.multipart.MultiPartRegistry.IPartConverter;
 import codechicken.multipart.MultiPartRegistry.IPartFactory;
 import codechicken.multipart.MultiPartRegistry.IPartFactory2;
 import cpw.mods.fml.common.ModContainer;
+import scala.collection.JavaConversions;
 
 /**
  * Scala companion singleton. Retained because compiled Scala consumers read MODULE$ and call these instance methods.
@@ -21,6 +22,11 @@ import cpw.mods.fml.common.ModContainer;
 public final class MultiPartRegistry$ {
 
     public static final MultiPartRegistry$ MODULE$ = new MultiPartRegistry$();
+
+    /** Retained with its original name and Scala type because Schematica reflects it directly. */
+    @SuppressWarnings("unused")
+    private final scala.collection.mutable.Map<String, IPartFactory2> codechicken$multipart$MultiPartRegistry$$typeMap = JavaConversions
+            .mapAsScalaMap(MultiPartRegistry.typeMapBacking());
 
     private MultiPartRegistry$() {}
 

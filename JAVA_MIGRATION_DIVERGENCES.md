@@ -573,16 +573,18 @@ winning, registration still refuses to run once the registry is closed and still
 duplicate part id still throws, and `writePartID` and `getModContainer` still throw rather than returning null for an
 unknown name.
 
-### Known reflective regression, discovered 2026-08-27
+### Resolved reflective regression, discovered and fixed 2026-08-27
 
 The full consumer-source audit found a constraint that the bytecode scan missed. Schematica 1.12.6 obtains the private
 field `codechicken$multipart$MultiPartRegistry$$typeMap` from `MultiPartRegistry$` and casts its value to
 `scala.collection.mutable.Map`. The Java port moved the canonical map to a private `java.util.HashMap` on
-`MultiPartRegistry`, and `MultiPartRegistry$` exposes no compatibility field, so Schematica currently disables its FMP
+`MultiPartRegistry`, and `MultiPartRegistry$` exposed no compatibility field, so Schematica disabled its FMP
 integration during reflective initialization.
 
-This is not an accepted divergence. Restore an exact reflective compatibility view backed by the canonical Java
-registry state and add a test reproducing Schematica's field lookup before continuing the migration.
+`MultiPartRegistry$` now restores that exact private field and descriptor using Scala's existing live Java-map wrapper;
+the Java map remains the single source of truth. `MultiPartRegistryCharacterizationTest` performs Schematica's actual
+`ReflectionHelper` lookup, casts the result to `scala.collection.mutable.Map`, and proves mutations reach the Java
+registry. No separate registry or synchronization path was added.
 
 ### Preserved Scala-typed descriptors
 
@@ -626,6 +628,15 @@ overloads build.
   registration needs FML's active mod container, so real startup is the only place both factory overloads actually
   run, and the suite resolves a part registered through each.
 - Error paths that log remain uncovered headless, as before, because the multipart logger is null until preInit.
+
+### 2026-08-27 compatibility repair validation
+
+- The new Schematica reflection case failed first with `UnableToFindFieldException`, then passed with the compatibility
+  field present.
+- `javap -private -s` confirms the field is private/final with descriptor `Lscala/collection/mutable/Map;`.
+- `MultiPartRegistryCharacterizationTest`: 6 tests, 0 failures, 0 errors.
+- Complete plain-JVM suite: 126 tests, 0 failures, 0 errors.
+- Clean `spotlessApply checkstyleTest build`: passing.
 
 ## 2026-08-14 — TileMultipart Java port
 

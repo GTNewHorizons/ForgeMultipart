@@ -27,10 +27,10 @@ The binary and source-level consumer audits are complete. Phase 0 still lacks br
 pre-optimization profile. The low-coupling Phase 3 queue is complete; before entering measured hot-path or generated
 tile work, the immediate milestone is the audit-derived compatibility gate below.
 
-That audit found one existing regression on this branch: Schematica 1.12.6 reflects the original private
+That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
-Java registry port moved the state to a private Java `HashMap` on `MultiPartRegistry`, so Schematica's integration
-currently disables itself. Restoring and testing that compatibility view is the next task.
+companion again exposes that exact private field as a live view of the canonical Java `HashMap`, and a test performs
+Schematica's reflective lookup. The remaining source-only member guards are next.
 
 Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
 than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
@@ -297,7 +297,7 @@ Exit condition: leaf code is Java and no longer generates avoidable Scala closur
 
 Do this before another source conversion:
 
-- [ ] Restore Schematica's reflective `MultiPartRegistry$` type-map view with its exact field name and Scala mutable-map
+- [x] Restore Schematica's reflective `MultiPartRegistry$` type-map view with its exact field name and Scala mutable-map
   shape, backed by the canonical Java registry state; add a regression test that performs Schematica's actual lookup.
 - [ ] Add exact member-level guards for GuideNH's `BlockMicroMaterial.block/meta` mixin fields, Et Futurum's mutable
   `ButtonPart.metaSideMap/sideMetaMap`, Iguana's `ItemSaw.harvestLevel`, and Galacticraft's name-only
@@ -393,7 +393,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 125 plain-JVM tests and 22 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 126 plain-JVM tests and 22 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -476,7 +476,7 @@ The old pre-audit calendar ranges are retired. They mixed the Java source port, 
 work, and optional Scala-runtime removal into estimates that are no longer useful. Track the remaining work by
 completed compatibility gates instead:
 
-1. Repair the Schematica registry view and finish the source-only reflection/member guards.
+1. Finish the source-only reflection/member guards; the Schematica registry view is repaired.
 2. Freeze tile ordering, lifecycle, NBT, packet, and generator behavior with compact representative fixtures.
 3. Capture the first focused CPU/allocation baseline and port the complete redstone unit.
 4. Convert a representative generated tile-trait group, then the remaining trait groups.
@@ -594,3 +594,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Dropped the three static forwarders Scala generated for inherited `TileEntitySpecialRenderer` members, the same category as the twelve `KeyBinding` forwarders dropped from `ControlKeyHandler`.
 - Dropped an unused `ThreadSafeISBRH` import. It annotated nothing and appears nowhere else; if the intent was to mark this ISBRH thread-safe for Angelica then the annotation was never applied in the reference either, which is worth checking independently of the migration.
 - Recorded that this port adds nothing to the automated suites and everything to the manual checklist. Static and dynamic rendering, the breaking overlay and the render id all need a client.
+
+### 2026-08-27
+
+- Reproduced Schematica 1.12.6's exact `ReflectionHelper` lookup of the private
+  `MultiPartRegistry$.codechicken$multipart$MultiPartRegistry$$typeMap` field. The test failed against the existing Java
+  port with `UnableToFindFieldException`, matching Schematica's silent integration-disable path.
+- Restored the exact private field name and `scala.collection.mutable.Map` descriptor as Scala's live wrapper over the
+  canonical Java registry map. The wrapper adds no copied state or synchronization path.
+- Proved through the reflected Scala view that Schematica can resolve a factory and that the Java registry immediately
+  sees the same entry. The focused registry suite and all 126 plain-JVM tests pass.

@@ -87,6 +87,10 @@ public final class MultiPartRegistry {
 
     private MultiPartRegistry() {}
 
+    static Map<String, IPartFactory2> typeMapBacking() {
+        return typeMap;
+    }
+
     /**
      * Register a part factory with an array of types it is capable of instantiating. Must be called before postInit.
      *
