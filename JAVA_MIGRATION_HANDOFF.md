@@ -57,7 +57,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **130 plain-JVM tests, 22 Forge server tests, all passing at their last completed runs.**
+Current baseline: **130 plain-JVM tests, 24 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -200,9 +200,12 @@ both views reach the same factory.
 The source-only member guards are also complete: GuideNH's mixin fields, Et Futurum's button arrays, Iguana's saw
 field, and Galacticraft's name-only registration lookup are pinned by `ConsumerReflectionCompatibilityTest`.
 
-Next characterize tile list/order/move lifecycle, followed by compact mixed NBT/packet fixtures and representative
-generated-trait/pass-through fixtures. The checklist is in the "Immediate compatibility gate" section of
-`JAVA_MIGRATION.md`.
+Tile list/order/slot behavior and the live move lifecycle are now frozen by focused plain-JVM and Forge tests. They
+pin ordered `parts`/`id` NBT, published list views, slot rebinding, add/remove/replace behavior, and the relocation
+sequence (`onWorldSeparate`, then `onMoved`/`onWorldJoin`) while preserving the original generated tile.
+
+Next add compact mixed-part NBT and exact description-packet fixtures, followed by representative generated-trait and
+pass-through fixtures. The checklist is in the "Immediate compatibility gate" section of `JAVA_MIGRATION.md`.
 
 `IRedstonePart.scala` is misleadingly named and is **not** a marker-trait file. It holds six traits plus
 `RedstoneInteractions`, whose `MODULE$` is load-bearing. After the compatibility gate and an initial profile, port the
@@ -225,7 +228,8 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   Every port since `TCuboidPart` has deferred something to it, and `BlockMultipart` leans on it hardest: breaking, selection boxes, collision, pick block, activation, particles and
   light are covered by nothing automated. Run it in a real client before this branch goes near a release.
 - No CPU or allocation profiles exist. Phase 4 has not started, so there is no baseline to compare against.
-- NBT and packet layout fixtures exist only for the material id carrier.
+- Tile `parts`/`id` ordering now has a live NBT round-trip fixture, but broad part payload and exact description-packet
+  fixtures are still missing.
 - `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation, and `operate` still
   allocates a `Function1` per call. Both are faithful to the reference and both are deliberately left for Phase 4,
   which needs profiling first.

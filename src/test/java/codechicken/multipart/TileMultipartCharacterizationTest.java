@@ -160,6 +160,9 @@ class TileMultipartCharacterizationTest {
         assertTrue(tile.canReplacePart(outgoing, new CountingPart("c")));
         // A part already present, other than the outgoing one, cannot be added again.
         assertFalse(tile.canReplacePart(outgoing, other));
+        assertEquals(Arrays.asList(outgoing, other), tile.jPartList(), "A replacement check must not mutate order");
+        assertSame(tile, outgoing.tile());
+        assertSame(tile, other.tile());
     }
 
     @Test

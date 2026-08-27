@@ -8,10 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.nbt.NBTTagList;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.world.World;
@@ -23,6 +25,8 @@ import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.handler.MultipartSaveLoad;
+import codechicken.multipart.minecraft.ButtonPart;
+import codechicken.multipart.minecraft.TorchPart;
 import scala.collection.JavaConversions;
 
 /**
@@ -49,21 +53,31 @@ class MultipartHelperFunctionalTest {
      * exists: the tile has to be rebuilt from NBT without waiting for the ChunkLoad event.
      */
     @Test
-    void rebuildsATileFromItsOwnNbtAndPublishesTheLoadingWorld() {
+    void rebuildsAnOrderedSlottedTileFromItsOwnNbtAndPublishesTheLoadingWorld() {
         World world = world();
-        TMultiPart torch = MultiPartRegistry.loadPart("mc_torch", null);
-        TileMultipart saved = MultipartHelper.createTileFromParts(Collections.singletonList(torch));
+        TMultiPart torch = new TorchPart(5);
+        TMultiPart button = new ButtonPart(1);
+        TileMultipart saved = MultipartHelper.createTileFromParts(Arrays.asList(torch, button));
 
         NBTTagCompound tag = new NBTTagCompound();
         saved.writeToNBT(tag);
         assertEquals("savedMultipart", tag.getString("id"));
+        NBTTagList savedParts = tag.getTagList("parts", 10);
+        assertEquals(2, savedParts.tagCount());
+        assertEquals("mc_torch", savedParts.getCompoundTagAt(0).getString("id"));
+        assertEquals(5, savedParts.getCompoundTagAt(0).getByte("meta"));
+        assertEquals("mc_button", savedParts.getCompoundTagAt(1).getString("id"));
+        assertEquals(1, savedParts.getCompoundTagAt(1).getByte("meta"));
 
         MultipartSaveLoad.loadingWorld_$eq(null);
         TileEntity loaded = MultipartHelper.createTileFromNBT(world, tag);
 
         TileMultipart tile = assertInstanceOf(TileMultipart.class, loaded);
-        assertEquals(1, tile.jPartList().size());
+        assertEquals(2, tile.jPartList().size());
         assertEquals("mc_torch", tile.jPartList().get(0).getType());
+        assertEquals("mc_button", tile.jPartList().get(1).getType());
+        assertSame(tile.jPartList().get(0), tile.partMap(0));
+        assertSame(tile.jPartList().get(1), tile.partMap(4));
         assertSame(world, MultipartSaveLoad.loadingWorld());
     }
 

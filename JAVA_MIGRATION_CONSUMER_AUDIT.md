@@ -444,6 +444,10 @@ Part list order is not an internal detail:
 The Java port may add faster indexed storage, but all published views, serialization, binding, ray-hit indices, and
 packet consumers must observe one consistent order.
 
+Current-branch verification: `MultipartHelperFunctionalTest` freezes ordered two-part NBT reconstruction and slot
+rebinding. `TileMultipartLifecycleFunctionalTest` freezes add/remove callbacks and the MatterManipulator-shaped live
+move, including ordered `onWorldSeparate` before ordered `onMoved`/`onWorldJoin`, without replacing the generated tile.
+
 ### Material IDs and packets
 
 Numeric material IDs are runtime registry identities used in descriptions and custom-part packets. Names are the
@@ -488,7 +492,8 @@ behavior:
 1. Keep the existing `+678` ABI fixture as the exact binary floor and correct failures before source cleanup.
 2. Add the hidden-member reflection checks, especially Schematica's `typeMap` compatibility and GuideNH's mixin
    fields, before converting their owners.
-3. Characterize `TileMultipart` list/map/slot behavior and move lifecycle before optimizing storage or iteration.
+3. Keep the completed `TileMultipart` list/map/slot and live-move characterization green before optimizing storage or
+   iteration.
 4. Characterize pass-through interfaces and ProjectRed's external Scala trait before changing either generator.
 5. Add mixed NBT/packet fixtures before converting microblocks and Minecraft part implementations.
 6. Treat Scala runtime removal as downstream coordination work after the Java port, not as a requirement of it.
