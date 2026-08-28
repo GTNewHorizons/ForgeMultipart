@@ -160,7 +160,7 @@ class ForgeEnvironmentSmokeTest {
     }
 
     @Test
-    void generatesAndCachesSlottedTileClass() {
+    void generatesAndCachesSlottedTileClass() throws Exception {
         int traitId = MultipartMixinFactory.getId(TSlottedTile.class.getName().replace('.', '/'));
         assertFalse(traitId < 0);
 
@@ -168,12 +168,50 @@ class ForgeEnvironmentSmokeTest {
         traits.set(traitId);
         Object first = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
         Object second = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Class<?> trait = Class.forName("codechicken.multipart.scalatraits.TSlottedTile");
 
         assertTrue(first instanceof TileMultipart);
         assertTrue(first instanceof TSlottedTile);
+        assertTrue(trait.isInterface());
         assertNotSame(first, second);
         assertSame(first.getClass(), second.getClass());
-        assertEquals(27, ((TSlottedTile) first).v_partMap().length);
+        assertEquals(0, trait.getDeclaredFields().length);
+        Set<String> signatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : trait.getDeclaredMethods()) {
+            signatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                "canAddPart(Lcodechicken/multipart/TMultiPart;)Z",
+                                "clearParts()V",
+                                "codechicken$multipart$scalatraits$TSlottedTile$$super$bindPart"
+                                        + "(Lcodechicken/multipart/TMultiPart;)V",
+                                "codechicken$multipart$scalatraits$TSlottedTile$$super$canAddPart"
+                                        + "(Lcodechicken/multipart/TMultiPart;)Z",
+                                "codechicken$multipart$scalatraits$TSlottedTile$$super$clearParts()V",
+                                "codechicken$multipart$scalatraits$TSlottedTile$$super$copyFrom"
+                                        + "(Lcodechicken/multipart/TileMultipart;)V",
+                                "codechicken$multipart$scalatraits$TSlottedTile$$super$partRemoved"
+                                        + "(Lcodechicken/multipart/TMultiPart;I)V",
+                                "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                "partMap(I)Lcodechicken/multipart/TMultiPart;",
+                                "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                "v_partMap()[Lcodechicken/multipart/TMultiPart;",
+                                "v_partMap_$eq([Lcodechicken/multipart/TMultiPart;)V")),
+                signatures);
+
+        TMultiPart[] firstMap = (TMultiPart[]) trait.getMethod("v_partMap").invoke(first);
+        TMultiPart[] secondMap = (TMultiPart[]) trait.getMethod("v_partMap").invoke(second);
+        assertEquals(27, firstMap.length);
+        assertEquals(27, secondMap.length);
+        assertNotSame(firstMap, secondMap, "Each generated tile must run the trait initializer");
+        assertEquals(TMultiPart[].class, first.getClass().getDeclaredField("v_partMap").getType());
+
+        TMultiPart[] replacement = new TMultiPart[27];
+        trait.getMethod("v_partMap_$eq", TMultiPart[].class).invoke(first, (Object) replacement);
+        assertSame(replacement, trait.getMethod("v_partMap").invoke(first));
     }
 
     @Test
