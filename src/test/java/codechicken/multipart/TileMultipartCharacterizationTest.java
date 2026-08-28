@@ -14,9 +14,14 @@ import java.util.List;
 import java.util.function.Consumer;
 
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.EntityPlayer;
+import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.util.Vec3;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.raytracer.ExtendedMOP;
+import scala.Tuple2;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 import scala.runtime.AbstractFunction1;
@@ -28,6 +33,8 @@ import scala.runtime.BoxedUnit;
  * instead, because it cannot run headless.
  */
 class TileMultipartCharacterizationTest {
+
+    private static final Vec3 ORIGIN = Vec3.createVectorHelper(0, 0, 0);
 
     @Test
     void aFreshTileHoldsNoPartsAndDoesNotTick() {
@@ -261,6 +268,96 @@ class TileMultipartCharacterizationTest {
         assertTrue(tile.canPlaceTorchOnTop());
     }
 
+    @Test
+    void rayTraceAllTagsEachHitWithItsPartListIndex() {
+        TileMultipart tile = new TileMultipart();
+        tile.addPart_do(new RayTracingPart("far", 9d));
+        tile.addPart_do(new RayTracingPart("missing", null));
+        tile.addPart_do(new RayTracingPart("near", 1d));
+
+        List<ExtendedMOP> hits = hits(tile);
+
+        // Sorted nearest first, but the part that missed still consumed its index.
+        assertEquals(Arrays.asList(2, 0), Arrays.asList(index(hits.get(0)), index(hits.get(1))));
+    }
+
+    @Test
+    void rayTraceAllIndicesStillSelectTheProducingPart() {
+        TileMultipart tile = new TileMultipart();
+        tile.addPart_do(new RayTracingPart("far", 9d));
+        tile.addPart_do(new RayTracingPart("missing", null));
+        tile.addPart_do(new RayTracingPart("near", 1d));
+
+        // The round trip every click, activate, harvest and pick block depends on.
+        for (ExtendedMOP hit : hits(tile)) {
+            TMultiPart part = tile.partList().apply(index(hit));
+            assertSame(hit, ((RayTracingPart) part).produced);
+        }
+    }
+
+    @Test
+    void rayTraceAllNestsThePartsOwnDataUnderTheIndex() {
+        TileMultipart tile = new TileMultipart();
+        RayTracingPart part = new RayTracingPart("only", 1d);
+        part.data = "subhit";
+        tile.addPart_do(part);
+
+        ExtendedMOP hit = hits(tile).get(0);
+
+        assertEquals("subhit", ExtendedMOP.<Tuple2<Object, Object>>getData(hit)._2());
+        assertEquals(-1, hit.subHit, "data is assigned directly, so subHit keeps its default");
+    }
+
+    @Test
+    void rayTraceAllIsEmptyWhenNothingIsHit() {
+        TileMultipart tile = new TileMultipart();
+        assertTrue(hits(tile).isEmpty());
+
+        tile.addPart_do(new RayTracingPart("missing", null));
+        assertTrue(hits(tile).isEmpty());
+    }
+
+    @Test
+    void collisionRayTraceReturnsTheNearestHitOrNull() {
+        TileMultipart tile = new TileMultipart();
+        assertNull(tile.collisionRayTrace(ORIGIN, ORIGIN));
+
+        tile.addPart_do(new RayTracingPart("far", 9d));
+        RayTracingPart near = new RayTracingPart("near", 1d);
+        tile.addPart_do(near);
+
+        ExtendedMOP nearest = tile.collisionRayTrace(ORIGIN, ORIGIN);
+
+        assertSame(near.produced, nearest);
+    }
+
+    @Test
+    void harvestPartSelectsByPartListIndex() {
+        TileMultipart tile = new TileMultipart();
+        RayTracingPart first = new RayTracingPart("first", null);
+        RayTracingPart second = new RayTracingPart("second", null);
+        tile.addPart_do(first);
+        tile.addPart_do(second);
+
+        tile.harvestPart(1, null, null);
+
+        assertEquals(0, first.harvests);
+        assertEquals(1, second.harvests);
+        assertThrows(IndexOutOfBoundsException.class, () -> tile.harvestPart(2, null, null));
+    }
+
+    private static List<ExtendedMOP> hits(TileMultipart tile) {
+        List<ExtendedMOP> list = new ArrayList<>();
+        for (ExtendedMOP hit : tile.rayTraceAll(ORIGIN, ORIGIN)) {
+            list.add(hit);
+        }
+        return list;
+    }
+
+    private static int index(ExtendedMOP hit) {
+        return (Integer) ExtendedMOP.<Tuple2<Object, Object>>getData(hit)._1();
+    }
+
     private static Seq<TMultiPart> seq(TMultiPart... parts) {
         List<TMultiPart> list = new ArrayList<>(Arrays.asList(parts));
         return JavaConversions.asScalaBuffer(list).toList();
@@ -360,6 +457,35 @@ class TileMultipartCharacterizationTest {
         @Override
         public boolean canPlaceTorchOnTop() {
             return true;
+        }
+    }
+
+    /** Returns a canned hit so raytrace bookkeeping can be checked without a world. */
+    private static final class RayTracingPart extends CountingPart {
+
+        private final Double dist;
+        private Object data;
+        private ExtendedMOP produced;
+        private int harvests;
+
+        private RayTracingPart(String type, Double dist) {
+            super(type);
+            this.dist = dist;
+        }
+
+        @Override
+        public ExtendedMOP collisionRayTrace(Vec3 start, Vec3 end) {
+            if (dist == null) {
+                return null;
+            }
+            produced = new ExtendedMOP(0, 0, 0, 0, ORIGIN, data);
+            produced.dist = dist;
+            return produced;
+        }
+
+        @Override
+        public void harvest(MovingObjectPosition hit, EntityPlayer player) {
+            harvests++;
         }
     }
 }
