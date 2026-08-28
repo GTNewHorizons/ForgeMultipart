@@ -8,6 +8,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import net.minecraft.block.Block;
+import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.IBlockAccess;
+import net.minecraft.world.biome.BiomeGenBase;
+import net.minecraftforge.common.util.ForgeDirection;
+
+import codechicken.multipart.BlockMultipart;
 import codechicken.multipart.IRedstonePart;
 import codechicken.multipart.IRedstoneTile;
 import codechicken.multipart.MultipartHelper;
@@ -32,6 +39,7 @@ final class ForgeMultipartProfileWorkload {
             tickingParts.add(new ProfilePart());
         }
         TileMultipart tickingTile = MultipartHelper.createTileFromParts(tickingParts);
+        ProfileBlockAccess blockAccess = new ProfileBlockAccess(tickingTile);
 
         List<TMultiPart> redstoneParts = new ArrayList<>();
         for (int i = 0; i < PART_COUNT; i++) {
@@ -45,6 +53,8 @@ final class ForgeMultipartProfileWorkload {
 
         profileUpdateEntity(tickingTile, WARMUP_ITERATIONS);
         profileOperate(tickingTile, operation, WARMUP_ITERATIONS);
+        profileLightValue(tickingTile, WARMUP_ITERATIONS);
+        profileGetTile(blockAccess, WARMUP_ITERATIONS);
         profileRedstone(redstoneTile, redstone, WARMUP_ITERATIONS);
 
         long updateStartMillis = System.currentTimeMillis();
@@ -61,6 +71,20 @@ final class ForgeMultipartProfileWorkload {
         long operateNanos = System.nanoTime() - operateStart;
         long operateBytes = allocationBean.getThreadAllocatedBytes(threadId) - operateStartBytes;
 
+        long lightStartMillis = System.currentTimeMillis();
+        long lightStartBytes = allocationBean.getThreadAllocatedBytes(threadId);
+        long lightStart = System.nanoTime();
+        long lightChecksum = profileLightValue(tickingTile, PROFILE_ITERATIONS);
+        long lightNanos = System.nanoTime() - lightStart;
+        long lightBytes = allocationBean.getThreadAllocatedBytes(threadId) - lightStartBytes;
+
+        long getTileStartMillis = System.currentTimeMillis();
+        long getTileStartBytes = allocationBean.getThreadAllocatedBytes(threadId);
+        long getTileStart = System.nanoTime();
+        long getTileChecksum = profileGetTile(blockAccess, PROFILE_ITERATIONS);
+        long getTileNanos = System.nanoTime() - getTileStart;
+        long getTileBytes = allocationBean.getThreadAllocatedBytes(threadId) - getTileStartBytes;
+
         long redstoneStartMillis = System.currentTimeMillis();
         long redstoneStartBytes = allocationBean.getThreadAllocatedBytes(threadId);
         long redstoneStart = System.nanoTime();
@@ -72,7 +96,7 @@ final class ForgeMultipartProfileWorkload {
         for (TMultiPart part : tickingParts) {
             updateChecksum += ((ProfilePart) part).updates;
         }
-        sink = updateChecksum + operation.applications + redstoneChecksum;
+        sink = updateChecksum + operation.applications + lightChecksum + getTileChecksum + redstoneChecksum;
         writeResults(
                 updateStartMillis,
                 updateNanos,
@@ -80,6 +104,12 @@ final class ForgeMultipartProfileWorkload {
                 operateStartMillis,
                 operateNanos,
                 operateBytes,
+                lightStartMillis,
+                lightNanos,
+                lightBytes,
+                getTileStartMillis,
+                getTileNanos,
+                getTileBytes,
                 redstoneStartMillis,
                 redstoneNanos,
                 redstoneBytes,
@@ -98,6 +128,24 @@ final class ForgeMultipartProfileWorkload {
         }
     }
 
+    private static long profileLightValue(TileMultipart tile, int iterations) {
+        long checksum = 0;
+        for (int i = 0; i < iterations; i++) {
+            checksum += tile.getLightValue();
+        }
+        return checksum;
+    }
+
+    private static long profileGetTile(IBlockAccess world, int iterations) {
+        long checksum = 0;
+        for (int i = 0; i < iterations; i++) {
+            if (BlockMultipart.getTile(world, 0, 0, 0) != null) {
+                checksum++;
+            }
+        }
+        return checksum;
+    }
+
     private static long profileRedstone(TileMultipart tile, IRedstoneTile redstone, int iterations) {
         long checksum = 0;
         for (int i = 0; i < iterations; i++) {
@@ -110,8 +158,9 @@ final class ForgeMultipartProfileWorkload {
     }
 
     private static void writeResults(long updateStartMillis, long updateNanos, long updateBytes,
-            long operateStartMillis, long operateNanos, long operateBytes, long redstoneStartMillis, long redstoneNanos,
-            long redstoneBytes, long checksum) {
+            long operateStartMillis, long operateNanos, long operateBytes, long lightStartMillis, long lightNanos,
+            long lightBytes, long getTileStartMillis, long getTileNanos, long getTileBytes, long redstoneStartMillis,
+            long redstoneNanos, long redstoneBytes, long checksum) {
         File output = new File("forgemultipart-profile.txt");
         try (PrintWriter writer = new PrintWriter(output)) {
             writer.printf(Locale.ROOT, "java=%s%n", System.getProperty("java.runtime.version"));
@@ -120,6 +169,8 @@ final class ForgeMultipartProfileWorkload {
             writer.printf(Locale.ROOT, "profileIterations=%d%n", PROFILE_ITERATIONS);
             writeTiming(writer, "updateEntity", updateStartMillis, updateNanos, updateBytes);
             writeTiming(writer, "operate", operateStartMillis, operateNanos, operateBytes);
+            writeTiming(writer, "lightValue", lightStartMillis, lightNanos, lightBytes);
+            writeTiming(writer, "getTile", getTileStartMillis, getTileNanos, getTileBytes);
             writeTiming(writer, "redstoneQueries", redstoneStartMillis, redstoneNanos, redstoneBytes);
             writer.printf(Locale.ROOT, "checksum=%d%n", checksum);
         } catch (FileNotFoundException e) {
@@ -208,6 +259,65 @@ final class ForgeMultipartProfileWorkload {
         public BoxedUnit apply(TMultiPart part) {
             applications++;
             return BoxedUnit.UNIT;
+        }
+    }
+
+    private static final class ProfileBlockAccess implements IBlockAccess {
+
+        private final TileEntity tile;
+
+        private ProfileBlockAccess(TileEntity tile) {
+            this.tile = tile;
+        }
+
+        @Override
+        public Block getBlock(int x, int y, int z) {
+            return null;
+        }
+
+        @Override
+        public TileEntity getTileEntity(int x, int y, int z) {
+            return tile;
+        }
+
+        @Override
+        public int getLightBrightnessForSkyBlocks(int x, int y, int z, int minimum) {
+            return 0;
+        }
+
+        @Override
+        public int getBlockMetadata(int x, int y, int z) {
+            return 0;
+        }
+
+        @Override
+        public int isBlockProvidingPowerTo(int x, int y, int z, int direction) {
+            return 0;
+        }
+
+        @Override
+        public boolean isAirBlock(int x, int y, int z) {
+            return false;
+        }
+
+        @Override
+        public BiomeGenBase getBiomeGenForCoords(int x, int z) {
+            return null;
+        }
+
+        @Override
+        public int getHeight() {
+            return 0;
+        }
+
+        @Override
+        public boolean extendedLevelsInChunkCache() {
+            return false;
+        }
+
+        @Override
+        public boolean isSideSolid(int x, int y, int z, ForgeDirection side, boolean defaultValue) {
+            return defaultValue;
         }
     }
 }

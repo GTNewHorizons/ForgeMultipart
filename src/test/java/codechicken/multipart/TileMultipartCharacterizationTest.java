@@ -73,6 +73,28 @@ class TileMultipartCharacterizationTest {
 
         assertEquals(1, tile.jPartList().size());
         assertSame(part, tile.jPartList().get(0));
+        assertSame(part, tile.partList().apply(0));
+    }
+
+    @Test
+    void readQueriesAndPublishedViewsAcceptAMutableSeq() {
+        TileMultipart tile = new TileMultipart();
+        List<TMultiPart> backing = new ArrayList<>();
+        backing.add(new LightPart(4));
+        tile.partList_$eq(JavaConversions.asScalaBuffer(backing));
+        List<TMultiPart> publishedView = tile.jPartList();
+
+        assertEquals(4, tile.getLightValue());
+        assertFalse(tile.canPlaceTorchOnTop());
+
+        TorchSupportingPart support = new TorchSupportingPart();
+        backing.add(new LightPart(11));
+        backing.add(support);
+
+        assertEquals(3, publishedView.size(), "The Java ABI exposes a live view of the supplied Seq");
+        assertSame(support, tile.partList().apply(2));
+        assertEquals(11, tile.getLightValue());
+        assertTrue(tile.canPlaceTorchOnTop());
     }
 
     @Test

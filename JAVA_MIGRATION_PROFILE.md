@@ -39,6 +39,8 @@ iterations per phase:
 
 - `updateEntity`: one `TileMultipart.updateEntity()` call, dispatching `update()` to eight ticking parts;
 - `operate`: one `TileMultipart.operate(Function1)` call with one reused function and eight bound parts;
+- `lightValue`: one `TileMultipart.getLightValue()` call across eight parts;
+- `getTile`: one `BlockMultipart.getTile()` lookup returning the same non-empty eight-part tile;
 - `redstoneQueries`: one `strongPowerLevel`, one `getConnectionMask`, and one masked `weakPowerLevel` call on a
   generated `TRedstoneTile` containing eight `IRedstonePart` implementations.
 
@@ -150,3 +152,18 @@ required no generator change.
 The two focused steady-state allocation targets identified by this workload are now resolved: `TileMultipart.operate`
 and generated redstone queries are effectively allocation-free on their normal immutable-list paths. Further
 optimization should follow a new representative profile rather than extending this synthetic workload speculatively.
+
+## Multipart read-path baseline captured 2026-08-28
+
+A consumer-audit sanity check identified two Java-port allocations that the original three-phase workload did not
+exercise. Focused tests now pin empty/non-empty `BlockMultipart.getTile`, direct ordered `Seq` indexing, and read
+queries over the mutable `Seq` implementations accepted by the public setter. The two matching profile phases measured:
+
+| Phase | Elapsed | Operations/s | Allocated bytes | Bytes/operation |
+| --- | ---: | ---: | ---: | ---: |
+| `lightValue` | 3.170 s | 15,772,691 | 9,196,067,864 | 183.9 |
+| `getTile` | 0.271 s | 184,225,439 | 1,200,000,000 | 24.0 |
+
+`lightValue` pays for `TileMultipart.parts()`'s copied `ArrayList`; `getTile` pays for the Java list wrapper returned by
+`jPartList()`. Both are absent from the reference Scala implementation, which reads the published `Seq` directly.
+Mutation paths still require a snapshot before publishing a replacement immutable `Seq`.
