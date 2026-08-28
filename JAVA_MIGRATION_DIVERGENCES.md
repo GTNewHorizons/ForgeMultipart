@@ -1361,3 +1361,49 @@ paths no longer pay for it.
 - Complete plain-JVM suite: 141 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 37 tests, 0 failures, 0 errors.
 - Class list and public members compared with the pre-port build; no characterization assertion changed.
+
+## 2026-08-28 — TPartialOcclusionTile Java-trait pilot
+
+This is the first built-in generated tile implementation whose source moved directly to Java. It was already a
+concrete Scala class, so the existing registration path treated it as a Java trait and rewrote it at class-load time;
+the port changes the compiler input without changing that generator.
+
+### Observable behavior
+
+No known divergence. A partial-occlusion candidate is still appended to the existing Scala `Seq` and tested before
+the normal superclass pairwise chain. Failure still short-circuits that chain. Non-partial candidates still go directly
+to the superclass. `partialOcclusionTest` still fills only `JPartialOcclusion` entries at their original indices and
+retains `PartialOcclusionTest`'s exclusive-voxel and complete-occlusion rules.
+
+Java uses a Scala `Seq` builder for the appended candidate because Scala 2.11's `Seq.:+` builder signature is not
+expressible type-safely from javac with its wildcarded `CanBuildFrom`. The resulting call still dispatches through the
+public `partialOcclusionTest(Seq)` method, preserving subclass/generated override behavior.
+
+### Supported JVM and generated APIs
+
+The direct compiled class still extends `TileMultipart`, has no fields or interfaces, one public no-arg constructor,
+and exactly the same two public method descriptors. No anonymous or helper class is emitted. There were no direct
+downstream references to this class in the audited mod corpus; consumers reach the behavior through
+`JPartialOcclusion` parts and generated tiles.
+
+At Forge class-load time the same name is still rewritten to a public interface with no fields and exactly three
+methods: `occlusionTest`, `partialOcclusionTest`, and the generated
+`codechicken$multipart$scalatraits$TPartialOcclusionTile$$super$occlusionTest` accessor. Generated composite instances
+still implement it, and equal trait sets still reuse the same generated class.
+
+The Scala source signature disappears from the untransformed class. No supported consumer used it, no `$class` helper
+existed in the input artifact, and the runtime generator continues to create the implementation helper it requires.
+
+### Scope boundary
+
+This pilot has no fields or lifecycle callbacks. It therefore does not validate field-to-accessor rewriting,
+constructor initialization injection, setter rebinding, copying, or part add/remove lifecycle order. Those are not
+assumed safe from this result; `TSlottedTile` is the explicit stateful checkpoint before broader trait conversion.
+
+### Validation
+
+- `TPartialOcclusionTileCharacterizationTest`: 4 tests covering exact direct shape, partial/normal precedence,
+  exclusive visibility, complete-occlusion exemption, and both short-circuit paths.
+- Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 37 tests, 0 failures, 0 errors.
+- Runtime reflection verifies the exact generated interface methods, no fields, override behavior, and class reuse.

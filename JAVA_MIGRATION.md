@@ -24,9 +24,10 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
-focused profile, first traversal optimization, complete redstone interaction helper unit, and `MicroRecipe` port are
-complete. The remaining measured hot paths are generated tile traits, so the next work starts the Phase 5 Java-trait
-pilot; see `JAVA_MIGRATION_PROFILE.md`.
+focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
+no-field `TPartialOcclusionTile` Java-trait pilot are complete. Direct Java source now survives the existing
+`registerJavaTrait` rewrite with its generated interface, super accessor, behavior, and class caching intact. The next
+checkpoint is the stateful `TSlottedTile`; see `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -336,22 +337,25 @@ Status: active. `operate` now preserves its captured-sequence mutation semantics
 and the six-interface `IRedstonePart`/`RedstoneInteractions$` unit is ported with its class list and descriptors intact.
 The comparison proves its allocation is owned by `scalatraits/TRedstoneTile.scala`, so that part waits for Phase 5.
 `MicroRecipe` is also Java: all five recipe forms and precedence are characterized, its published Scala façade remains,
-and its closure-backed scans and non-local returns are gone. The remaining two hot-path items are generated traits and
-will be handled through Phase 5. Start with `TPartialOcclusionTile` as the simple no-field Java-trait pilot before the
-stateful slot and redstone traits.
+and its closure-backed scans and non-local returns are gone. `TPartialOcclusionTile` has completed the simple no-field
+Java-trait pilot. The remaining two hot-path items are stateful generated traits: port `TSlottedTile` as the field and
+lifecycle checkpoint before changing `TRedstoneTile` and re-running the redstone profile.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
 ### Phase 5 — Convert built-in tile traits through the existing Java path
 
-- [ ] Characterize the interfaces, fields, lifecycle callbacks, and behavior of the Scala-generated pilot tile.
-- [ ] Port one simple built-in trait as a pilot using `registerJavaTrait`.
-- [ ] Verify generated methods, interfaces, field initialization, lifecycle callbacks, and class caching against the Scala version.
+- [x] Characterize the direct class shape, generated interface, super dispatch, behavior, and class caching of a
+  no-field pilot.
+- [x] Port one simple built-in trait as a pilot using `registerJavaTrait`.
+- [ ] Verify generated field accessors, initialization, copying, lifecycle callbacks, and class caching on the
+  stateful `TSlottedTile` checkpoint. The no-field pilot proves methods/interfaces/caching but cannot prove state.
 - [ ] Convert remaining traits in small related groups.
 - [ ] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
 - [ ] Preserve pass-through interface behavior.
-- [ ] For the pilot, explicitly cover OpenComputers' `TSlottedTile.v_partMap` rebinding, AE2's
-  `TIInventoryTile.rebuildSlotMap`, and ProjectRed/Extra Utilities `TRedstoneTile` behavior.
+- [ ] Explicitly cover OpenComputers' `TSlottedTile.v_partMap` mutation/rebinding before that port, AE2's
+  `TIInventoryTile.rebuildSlotMap` before the inventory trait, and ProjectRed/Extra Utilities behavior before
+  `TRedstoneTile`.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
 
@@ -668,5 +672,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Ported the recipe singleton to Java with ordinary loops. The published `MicroRecipe` static façade,
   `MicroRecipe$.MODULE$`, `scala.Tuple3` return and immutable Scala map descriptors remain; the 12 private Scala
   closure classes and their `NonLocalReturnControl` exits are gone.
-- The recipe port passes all 141 plain-JVM and 37 Forge tests. The next step is the Phase 5
-  `TPartialOcclusionTile` Java-trait pilot, whose generated override dispatch is already covered by the Forge harness.
+- The recipe port passes all 141 plain-JVM and 37 Forge tests.
+- Characterized `TPartialOcclusionTile` against the untouched Scala implementation with four focused tests covering
+  its exact direct class shape, partial/normal precedence, complete-occlusion behavior, and both short-circuit paths.
+- Ported `TPartialOcclusionTile` to direct Java source without changing the generator. Its compiled input still has
+  one no-arg constructor, no fields, and the same two public descriptors; the Forge rewrite still exposes exactly the
+  two behavior methods plus its super accessor, caches the generated class, and passes all 37 server tests.
+- The pilot raises the plain-JVM baseline to 145 tests. It deliberately proves no field or lifecycle behavior, so the
+  next checkpoint is `TSlottedTile`, not a bulk conversion of the remaining traits.

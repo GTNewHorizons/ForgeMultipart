@@ -12,7 +12,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 68 commits including the `MicroRecipe` unit.
+Branch: `algent/java`. Base: `master`. 70 commits including the `TPartialOcclusionTile` characterization and Java port.
 
 ## The one rule that matters
 
@@ -66,7 +66,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **141 plain-JVM tests, 37 Forge server tests, all passing at their last completed runs.**
+Current baseline: **145 plain-JVM tests, 37 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -189,14 +189,14 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `IDWriter`, `PartialOcclusionTest`/`JPartialOcclusion`, `TCuboidPart`/`JCuboidPart`, the `TNormalOcclusion` unit,
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
-`IRedstonePart`/`RedstoneInteractions` unit, and `MicroRecipe`.
+`IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the no-field `TPartialOcclusionTile` Java-trait pilot.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
 
 Both `package.scala` objects are gone, removed rather than ported. `MultipartRenderer` is done.
 
-82 Java files, 46 Scala files, ~5,884 Scala lines left (non-blank; that is the metric this figure has always used).
+83 Java files, 45 Scala files, ~5,852 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -238,15 +238,21 @@ and tag matching, all five recipe forms, class-specific gluing, saw position, an
 frozen. Its internal scans are ordinary loops, and only the published `getSaw` call still constructs its required
 `scala.Tuple3`. The in-repo Scala registration now names `MicroRecipe$.MODULE$` explicitly.
 
+`TPartialOcclusionTile` is now the first built-in generated tile implementation written directly in Java. Four
+plain-JVM tests freeze its input class and behavior. The Forge harness proves that `registerJavaTrait` still rewrites it
+to the exact three-method runtime interface, preserves override/super dispatch, and reuses the generated composite
+class. It has no fields or lifecycle callbacks, so this is not evidence for stateful traits.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
 
 **Phase 5, needs the `registerJavaTrait` path.** `TileMultipartClient` and everything in `multipart/scalatraits/`.
 These are registered with the ASM generator; converting them is a different mechanism with documented restrictions.
-Next characterize and port `TPartialOcclusionTile.scala` as the pilot. It has no fields, already takes the Java-trait
-rewrite path because it is a concrete class, and the Forge harness already verifies generated override dispatch. Once
-that proves direct Java source through `registerJavaTrait`, move to the stateful `TSlottedTile` pilot coverage.
+The no-field `TPartialOcclusionTile` pilot is complete without a generator change. Next characterize and port
+`TSlottedTile` as the stateful checkpoint. Freeze the generated getter/setter and 27-entry initialization, array identity
+through `copyFrom`, clearing/removal/binding, occupied-slot rejection, super-call order, class caching, and
+OpenComputers' direct `v_partMap()` mutation pattern before changing its source. Only then proceed to `TRedstoneTile`.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
@@ -260,12 +266,15 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   work and is required before release claims about real TPS.
 - The server side of flag-sensitive pass-through registration is automated; client-side exclusion still belongs to
   the packaged-client/manual compatibility run.
+- The completed `TPartialOcclusionTile` pilot is stateless. It does not prove the generator's field-to-accessor rewrite,
+  constructor initialization injection, setter rebinding, or lifecycle ordering; `TSlottedTile` is the required
+  checkpoint for those mechanisms.
 - Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
   the compact core tile/part fixture is complete.
 - `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation. `operate` no longer calls
   the Java port's copying `parts()` helper, but less frequent read and mutation paths still do. Optimize those only if
   a representative profile identifies them; their mutable snapshots are intentional at mutation sites.
 - The focused redstone allocation remains 80.5 B per three-query iteration. It is generated by
-  `scalatraits/TRedstoneTile.scala`, not `RedstoneInteractions`; remove it only with the Phase 5 Java-trait pilot.
+  `scalatraits/TRedstoneTile.scala`, not `RedstoneInteractions`; address it after the stateful `TSlottedTile` checkpoint.
 - Phase 1 never properly started. GTNHLib is currently commented out in `dependencies.gradle`; it had been added at
   `api` scope to satisfy a test compile rather than because a migration change needed it.

@@ -502,7 +502,7 @@ behavior:
 6. Treat Scala runtime removal as downstream coordination work after the Java port, not as a requirement of it.
 
 Current-branch generator verification: `ForgeEnvironmentSmokeTest` pins cached built-in `TSlottedTile` generation,
-an external Scala microblock trait registered by name like ProjectRed's `LightMicroblock`, Java
+an external Scala microblock trait registered by name like ProjectRed's `LightMicroblock`, direct-Java-source
 `TPartialOcclusionTile` rewriting and override dispatch, and server-only pass-through forwarding, overloading,
 single-implementor selection, copying/rebinding, and removal cleanup. Full downstream mixed tiles and client-side
 selection remain Phase 7 integration cases.
