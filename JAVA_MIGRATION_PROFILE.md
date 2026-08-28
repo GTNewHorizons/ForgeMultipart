@@ -167,3 +167,17 @@ queries over the mutable `Seq` implementations accepted by the public setter. Th
 `lightValue` pays for `TileMultipart.parts()`'s copied `ArrayList`; `getTile` pays for the Java list wrapper returned by
 `jPartList()`. Both are absent from the reference Scala implementation, which reads the published `Seq` directly.
 Mutation paths still require a snapshot before publishing a replacement immutable `Seq`.
+
+### Read-path result captured 2026-08-28
+
+The paired run used the same JVM, eight-part tiles, warm-up, iteration count, and checksum:
+
+| Phase | Baseline elapsed | Result elapsed | Baseline B/op | Result B/op | Throughput change |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `lightValue` | 3.170 s | 0.278 s | 183.9 | 0.0 | 11.42x |
+| `getTile` | 0.271 s | 0.094 s | 24.0 | 0.0 | 2.89x |
+
+Internal read paths now traverse or index the published Scala `Seq` directly. The normal immutable-list light query
+walks the existing head/tail chain; arbitrary `Seq` implementations retain an iterator fallback. The public
+`jPartList()` bridge remains unchanged for downstream ABI compatibility, and only add/remove paths take mutable
+snapshots before publishing a replacement immutable `Seq`.

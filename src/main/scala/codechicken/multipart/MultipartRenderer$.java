@@ -41,7 +41,7 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
     public void renderTileEntityAt(TileEntity t, double x, double y, double z, float f) {
         TileMultipartClient client = (TileMultipartClient) t;
         TileMultipart tile = (TileMultipart) t;
-        if (tile.jPartList().isEmpty() || !client.hasDynamicParts()) {
+        if (tile.partList().isEmpty() || !client.hasDynamicParts()) {
             return;
         }
 
@@ -68,7 +68,7 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
 
         TileMultipartClient client = (TileMultipartClient) t;
         TileMultipart tile = (TileMultipart) t;
-        if (tile.jPartList().isEmpty()) {
+        if (tile.partList().isEmpty()) {
             return false;
         }
 
@@ -106,8 +106,8 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
         }
 
         int i = (Integer) index;
-        if (i >= 0 && i < tile.jPartList().size()) {
-            tile.jPartList().get(i).drawBreaking(renderer);
+        if (i >= 0 && i < tile.partList().size()) {
+            tile.partList().apply(i).drawBreaking(renderer);
         }
     }
 

@@ -36,9 +36,9 @@ Schematica's reflective lookup. The remaining source-only member guards, `TileMu
 compact mixed-part NBT/description packet, generated Scala and Java traits, and a server-only pass-through interface
 are also frozen.
 
-Phase 1 has not properly started: GTNHLib is present but was added at `api` scope to satisfy a test compile rather
-than because a migration change needed it, and no Forge mod dependency was declared. Revisit that entry only when a
-real migration change needs it. Phase 8 is answered and deferred.
+Phase 1 has not properly started: GTNHLib is not declared because no migration change currently needs it. Select a
+pack-aligned version only when a concrete port or measured data-structure change requires it. Phase 8 is answered and
+deferred.
 
 The working rules established while converting, which apply to every remaining area:
 
@@ -705,3 +705,10 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - The paired 50,000,000-iteration run fell from 4,023,855,000 bytes / 80.5 B per three-query iteration to zero measured
   allocation, while throughput rose 20.3% from 6,636,424 to 7,986,213 iterations/s. The checksum remained
   `3315999992`, and all 145 plain-JVM plus 46 Forge tests pass.
+- Characterized mutable-`Seq` read behavior, direct ordered indexing, and `BlockMultipart.getTile` filtering, then
+  extended the focused workload with `getLightValue` and `getTile` phases before changing production code.
+- Removed the Java-port-only `ArrayList` snapshots from all read paths and Java wrappers from internal block,
+  renderer, and scheduler paths. The public `jPartList()` bridge is unchanged; add/remove retain intentional mutable
+  snapshots before publishing a replacement immutable `Seq`.
+- In the paired run, `getLightValue` fell from 183.9 B to 0.0 B per call with 11.42x throughput, and `getTile` fell
+  from 24.0 B to 0.0 B per call with 2.89x throughput. All 147 plain-JVM and 46 Forge tests pass.

@@ -664,8 +664,7 @@ same messages, since Scala's `assert` is always enabled here and Java's is not.
 five jars link against. Mutations copy to a Java list, mutate, and republish through `JavaConversions`, matching the
 reference's allocate-a-new-Seq semantics exactly. The focused Phase 4 baseline later found that the Java port's
 `parts()` read helper also materializes an `ArrayList`, backing array, iterator and conversion wrappers on every
-traversal. That read-side cost is not required by the reference and is the next measured optimization target; see
-`JAVA_MIGRATION_PROFILE.md`.
+traversal. That read-side cost was later removed after focused characterization; see `JAVA_MIGRATION_PROFILE.md`.
 
 `operate` keeps its `(Lscala/Function1;)V` descriptor and internal callers still go through it, wrapping their action
 in an `AbstractFunction1`. That preserves both the virtual dispatch, so any trait overriding `operate` still sees
@@ -1509,3 +1508,24 @@ to 7,986,213 iterations/s (20.3%). Both runs produced checksum `3315999992`.
 - Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 46 tests, 0 failures, 0 errors.
 - Clean formatting, checkstyle, build, generated runtime reflection, and paired profile checksum.
+
+## 2026-08-28 — multipart read-path cleanup
+
+### Observable behavior and ABI
+
+No known runtime divergence. Focused tests pin max-or-zero lighting, torch support, live reads through a mutable `Seq`,
+direct ordered indexing, and `BlockMultipart.getTile`'s non-multipart/empty/non-empty filtering. Internal code now reads
+the published `Seq` directly. The public `partList`, `partList_$eq`, and `jPartList` descriptors and live-view behavior
+are unchanged; add/remove still snapshot before publishing a replacement immutable `Seq`.
+
+### Performance result
+
+The paired 50,000,000-iteration Forge/JFR run reduced `getLightValue` from 9,196,067,864 allocated bytes / 183.9 B per
+call to zero and raised throughput 11.42x. `BlockMultipart.getTile` fell from 1,200,000,000 bytes / 24.0 B per call to
+zero and rose 2.89x. Both runs used the same eight-part tile and produced the same checksum.
+
+### Validation
+
+- Complete plain-JVM suite: 147 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 46 tests, 0 failures, 0 errors.
+- The public Java list bridge remains for downstream consumers; there are no internal `jPartList()` callers.

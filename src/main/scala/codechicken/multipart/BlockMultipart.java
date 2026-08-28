@@ -25,6 +25,7 @@ import codechicken.lib.raytracer.RayTracer;
 import codechicken.lib.render.TextureUtils;
 import codechicken.lib.vec.Cuboid6;
 import scala.Tuple2;
+import scala.collection.Iterator;
 
 /** Block class for all multiparts, should be internal use only. */
 public class BlockMultipart extends Block {
@@ -35,7 +36,7 @@ public class BlockMultipart extends Block {
 
     public static TileMultipart getTile(IBlockAccess world, int x, int y, int z) {
         net.minecraft.tileentity.TileEntity t = world.getTileEntity(x, y, z);
-        if (t instanceof TileMultipart && !((TileMultipart) t).jPartList().isEmpty()) {
+        if (t instanceof TileMultipart && !((TileMultipart) t).partList().isEmpty()) {
             return (TileMultipart) t;
         }
         return null;
@@ -43,7 +44,7 @@ public class BlockMultipart extends Block {
 
     public static TileMultipartClient getClientTile(IBlockAccess world, int x, int y, int z) {
         net.minecraft.tileentity.TileEntity t = world.getTileEntity(x, y, z);
-        if (t instanceof TileMultipartClient && !((TileMultipart) t).jPartList().isEmpty()) {
+        if (t instanceof TileMultipartClient && !((TileMultipart) t).partList().isEmpty()) {
             return (TileMultipartClient) t;
         }
         return null;
@@ -64,11 +65,11 @@ public class BlockMultipart extends Block {
 
         Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
         int index = (Integer) reduced._1();
-        if (tile.jPartList().get(index).drawHighlight(reduced._2(), player, frame)) {
+        if (tile.partList().apply(index).drawHighlight(reduced._2(), player, frame)) {
             return true;
         }
 
-        tile.jPartList().get(index).collisionRayTrace(RayTracer.getStartVec(player), RayTracer.getEndVec(player));
+        tile.partList().apply(index).collisionRayTrace(RayTracer.getStartVec(player), RayTracer.getEndVec(player));
         return false;
     }
 
@@ -126,7 +127,7 @@ public class BlockMultipart extends Block {
         Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
         int index = (Integer) reduced._1();
         if (world.isRemote) {
-            tile.jPartList().get(index).addDestroyEffects(reduced._2(), Minecraft.getMinecraft().effectRenderer);
+            tile.partList().apply(index).addDestroyEffects(reduced._2(), Minecraft.getMinecraft().effectRenderer);
             return true;
         }
 
@@ -157,7 +158,9 @@ public class BlockMultipart extends Block {
 
         TileMultipart tile = getTile(world, x, y, z);
         if (tile != null) {
-            for (TMultiPart part : tile.jPartList()) {
+            Iterator<TMultiPart> iterator = tile.partList().iterator();
+            while (iterator.hasNext()) {
+                TMultiPart part = iterator.next();
                 for (ItemStack item : part.getDrops()) {
                     ai.add(item);
                 }
@@ -174,7 +177,9 @@ public class BlockMultipart extends Block {
         List<AxisAlignedBB> list = list$;
         TileMultipart tile = getTile(world, x, y, z);
         if (tile != null) {
-            for (TMultiPart part : tile.jPartList()) {
+            Iterator<TMultiPart> iterator = tile.partList().iterator();
+            while (iterator.hasNext()) {
+                TMultiPart part = iterator.next();
                 for (Cuboid6 c : part.getCollisionBoxes()) {
                     AxisAlignedBB aabb = c.toAABB().offset(x, y, z);
                     if (aabb.intersectsWith(ebb)) {
@@ -194,8 +199,8 @@ public class BlockMultipart extends Block {
             TileMultipart parts = (TileMultipart) tile;
             Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
             int index = (Integer) reduced._1();
-            if (index < parts.jPartList().size()) {
-                parts.jPartList().get(index).addHitEffects(reduced._2(), effectRenderer);
+            if (index < parts.partList().size()) {
+                parts.partList().apply(index).addHitEffects(reduced._2(), effectRenderer);
             }
         }
 
@@ -225,7 +230,7 @@ public class BlockMultipart extends Block {
     @Override
     public boolean isAir(IBlockAccess world, int x, int y, int z) {
         TileMultipart tile = getTile(world, x, y, z);
-        return tile == null || tile.jPartList().isEmpty();
+        return tile == null || tile.partList().isEmpty();
     }
 
     @Override
@@ -251,7 +256,7 @@ public class BlockMultipart extends Block {
                 return null;
             }
             Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
-            return tile.jPartList().get((Integer) reduced._1()).pickItem(reduced._2());
+            return tile.partList().apply((Integer) reduced._1()).pickItem(reduced._2());
         }
         return null;
     }
@@ -262,7 +267,7 @@ public class BlockMultipart extends Block {
         TileMultipart tile = getTile(world, x, y, z);
         if (hit != null && tile != null) {
             Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
-            return tile.jPartList().get((Integer) reduced._1()).getStrength(reduced._2(), player) / 30f;
+            return tile.partList().apply((Integer) reduced._1()).getStrength(reduced._2(), player) / 30f;
         }
 
         return 1 / 100f;
@@ -304,7 +309,7 @@ public class BlockMultipart extends Block {
         }
 
         Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
-        return tile.jPartList().get((Integer) reduced._1()).activate(player, reduced._2(), player.getHeldItem());
+        return tile.partList().apply((Integer) reduced._1()).activate(player, reduced._2(), player.getHeldItem());
     }
 
     @Override
@@ -320,7 +325,7 @@ public class BlockMultipart extends Block {
         }
 
         Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
-        tile.jPartList().get((Integer) reduced._1()).click(player, reduced._2(), player.getHeldItem());
+        tile.partList().apply((Integer) reduced._1()).click(player, reduced._2(), player.getHeldItem());
     }
 
     @Override

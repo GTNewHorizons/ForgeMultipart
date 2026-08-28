@@ -243,6 +243,12 @@ one-argument `weakPowerLevel` call are covered, the runtime interface remains fi
 methods, and the paired workload fell from 80.5 B to 0.0 B per three-query iteration with 20.3% higher throughput and
 the same checksum. Its package-private access shim is required by current inherited-member transformer limitations.
 
+The Java-port-only multipart read allocations are also resolved. Focused tests pin mutable-`Seq` reads and
+`BlockMultipart.getTile`; internal tile/block/renderer/scheduler paths now use the published `Seq` directly while the
+public `jPartList()` bridge remains. In the paired workload, `getLightValue` fell from 183.9 B to 0.0 B per call and
+`BlockMultipart.getTile` from 24.0 B to 0.0 B per call. Mutable snapshots remain only where add/remove publishes a
+replacement immutable `Seq`.
+
 `MicroRecipe` is now Java. The complete 17-method static/companion surface, immutable Scala split map, exact material
 and tag matching, all five recipe forms, class-specific gluing, saw position, and hollow-over-gluing precedence are
 frozen. Its internal scans are ordinary loops, and only the published `getSaw` call still constructs its required
@@ -288,10 +294,9 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   source-compatible rebuilds.
 - Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
   the compact core tile/part fixture is complete.
-- `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation. `operate` no longer calls
-  the Java port's copying `parts()` helper, but less frequent read and mutation paths still do. Optimize those only if
-  a representative profile identifies them; their mutable snapshots are intentional at mutation sites.
+- `TileMultipart` still republishes an immutable Scala `Seq` on every mutation. Its internal read paths now avoid Java
+  list copies and wrappers; the remaining mutable snapshots at add/remove sites are intentional.
 - The focused synthetic redstone allocation is resolved (80.5 B to 0.0 B per three-query iteration). A representative
   full-pack profile remains the authority for choosing any further optimization target.
-- Phase 1 never properly started. GTNHLib is currently commented out in `dependencies.gradle`; it had been added at
-  `api` scope to satisfy a test compile rather than because a migration change needed it.
+- Phase 1 never properly started. GTNHLib is not declared because no migration change currently needs it; choose a
+  pack-aligned version only when one does.

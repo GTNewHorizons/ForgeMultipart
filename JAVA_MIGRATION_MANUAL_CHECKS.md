@@ -48,4 +48,5 @@ release that includes those ports.
 
 - A focused pre-optimization CPU/allocation baseline now exists in `JAVA_MIGRATION_PROFILE.md`. A representative
   full-pack capture and the matching post-optimization comparison still need to be performed.
-- NBT and packet layout fixtures beyond the material id carrier. Phase 0 still lists this as open.
+- Microblock-specific NBT and packet payloads. The compact core tile/part NBT and logical chunk-description fixtures
+  are complete.

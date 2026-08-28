@@ -267,7 +267,7 @@ public final class TickScheduler {
                 if (part.tile() != null && !e.random()) {
                     NBTTagCompound tag = new NBTTagCompound();
                     tag.setShort("pos", (short) MultipartProxy.indexInChunk(new BlockCoord(part.tile())));
-                    tag.setByte("i", (byte) part.tile().jPartList().indexOf(part));
+                    tag.setByte("i", (byte) part.tile().partList().indexOf(part));
                     tag.setLong("time", e.time());
                     tagList.appendTag(tag);
                 }
@@ -293,7 +293,7 @@ public final class TickScheduler {
                 if (tile instanceof TileMultipart) {
                     tickList.add(
                             new PartTickEntry(
-                                    ((TileMultipart) tile).jPartList().get(tag.getByte("i")),
+                                    ((TileMultipart) tile).partList().apply(tag.getByte("i")),
                                     tag.getLong("time"),
                                     false));
                 }
