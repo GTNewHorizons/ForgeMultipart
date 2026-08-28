@@ -122,8 +122,10 @@ requires the Phase 5 `registerJavaTrait` path and must not be smuggled into this
 characterized, and ordinary loops replaced its range/closure scans and exception-backed non-local returns. The focused
 server workload does not craft recipes, so no timing claim is made for that structural removal.
 
-The remaining measured redstone allocation and slot-scan non-local return live in generated traits. The simpler
-`TPartialOcclusionTile` Java-source pilot is complete and has no profile claim because this workload does not exercise
-partial-occlusion placement. It proves direct Java input, generated method/super dispatch, and class caching, but has no
-fields or lifecycle callbacks. Use `TSlottedTile` as the stateful generator checkpoint, then port `TRedstoneTile` and
-re-run this workload immediately before and after that change.
+The generated-trait checkpoints are complete. `TPartialOcclusionTile` proved the no-field path; `TSlottedTile` proved
+field/accessor generation, initialization, copying, lifecycle behavior, and caching. Its ordinary loops remove four
+Scala range closures and the exception-backed slot-scan return structurally, but the focused workload has no slotted
+placement phase, so no numeric performance claim is made for that port.
+
+The remaining measured redstone allocation lives in `TRedstoneTile`. Capture a fresh baseline with this exact workload,
+characterize ProjectRed and Extra Utilities behavior, port the queries, and rerun immediately afterward.

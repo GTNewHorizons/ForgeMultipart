@@ -12,7 +12,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 70 commits including the `TPartialOcclusionTile` characterization and Java port.
+Branch: `algent/java`. Base: `master`. 72 commits including both `TSlottedTile` commits.
 
 ## The one rule that matters
 
@@ -66,7 +66,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **145 plain-JVM tests, 37 Forge server tests, all passing at their last completed runs.**
+Current baseline: **145 plain-JVM tests, 43 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -189,14 +189,15 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `IDWriter`, `PartialOcclusionTest`/`JPartialOcclusion`, `TCuboidPart`/`JCuboidPart`, the `TNormalOcclusion` unit,
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
-`IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the no-field `TPartialOcclusionTile` Java-trait pilot.
+`IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile` and `TSlottedTile`
+Java-trait checkpoints.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
 
 Both `package.scala` objects are gone, removed rather than ported. `MultipartRenderer` is done.
 
-83 Java files, 45 Scala files, ~5,852 Scala lines left (non-blank; that is the metric this figure has always used).
+84 Java files, 44 Scala files, ~5,806 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -243,16 +244,21 @@ plain-JVM tests freeze its input class and behavior. The Forge harness proves th
 to the exact three-method runtime interface, preserves override/super dispatch, and reuses the generated composite
 class. It has no fields or lifecycle callbacks, so this is not evidence for stateful traits.
 
+`TSlottedTile` is now Java and supplies that stateful evidence. The generated runtime interface still has the exact 13
+methods, including public array getter/setter and five super accessors. Each tile receives a distinct 27-entry array;
+copying shares the source array exactly as before; external array mutation plus `bindPart`, clear/removal behavior,
+occupied-slot rejection, value equality, actual add/remove/move lifecycle, and generated-class caching are all green.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
 
 **Phase 5, needs the `registerJavaTrait` path.** `TileMultipartClient` and everything in `multipart/scalatraits/`.
 These are registered with the ASM generator; converting them is a different mechanism with documented restrictions.
-The no-field `TPartialOcclusionTile` pilot is complete without a generator change. Next characterize and port
-`TSlottedTile` as the stateful checkpoint. Freeze the generated getter/setter and 27-entry initialization, array identity
-through `copyFrom`, clearing/removal/binding, occupied-slot rejection, super-call order, class caching, and
-OpenComputers' direct `v_partMap()` mutation pattern before changing its source. Only then proceed to `TRedstoneTile`.
+The no-field and stateful checkpoints are complete without a generator change. Next characterize `TRedstoneTile`'s
+exact generated interface and every ProjectRed/Extra Utilities call, capture a fresh allocation baseline, port its
+queries with ordinary loops, and immediately rerun the same profile. Keep `TIInventoryTile` separate until AE2's
+`rebuildSlotMap` and inventory-field behavior are frozen.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
@@ -266,15 +272,16 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   work and is required before release claims about real TPS.
 - The server side of flag-sensitive pass-through registration is automated; client-side exclusion still belongs to
   the packaged-client/manual compatibility run.
-- The completed `TPartialOcclusionTile` pilot is stateless. It does not prove the generator's field-to-accessor rewrite,
-  constructor initialization injection, setter rebinding, or lifecycle ordering; `TSlottedTile` is the required
-  checkpoint for those mechanisms.
+- A shipping consumer compiled against the old `TSlottedTile` interface remains binary-compatible because Forge still
+  exposes that exact interface at runtime. A consumer recompiled against the untransformed dev jar instead sees the
+  concrete Java mixin input and can emit class/field opcodes that are invalid after Forge rewrites it to an interface.
+  Provide a transformed compile stub or downstream source guidance before claiming source-compatible rebuilds.
 - Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
   the compact core tile/part fixture is complete.
 - `TileMultipart`'s `partList` still republishes an immutable Scala `Seq` on every mutation. `operate` no longer calls
   the Java port's copying `parts()` helper, but less frequent read and mutation paths still do. Optimize those only if
   a representative profile identifies them; their mutable snapshots are intentional at mutation sites.
 - The focused redstone allocation remains 80.5 B per three-query iteration. It is generated by
-  `scalatraits/TRedstoneTile.scala`, not `RedstoneInteractions`; address it after the stateful `TSlottedTile` checkpoint.
+  `scalatraits/TRedstoneTile.scala`, not `RedstoneInteractions`; it is now the next measured target.
 - Phase 1 never properly started. GTNHLib is currently commented out in `dependencies.gradle`; it had been added at
   `api` scope to satisfy a test compile rather than because a migration change needed it.

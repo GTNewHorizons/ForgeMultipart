@@ -24,10 +24,10 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
-focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
-no-field `TPartialOcclusionTile` Java-trait pilot are complete. Direct Java source now survives the existing
-`registerJavaTrait` rewrite with its generated interface, super accessor, behavior, and class caching intact. The next
-checkpoint is the stateful `TSlottedTile`; see `JAVA_MIGRATION_PROFILE.md`.
+focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and both
+Java-trait checkpoints are complete. `TPartialOcclusionTile` proved the no-field path; `TSlottedTile` now proves field
+accessors, per-instance initialization, rebinding/copying, callbacks, super bridges, and class caching. The next
+measured target is `TRedstoneTile`; see `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -329,7 +329,7 @@ and the already-ported registry again supports Schematica.
 - [x] Rewrite `TileMultipart` update/operate traversal without per-call collection allocation.
 - [ ] Rewrite redstone queries without closure allocation or `IntRef` boxing.
 - [x] Replace non-local returns in recipe scans with ordinary Java control flow.
-- [ ] Replace the remaining non-local return in the generated `TSlottedTile` slot scan.
+- [x] Replace the remaining non-local return in the generated `TSlottedTile` slot scan.
 - [x] Keep fastutil out of these paths because profiling did not justify another dependency or data structure.
 - [x] Re-profile the same scenarios and record both improvements and regressions.
 
@@ -337,9 +337,10 @@ Status: active. `operate` now preserves its captured-sequence mutation semantics
 and the six-interface `IRedstonePart`/`RedstoneInteractions$` unit is ported with its class list and descriptors intact.
 The comparison proves its allocation is owned by `scalatraits/TRedstoneTile.scala`, so that part waits for Phase 5.
 `MicroRecipe` is also Java: all five recipe forms and precedence are characterized, its published Scala façade remains,
-and its closure-backed scans and non-local returns are gone. `TPartialOcclusionTile` has completed the simple no-field
-Java-trait pilot. The remaining two hot-path items are stateful generated traits: port `TSlottedTile` as the field and
-lifecycle checkpoint before changing `TRedstoneTile` and re-running the redstone profile.
+and its closure-backed scans and non-local returns are gone. `TPartialOcclusionTile` completed the simple no-field
+Java-trait pilot, and `TSlottedTile` completed the stateful field/lifecycle checkpoint while removing the remaining
+slot-scan closures and exception-backed return. The remaining measured item is `TRedstoneTile`; characterize its exact
+generated surface and real consumers, then re-profile immediately before and after its Java port.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -348,13 +349,13 @@ Exit condition: identified steady-state Scala allocation sites are removed with 
 - [x] Characterize the direct class shape, generated interface, super dispatch, behavior, and class caching of a
   no-field pilot.
 - [x] Port one simple built-in trait as a pilot using `registerJavaTrait`.
-- [ ] Verify generated field accessors, initialization, copying, lifecycle callbacks, and class caching on the
-  stateful `TSlottedTile` checkpoint. The no-field pilot proves methods/interfaces/caching but cannot prove state.
+- [x] Verify generated field accessors, initialization, copying, lifecycle callbacks, super bridges, and class caching
+  on the stateful `TSlottedTile` checkpoint.
 - [ ] Convert remaining traits in small related groups.
 - [ ] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
 - [ ] Preserve pass-through interface behavior.
-- [ ] Explicitly cover OpenComputers' `TSlottedTile.v_partMap` mutation/rebinding before that port, AE2's
-  `TIInventoryTile.rebuildSlotMap` before the inventory trait, and ProjectRed/Extra Utilities behavior before
+- [ ] Keep the completed OpenComputers `TSlottedTile.v_partMap` mutation/rebinding case green; explicitly cover AE2's
+  `TIInventoryTile.rebuildSlotMap` before the inventory trait and ProjectRed/Extra Utilities behavior before
   `TRedstoneTile`.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
@@ -680,3 +681,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   two behavior methods plus its super accessor, caches the generated class, and passes all 37 server tests.
 - The pilot raises the plain-JVM baseline to 145 tests. It deliberately proves no field or lifecycle behavior, so the
   next checkpoint is `TSlottedTile`, not a bulk conversion of the remaining traits.
+- Characterized `TSlottedTile` against untouched Scala with six focused Forge cases plus the existing live-world
+  lifecycle fixture. The gate freezes its exact 13-method runtime interface, 27-slot per-instance initialization,
+  getter/setter rebinding, copy identity, clear/remove/bind behavior, occupied-slot rejection, Scala value equality,
+  generated field, super accessors, and class cache.
+- Ported `TSlottedTile` to a concrete Java mixin input with one public array field and ordinary loops. The runtime
+  rewrite remains interface- and behavior-identical, while the four Scala range closures, `$class` artifact in the raw
+  jar, and `NonLocalReturnControl` slot rejection disappear. All 145 plain-JVM and 43 Forge tests pass.
+- Found a Phase 5 source-build constraint: shipping binaries still see the same runtime interface, but a consumer
+  recompiled directly against the untransformed dev jar sees the Java mixin input as a class. Consumers that name a
+  generated trait therefore need a transformed compile stub or must avoid direct trait invocations; record this before
+  claiming source-compatible downstream rebuilds.

@@ -1407,3 +1407,55 @@ assumed safe from this result; `TSlottedTile` is the explicit stateful checkpoin
 - Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 37 tests, 0 failures, 0 errors.
 - Runtime reflection verifies the exact generated interface methods, no fields, override behavior, and class reuse.
+
+## 2026-08-28 — TSlottedTile Java-trait port
+
+This is the stateful `registerJavaTrait` checkpoint. OpenComputers casts generated tiles to this type, retrieves the
+public `v_partMap()` array, mutates matching entries in place, and calls `bindPart` to rebuild them. The frozen binary
+inventory contains that exact getter descriptor and no reference to `TSlottedTile$class`.
+
+### Observable behavior
+
+No known runtime divergence. Every generated tile receives its own 27-entry array. `copyFrom` still calls its super
+implementation first and then shares the source array by identity only when the source is slotted. `partMap` preserves
+normal array indexing. `clearParts` still clears both the superclass part list and every entry in the current array.
+
+`partRemoved` still calls super first, acts only on `TSlottedPart`, scans exactly 27 slots, and uses Scala-style
+null-safe value equality; Java uses `Objects.equals` to preserve the last detail. `canAddPart` still rejects the first
+occupied masked slot before delegating to the base tile, while non-slotted and conflict-free parts delegate normally.
+`bindPart` still calls super first and fills each of the 27 positive masked slots. OpenComputers' external mutation and
+rebind pattern is exercised directly.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TSlottedTile` remains a public interface with no fields and the exact same 13 abstract methods: six
+behavior methods, `v_partMap` getter/setter, and five super accessors. The generated composite still owns a
+`TMultiPart[] v_partMap` field, runs the 27-entry initializer for every instance, and reuses its class for equal trait
+sets. All 27 shipping consumer jars therefore retain their binary linkage.
+
+The untransformed artifact necessarily changes shape. Scala emitted an interface, a static `$class` implementation
+helper, and four `$$anonfun$` range classes. Java emits one concrete `TileMultipart` subclass with a public array field,
+one no-arg constructor, and six overrides; `registerJavaTrait` creates the interface/helper at class-load time. No
+shipping consumer references the removed raw helper or closure classes.
+
+This produces an accepted source-build limitation: code recompiled directly against the raw dev jar sees a class and
+public field, so it may emit `invokevirtual` or `getfield`; Forge later rewrites that owner to an interface, for which
+those opcodes are invalid. Existing binaries such as OpenComputers use `invokeinterface` and remain valid. A future
+downstream-source release needs either a transformed compile stub/API artifact or explicit avoidance of direct
+generated-trait calls; runtime binary compatibility does not by itself solve that development artifact problem.
+
+### Performance boundary
+
+Ordinary loops remove the four Scala `Range.foreach` closure classes and the `NonLocalReturnControl` used for occupied
+slot rejection. The retained focused profiler does not perform slotted placement, so this is a structural removal, not
+a numeric performance claim. No new dependency or generator change was needed.
+
+### Validation
+
+- `TSlottedTileFunctionalTest`: 6 Forge tests covering copy identity, non-slotted copy, external mutation/rebinding,
+  bind/remove/clear semantics, value equality, and occupied/free/non-slotted placement.
+- `ForgeEnvironmentSmokeTest` verifies the exact 13-method runtime interface, generated field, distinct initialized
+  arrays, setter rebinding, and class-cache identity.
+- Existing live-world lifecycle tests continue to cover add/remove slot caches and relocation of the generated tile.
+- Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 43 tests, 0 failures, 0 errors.
