@@ -39,6 +39,7 @@ import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.asm.MultipartMixinFactory;
 import codechicken.multipart.scalatraits.TSlottedTile;
+import codechicken.multipart.scalatraits.TTileChangeTile;
 import cpw.mods.fml.common.FMLCommonHandler;
 import cpw.mods.fml.common.Loader;
 import scala.collection.JavaConversions;
@@ -212,6 +213,52 @@ class ForgeEnvironmentSmokeTest {
         TMultiPart[] replacement = new TMultiPart[27];
         trait.getMethod("v_partMap_$eq", TMultiPart[].class).invoke(first, (Object) replacement);
         assertSame(replacement, trait.getMethod("v_partMap").invoke(first));
+    }
+
+    @Test
+    void generatesAndCachesTileChangeTileClass() throws Exception {
+        int traitId = MultipartMixinFactory.getId(TTileChangeTile.class.getName().replace('.', '/'));
+        assertFalse(traitId < 0);
+
+        BitSet traits = new BitSet();
+        traits.set(traitId);
+        Object first = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Object second = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Class<?> trait = Class.forName("codechicken.multipart.scalatraits.TTileChangeTile");
+
+        assertTrue(first instanceof TileMultipart);
+        assertTrue(first instanceof TTileChangeTile);
+        assertTrue(trait.isInterface());
+        assertNotSame(first, second);
+        assertSame(first.getClass(), second.getClass());
+        assertEquals(0, trait.getDeclaredFields().length);
+        Set<String> signatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : trait.getDeclaredMethods()) {
+            signatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        String prefix = "codechicken$multipart$scalatraits$TTileChangeTile$$super$";
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                "clearParts()V",
+                                "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                "getWeakChanges()Z",
+                                "onNeighborTileChange(III)V",
+                                "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                "weakTileChanges()Z",
+                                "weakTileChanges_$eq(Z)V",
+                                prefix + "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                prefix + "clearParts()V",
+                                prefix + "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                prefix + "onNeighborTileChange(III)V",
+                                prefix + "partRemoved(Lcodechicken/multipart/TMultiPart;I)V")),
+                signatures);
+
+        assertEquals(boolean.class, first.getClass().getDeclaredField("weakTileChanges").getType());
+        trait.getMethod("weakTileChanges_$eq", boolean.class).invoke(first, true);
+        assertEquals(true, trait.getMethod("weakTileChanges").invoke(first));
+        assertEquals(false, trait.getMethod("weakTileChanges").invoke(second), "State is per tile");
     }
 
     @Test
