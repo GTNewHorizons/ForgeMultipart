@@ -24,10 +24,10 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
-focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and both
-Java-trait checkpoints are complete. `TPartialOcclusionTile` proved the no-field path; `TSlottedTile` now proves field
-accessors, per-instance initialization, rebinding/copying, callbacks, super bridges, and class caching. The next
-measured target is `TRedstoneTile`; see `JAVA_MIGRATION_PROFILE.md`.
+focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
+first three Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
+and lifecycle rewriting, and `TRedstoneTile` removed the measured redstone allocation while retaining its exact runtime
+interface. See `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -123,21 +123,21 @@ Exception-table metadata does not impose a meaningful steady-state cost merely b
 
 ### More credible performance risks
 
-The source and bytecode audit identified allocation patterns that are more plausible performance targets:
+The source and bytecode audit identified these allocation patterns; the named ports have now resolved them:
 
-- The Java port's `TileMultipart.updateEntity()` still traverses through `operate(Function1)`, whose current
-  `parts()` helper materializes an `ArrayList`, backing array, Scala iterator and Java-conversion wrappers per call.
-- `TRedstoneTile` power and connection queries create closures and `scala.runtime.IntRef` boxes in frequently queried
-  code.
+- The earlier Java `TileMultipart.updateEntity()` traversed through `operate(Function1)`, whose `parts()` helper
+  materialized an `ArrayList`, backing array, Scala iterator and Java-conversion wrappers per call.
+- The former Scala `TRedstoneTile` queries created closures and `scala.runtime.IntRef` boxes; the Java trait now walks
+  the normal immutable list without allocation while preserving an arbitrary-`Seq` fallback.
 - Several Scala 2.11 collection, range, and `JavaConversions` paths create closure objects, boxed primitives, iterators, or temporary collections.
-- `TSlottedTile.canAddPart` still uses an exception-based non-local return. `MicroRecipe`'s equivalent scans are now
+- The former `TSlottedTile.canAddPart` and `MicroRecipe` scans used exception-based non-local returns; both are now
   ordinary Java loops.
 - Rendering code in `TileMultipart` already uses cached arrays and `while` loops in important paths. It should be preserved as evidence of deliberate optimization, not mechanically rewritten into streams or higher-level collection pipelines.
 
-The focused Forge/JFR baseline confirms both risks. With eight parts, `updateEntity` and `operate` allocate about 184
-bytes per call, while a three-query redstone iteration allocates 80.5 bytes. CPU samples identify the same collection,
-boxing and closure paths. These are focused measurements, not whole-pack TPS; retain the workload and re-profile after
-each relevant migration phase. See `JAVA_MIGRATION_PROFILE.md`.
+The focused Forge/JFR baseline confirmed both risks. With eight parts, `updateEntity` and `operate` allocated about 184
+bytes per call, while a three-query redstone iteration allocated 80.5 bytes. The completed ports reduce the normal
+paths to effectively zero measured allocation; these remain focused measurements, not whole-pack TPS. See
+`JAVA_MIGRATION_PROFILE.md`.
 
 ### Runtime code generation is architectural, not incidental
 
@@ -333,14 +333,16 @@ and the already-ported registry again supports Schematica.
 - [x] Keep fastutil out of these paths because profiling did not justify another dependency or data structure.
 - [x] Re-profile the same scenarios and record both improvements and regressions.
 
-Status: active. `operate` now preserves its captured-sequence mutation semantics without collection materialization,
+Status: complete for the measured targets. `operate` now preserves its captured-sequence mutation semantics without
+collection materialization,
 and the six-interface `IRedstonePart`/`RedstoneInteractions$` unit is ported with its class list and descriptors intact.
-The comparison proves its allocation is owned by `scalatraits/TRedstoneTile.scala`, so that part waits for Phase 5.
+The comparison proved its allocation was owned by the generated `TRedstoneTile`, which is now Java and allocation-free
+on the normal immutable-list path.
 `MicroRecipe` is also Java: all five recipe forms and precedence are characterized, its published Scala façade remains,
 and its closure-backed scans and non-local returns are gone. `TPartialOcclusionTile` completed the simple no-field
 Java-trait pilot, and `TSlottedTile` completed the stateful field/lifecycle checkpoint while removing the remaining
-slot-scan closures and exception-backed return. The remaining measured item is `TRedstoneTile`; characterize its exact
-generated surface and real consumers, then re-profile immediately before and after its Java port.
+slot-scan closures and exception-backed return. The paired `TRedstoneTile` run removed 80.5 B per three-query iteration
+and improved throughput by 20.3% with an identical checksum.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -351,12 +353,13 @@ Exit condition: identified steady-state Scala allocation sites are removed with 
 - [x] Port one simple built-in trait as a pilot using `registerJavaTrait`.
 - [x] Verify generated field accessors, initialization, copying, lifecycle callbacks, super bridges, and class caching
   on the stateful `TSlottedTile` checkpoint.
+- [x] Characterize ProjectRed/Extra Utilities redstone calls and port `TRedstoneTile` with an immediate paired profile.
 - [ ] Convert remaining traits in small related groups.
 - [ ] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
 - [ ] Preserve pass-through interface behavior.
-- [ ] Keep the completed OpenComputers `TSlottedTile.v_partMap` mutation/rebinding case green; explicitly cover AE2's
-  `TIInventoryTile.rebuildSlotMap` before the inventory trait and ProjectRed/Extra Utilities behavior before
-  `TRedstoneTile`.
+- [x] Keep the completed OpenComputers `TSlottedTile.v_partMap` mutation/rebinding case green and cover ProjectRed/
+  Extra Utilities behavior before `TRedstoneTile`.
+- [ ] Explicitly cover AE2's `TIInventoryTile.rebuildSlotMap` before the inventory trait.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
 
@@ -692,3 +695,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   recompiled directly against the untransformed dev jar sees the Java mixin input as a class. Consumers that name a
   generated trait therefore need a transformed compile stub or must avoid direct trait invocations; record this before
   claiming source-compatible downstream rebuilds.
+- Characterized `TRedstoneTile` against untouched Scala with three Forge cases covering its exact eight-method runtime
+  interface, class caching, face/edge conduction, strong and weak maxima, mask filtering, arbitrary `Seq` input,
+  neighbor masks, and vanilla-side translation. This directly covers ProjectRed's `openConnections` and Extra
+  Utilities' one-argument `weakPowerLevel` calls.
+- Ported `TRedstoneTile` to Java with allocation-free immutable-list traversal and an iterator fallback for other
+  published `Seq` values. A package-private shim isolates inherited `TileMultipart` methods and Minecraft coordinate
+  fields from known Java-trait transformer limitations; no public redstone or generated-interface member changed.
+- The paired 50,000,000-iteration run fell from 4,023,855,000 bytes / 80.5 B per three-query iteration to zero measured
+  allocation, while throughput rose 20.3% from 6,636,424 to 7,986,213 iterations/s. The checksum remained
+  `3315999992`, and all 145 plain-JVM plus 46 Forge tests pass.

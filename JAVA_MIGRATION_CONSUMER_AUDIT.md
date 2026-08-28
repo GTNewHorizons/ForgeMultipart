@@ -504,9 +504,10 @@ behavior:
 Current-branch generator verification: `ForgeEnvironmentSmokeTest` pins exact direct-Java-source `TSlottedTile`
 interface/field generation, initialization, rebinding and caching, an external Scala microblock trait registered by
 name like ProjectRed's `LightMicroblock`, direct-Java-source `TPartialOcclusionTile` rewriting and override dispatch,
-and server-only pass-through forwarding, overloading,
-single-implementor selection, copying/rebinding, and removal cleanup. Full downstream mixed tiles and client-side
-selection remain Phase 7 integration cases.
+direct-Java-source `TRedstoneTile`'s exact eight-method interface and class caching, and server-only pass-through
+forwarding, overloading, single-implementor selection, copying/rebinding, and removal cleanup.
+`TRedstoneTileFunctionalTest` additionally pins the ProjectRed/Extra Utilities query surface, masks, conduction, and
+world-side routing. Full downstream mixed tiles and client-side selection remain Phase 7 integration cases.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
 changes, while each externally observed behavior has a named consumer and a focused way to prove compatibility.

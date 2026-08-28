@@ -127,5 +127,26 @@ field/accessor generation, initialization, copying, lifecycle behavior, and cach
 Scala range closures and the exception-backed slot-scan return structurally, but the focused workload has no slotted
 placement phase, so no numeric performance claim is made for that port.
 
-The remaining measured redstone allocation lives in `TRedstoneTile`. Capture a fresh baseline with this exact workload,
-characterize ProjectRed and Extra Utilities behavior, port the queries, and rerun immediately afterward.
+## TRedstoneTile result captured 2026-08-28
+
+The port was measured immediately before and after with the same JVM, eight-part generated tile, warm-up, and
+50,000,000-iteration workload. Both runs produced checksum `3315999992`.
+
+| Implementation | Elapsed | Operations/s | Allocated bytes | Bytes/operation |
+| --- | ---: | ---: | ---: | ---: |
+| Scala trait | 7.534 s | 6,636,424 | 4,023,855,000 | 80.5 |
+| Java trait | 6.261 s | 7,986,213 | 0 | 0.0 |
+
+The Java trait removes all measured allocation from the three-query iteration and improves throughput by 20.3% in
+this paired run. The checksum and all characterization tests are unchanged. Normal immutable Scala `List` part
+storage is traversed through its existing head/tail chain; the published `partList` setter still accepts any `Seq`,
+so non-`List` implementations retain an iterator fallback.
+
+The existing Java-trait transformer cannot safely rewrite bytecode that directly reads inherited Minecraft fields or
+calls inherited `TileMultipart` methods. A package-private `TRedstoneTileAccess` shim keeps coordinate, `partList`, and
+virtual `partMap` access outside the transformed class. This changes no public facade or generated-trait member and
+required no generator change.
+
+The two focused steady-state allocation targets identified by this workload are now resolved: `TileMultipart.operate`
+and generated redstone queries are effectively allocation-free on their normal immutable-list paths. Further
+optimization should follow a new representative profile rather than extending this synthetic workload speculatively.

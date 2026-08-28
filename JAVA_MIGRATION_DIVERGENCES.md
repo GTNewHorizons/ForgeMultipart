@@ -1459,3 +1459,53 @@ a numeric performance claim. No new dependency or generator change was needed.
 - Existing live-world lifecycle tests continue to cover add/remove slot caches and relocation of the generated tile.
 - Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 43 tests, 0 failures, 0 errors.
+
+## 2026-08-28 — TRedstoneTile Java-trait port
+
+ProjectRed directly casts a generated tile to `TRedstoneTile` and calls `openConnections(int)`. Extra Utilities casts
+the same type and calls the inherited one-argument `weakPowerLevel(int)`. Neither shipping consumer references
+`TRedstoneTile$class`; UtilitiesInExcess has no direct reference in its current source.
+
+### Observable behavior
+
+No known runtime divergence. Strong power still scans only `IRedstonePart` instances, ignores connection masks, and
+returns the greatest positive level from a zero baseline. Face and edge parts retain the same center/rotation
+conduction rules. Connection masks are still intersected with the open face/edge mask before being combined, while
+weak power calls only connected redstone parts and takes their maximum from zero.
+
+The one-argument weak-power method still intersects the tile's mask with the adjacent connector's power mask.
+`canConnectRedstone` still applies the legacy vanilla-to-multipart side mapping and uses the neighbor's non-power mask.
+Normal immutable Scala `List` storage is traversed without allocation; an arbitrary `Seq` supplied through the public
+setter retains an iterator fallback.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TRedstoneTile` remains a public interface extending exactly `IRedstoneTile`, with no fields and the
+same eight abstract methods: `strongPowerLevel(int)`, both `weakPowerLevel` overloads, `canConnectRedstone(int)`,
+`openConnections(int)`, `getConnectionMask(int)`, `redstoneConductionF(int)`, and `redstoneConductionE(int)`.
+Generated composites still implement that interface, and equal trait sets still reuse the same generated class.
+
+The untransformed artifact changes from the Scala interface, `$class` helper, and four `$$anonfun$` classes to a
+concrete Java `TileMultipart` subclass plus package-private `TRedstoneTileAccess`. The shim is required because the
+current Java-trait transformer treats direct inherited field reads as trait fields and emits an invalid cast for
+inherited virtual calls. It performs coordinate, `partList`, and virtual `partMap` access outside the transformed
+class. It adds no public member and does not change the generator.
+
+As with `TSlottedTile`, this preserves existing consumer binaries but not recompilation directly against the raw dev
+jar: Java source presents the mixin input as a class, while Forge rewrites it to an interface at runtime. A transformed
+compile stub or downstream source guidance is still required before claiming source-compatible rebuilds.
+
+### Performance result
+
+The paired 50,000,000-iteration Forge/JFR run fell from 4,023,855,000 allocated bytes / 80.5 B per three-query
+iteration to zero measured bytes / 0.0 B. Elapsed time fell from 7.534 s to 6.261 s, raising throughput from 6,636,424
+to 7,986,213 iterations/s (20.3%). Both runs produced checksum `3315999992`.
+
+### Validation
+
+- `TRedstoneTileFunctionalTest`: 3 Forge tests covering the exact eight-method interface and class cache, face/edge
+  conduction, strong and weak maxima, mask filtering, non-redstone parts, arbitrary `Seq` input, neighbor masks, and
+  vanilla-side translation.
+- Complete plain-JVM suite: 145 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 46 tests, 0 failures, 0 errors.
+- Clean formatting, checkstyle, build, generated runtime reflection, and paired profile checksum.
