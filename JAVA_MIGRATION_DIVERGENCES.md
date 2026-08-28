@@ -1311,3 +1311,53 @@ gain. Removing that allocation requires the later `registerJavaTrait` conversion
   actual world routing, and a generated redstone tile.
 - Clean `spotlessApply checkstyleTest build`: passing.
 - Class list and public members diffed against the pre-port build; no characterization assertion changed.
+
+## 2026-08-28 — MicroRecipe Java port
+
+The complete recipe singleton moved together. Extra Utilities consumes this area through NEI recipe enumeration, and
+the audited binary corpus calls `create`, `findMaterial`, and `getCraftingResult`; the port preserves the larger
+published surface as well.
+
+### Observable behavior
+
+No known recipe divergence. Hollow construction, gluing, vertical thinning, horizontal splitting, and hollow filling
+retain their exact slot shapes and early rejection rules. A ring of eight size-one covers is valid both as a hollow
+recipe and as gluing back to a full block; `getCraftingResult` still chooses the hollow result first. Gluing retains
+the separate cover/hollow, edge, and corner rules, and splitting keeps the `0 -> 3`, `1 -> 3`, `3 -> 2` map.
+
+Saw discovery remains row-major. Cutting still accepts either sufficient strength or exactly the registry's maximum
+saw strength. Full-size results still copy the material's source stack, while smaller results retain the material name
+in an `ItemMicroPart`. `findMaterial` still returns the first exact item, damage, and NBT match. This means the missing
+material placeholder's vanilla-stone stack can shadow a later stone entry; the Forge tests deliberately use glass when
+they need an unambiguous raw-material round trip.
+
+Java uses `Objects.equals` where Scala used null-safe `==`. Internal thinning and splitting locate the saw by slot
+number to avoid constructing the published tuple for private work; direct `getSaw` calls still return the same boxed
+`scala.Tuple3<Saw, Object, Object>`.
+
+### Supported JVM API
+
+`MicroRecipe` retains all 17 public static methods with their exact descriptors. `MicroRecipe$` still implements
+`IRecipe`, exposes `MODULE$`, carries the implementation methods, and publishes the same
+`scala.collection.immutable.Map<Object, Object>` by identity. The Java façade necessarily has a private constructor,
+as with the other converted Scala forwarder classes.
+
+The 12 private `MicroRecipe$$anonfun$...` compiler classes disappear; no consumer references them. The in-repo Scala
+proxy now registers `MicroRecipe$.MODULE$` explicitly because deleting the Scala object removes the compiler symbol
+that allowed `MicroRecipe` to be used as a value. Existing bytecode remains compatible through the retained companion.
+
+### Performance boundary
+
+Ordinary loops remove the range, filter, collection-search, captured-ref, and `NonLocalReturnControl` machinery from
+recipe matching. No recipe workload was added to the focused tick/redstone profiler, so this is a structural result,
+not a numeric performance claim. The public `getSaw` tuple allocation remains compatibility-required; internal recipe
+paths no longer pay for it.
+
+### Validation
+
+- `MicroRecipeBinaryCompatibilityTest`: 2 tests covering the complete façade/companion ABI, `MODULE$`, and split map.
+- `MicroRecipeFunctionalTest`: 6 Forge tests covering all recipe forms, precedence, class mappings, saw order,
+  material lookup, NBT sensitivity, metadata, creation, and rejection paths.
+- Complete plain-JVM suite: 141 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 37 tests, 0 failures, 0 errors.
+- Class list and public members compared with the pre-port build; no characterization assertion changed.

@@ -12,7 +12,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 66 commits including the redstone interaction unit.
+Branch: `algent/java`. Base: `master`. 68 commits including the `MicroRecipe` unit.
 
 ## The one rule that matters
 
@@ -66,7 +66,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **139 plain-JVM tests, 31 Forge server tests, all passing at their last completed runs.**
+Current baseline: **141 plain-JVM tests, 37 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -188,15 +188,15 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 
 `IDWriter`, `PartialOcclusionTest`/`JPartialOcclusion`, `TCuboidPart`/`JCuboidPart`, the `TNormalOcclusion` unit,
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
-`MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, and the complete
-`IRedstonePart`/`RedstoneInteractions` unit.
+`MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
+`IRedstonePart`/`RedstoneInteractions` unit, and `MicroRecipe`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
 
 Both `package.scala` objects are gone, removed rather than ported. `MultipartRenderer` is done.
 
-80 Java files, 47 Scala files, ~6,103 Scala lines left (non-blank; that is the metric this figure has always used).
+82 Java files, 46 Scala files, ~5,884 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -233,17 +233,20 @@ implementation singleton. Pure masks, vanilla special cases, routing precedence,
 redstone-tile selection are characterized. The comparison correctly found no allocation reduction: the measured
 closures and `IntRef` boxes belong to `scalatraits/TRedstoneTile.scala`, which requires the Phase 5 Java-trait path.
 
-Next characterize and port `MicroRecipe.scala`. It is an independent medium-risk unit and contains the recipe/slot
-scan non-local returns still open in Phase 4; freeze all five recipe forms and their precedence before replacing them
-with ordinary Java loops.
+`MicroRecipe` is now Java. The complete 17-method static/companion surface, immutable Scala split map, exact material
+and tag matching, all five recipe forms, class-specific gluing, saw position, and hollow-over-gluing precedence are
+frozen. Its internal scans are ordinary loops, and only the published `getSaw` call still constructs its required
+`scala.Tuple3`. The in-repo Scala registration now names `MicroRecipe$.MODULE$` explicitly.
 
-**Medium.** The `handler` packages on both sides, `MicroRecipe`, `ItemMicroPart`,
+**Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
 
 **Phase 5, needs the `registerJavaTrait` path.** `TileMultipartClient` and everything in `multipart/scalatraits/`.
 These are registered with the ASM generator; converting them is a different mechanism with documented restrictions.
-Do the pilot deliberately, as its own piece of work.
+Next characterize and port `TPartialOcclusionTile.scala` as the pilot. It has no fields, already takes the Java-trait
+rewrite path because it is a concrete class, and the Forge harness already verifies generated override dispatch. Once
+that proves direct Java source through `registerJavaTrait`, move to the stateful `TSlottedTile` pilot coverage.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

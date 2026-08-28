@@ -118,5 +118,10 @@ That evidence corrects the earlier plan. `IRedstonePart.scala` owned the public 
 measured `IntRef`, iterator, and closure allocations are emitted by `scalatraits/TRedstoneTile.scala`. Removing them
 requires the Phase 5 `registerJavaTrait` path and must not be smuggled into this otherwise descriptor-identical port.
 
-The next independent Phase 4 unit is `MicroRecipe.scala`: characterize every recipe shape and precedence rule, then
-replace its closure-backed scans and non-local returns with ordinary Java loops.
+`MicroRecipe.scala` was the next independent Phase 4 unit and is now Java. Its five recipe forms and precedence are
+characterized, and ordinary loops replaced its range/closure scans and exception-backed non-local returns. The focused
+server workload does not craft recipes, so no timing claim is made for that structural removal.
+
+The remaining measured redstone allocation and slot-scan non-local return live in generated traits. Start Phase 5 with
+the simpler `TPartialOcclusionTile` Java-source pilot, then use the proven path for `TSlottedTile` and
+`TRedstoneTile`; re-run this workload when the latter changes.

@@ -24,8 +24,9 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
-focused profile, first traversal optimization, and complete redstone interaction helper unit are complete. Phase 4
-continues with `MicroRecipe`'s non-local-return category; see `JAVA_MIGRATION_PROFILE.md`.
+focused profile, first traversal optimization, complete redstone interaction helper unit, and `MicroRecipe` port are
+complete. The remaining measured hot paths are generated tile traits, so the next work starts the Phase 5 Java-trait
+pilot; see `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -128,7 +129,8 @@ The source and bytecode audit identified allocation patterns that are more plaus
 - `TRedstoneTile` power and connection queries create closures and `scala.runtime.IntRef` boxes in frequently queried
   code.
 - Several Scala 2.11 collection, range, and `JavaConversions` paths create closure objects, boxed primitives, iterators, or temporary collections.
-- `TSlottedTile.canAddPart` and several `MicroRecipe` searches use exception-based non-local returns.
+- `TSlottedTile.canAddPart` still uses an exception-based non-local return. `MicroRecipe`'s equivalent scans are now
+  ordinary Java loops.
 - Rendering code in `TileMultipart` already uses cached arrays and `while` loops in important paths. It should be preserved as evidence of deliberate optimization, not mechanically rewritten into streams or higher-level collection pipelines.
 
 The focused Forge/JFR baseline confirms both risks. With eight parts, `updateEntity` and `operate` allocate about 184
@@ -325,15 +327,18 @@ and the already-ported registry again supports Schematica.
 - [x] Characterize result ordering, callback timing, early exits, and edge cases before changing traversal code.
 - [x] Rewrite `TileMultipart` update/operate traversal without per-call collection allocation.
 - [ ] Rewrite redstone queries without closure allocation or `IntRef` boxing.
-- [ ] Replace non-local returns in slot/recipe scans with ordinary Java control flow.
-- [ ] Use fastutil only where profiling and data shape justify it.
+- [x] Replace non-local returns in recipe scans with ordinary Java control flow.
+- [ ] Replace the remaining non-local return in the generated `TSlottedTile` slot scan.
+- [x] Keep fastutil out of these paths because profiling did not justify another dependency or data structure.
 - [x] Re-profile the same scenarios and record both improvements and regressions.
 
 Status: active. `operate` now preserves its captured-sequence mutation semantics without collection materialization,
 and the six-interface `IRedstonePart`/`RedstoneInteractions$` unit is ported with its class list and descriptors intact.
 The comparison proves its allocation is owned by `scalatraits/TRedstoneTile.scala`, so that part waits for Phase 5.
-Next characterize and port `MicroRecipe.scala`, replacing its closure-backed scans and non-local returns with ordinary
-Java loops.
+`MicroRecipe` is also Java: all five recipe forms and precedence are characterized, its published Scala façade remains,
+and its closure-backed scans and non-local returns are gone. The remaining two hot-path items are generated traits and
+will be handled through Phase 5. Start with `TPartialOcclusionTile` as the simple no-field Java-trait pilot before the
+stateful slot and redstone traits.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -402,7 +407,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 139 plain-JVM tests and 31 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 141 plain-JVM tests and 37 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -657,3 +662,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   the Phase 5 generated-trait conversion, not this helper unit.
 - Chose `MicroRecipe.scala` as the next independent Phase 4 unit because its nested collection scans compile early
   exits into `NonLocalReturnControl`; characterize all five recipe paths and precedence before porting it.
+- Characterized `MicroRecipe`'s complete 17-method façade/companion ABI, Scala `splitMap`, all five recipe forms,
+  class-specific gluing rules, saw ordering, exact material/tag lookup, and hollow-over-gluing precedence against the
+  original Scala implementation.
+- Ported the recipe singleton to Java with ordinary loops. The published `MicroRecipe` static façade,
+  `MicroRecipe$.MODULE$`, `scala.Tuple3` return and immutable Scala map descriptors remain; the 12 private Scala
+  closure classes and their `NonLocalReturnControl` exits are gone.
+- The recipe port passes all 141 plain-JVM and 37 Forge tests. The next step is the Phase 5
+  `TPartialOcclusionTile` Java-trait pilot, whose generated override dispatch is already covered by the Forge harness.

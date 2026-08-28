@@ -90,7 +90,7 @@ class MicroblockProxy_serverImpl {
   def init() {
     CraftingManager.getInstance.getRecipeList
       .asInstanceOf[JList[IRecipe]]
-      .add(MicroRecipe)
+      .add(MicroRecipe$.MODULE$)
     if (!Loader.isModLoaded("dreamcraft")) {
       CraftingManager.getInstance.addRecipe(
         new ItemStack(stoneRod, 4),
