@@ -12,8 +12,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.lang.reflect.Proxy;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.Set;
+import java.util.TreeSet;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
@@ -177,10 +180,26 @@ class ForgeEnvironmentSmokeTest {
     void generatedJavaTraitOverridesPartialOcclusion() throws Exception {
         PartialPart existing = new PartialPart(voxel(0));
         TileMultipart tile = MultipartHelper.createTileFromParts(Collections.singletonList(existing));
+        TileMultipart second = MultipartHelper
+                .createTileFromParts(Collections.singletonList(new PartialPart(voxel(2))));
         Class<?> trait = Class.forName("codechicken.multipart.scalatraits.TPartialOcclusionTile");
 
         assertTrue(trait.isInterface(), "The registered Java mixin class is rewritten to a trait interface");
         assertTrue(trait.isInstance(tile));
+        assertSame(tile.getClass(), second.getClass(), "The Java trait combination must keep using the class cache");
+        assertEquals(0, trait.getDeclaredFields().length);
+        Set<String> signatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : trait.getDeclaredMethods()) {
+            signatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "codechicken$multipart$scalatraits$TPartialOcclusionTile$$super$occlusionTest"
+                                        + "(Lscala/collection/Seq;Lcodechicken/multipart/TMultiPart;)Z",
+                                "occlusionTest(Lscala/collection/Seq;Lcodechicken/multipart/TMultiPart;)Z",
+                                "partialOcclusionTest(Lscala/collection/Seq;)Z")),
+                signatures);
         assertEquals(
                 boolean.class,
                 tile.getClass().getMethod("partialOcclusionTest", scala.collection.Seq.class).getReturnType());
