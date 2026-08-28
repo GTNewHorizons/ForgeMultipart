@@ -12,7 +12,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 74 commits including the separate `TRedstoneTile` characterization and port.
+Branch: `algent/java`. Base: `master`. 79 commits including the separate `TTileChangeTile` characterization and port.
 
 ## The one rule that matters
 
@@ -66,7 +66,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **145 plain-JVM tests, 46 Forge server tests, all passing at their last completed runs.**
+Current baseline: **153 plain-JVM tests, 54 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -187,6 +187,15 @@ mistaken for trait-owned state, and an inherited virtual call takes a broken cas
 coordinate, `partList`, and virtual `partMap` access in package-private `TRedstoneTileAccess`; use that pattern or fix
 and characterize the generator before converting another trait with the same bytecode shape.
 
+**Type the access shim's parameters `Object`.** `TTileChangeTileAccess` first typed them as the trait itself and cast
+to `TileMultipart` inside. Because the untransformed trait extends `TileMultipart`, javac elided the cast, and once
+Forge rewrote the trait to an interface the verifier rejected the `getfield`. `TRedstoneTileAccess` only escapes this
+because `IRedstoneTile` is unrelated to `TileMultipart`, forcing a real `checkcast`. `Object` always works.
+
+**A Java mixin trait may not carry an inner class.** `registerJavaTrait` throws on a non-empty `InnerClasses`
+attribute. An anonymous `AbstractFunction1` for an `operate` callback, a lambda, or a string switch all trip it. Put
+the callback in the access shim as a named class, as `TTileChangeTileAccess.NeighborTileChanged` does.
+
 ## What is done
 
 All eight load-bearing `$class` helpers from the inventory, both registries, and the two central types:
@@ -202,7 +211,15 @@ Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighbor
 
 Both `package.scala` objects are gone, removed rather than ported. `MultipartRenderer` is done.
 
-85 Java files, 43 Scala files, ~5,730 Scala lines left (non-blank; that is the metric this figure has always used).
+`TTileChangeTile` is the fourth generated tile written in Java, and the first with both mutable state and inherited
+member access. Its runtime interface keeps the exact 13 methods, the flag lifecycle and coordinate filter are frozen by
+seven Forge tests, and `INeighborTileChange` — the surface shipping jars actually link against — is byte-identical
+across the port. It is also where the two shim constraints in the gotchas list were found.
+
+`rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
+into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
+
+86 Java files, 42 Scala files, ~5,676 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -269,11 +286,21 @@ occupied-slot rejection, value equality, actual add/remove/move lifecycle, and g
 `DefaultContent`.
 
 **Phase 5, needs the `registerJavaTrait` path.** `TileMultipartClient` and the remaining Scala files in
-`multipart/scalatraits/`. The no-field, stateful, and measured hot-query cases are complete without a generator change.
-Next characterize `TTileChangeTile`: it is server-side, has one copied/rebuilt field, lifecycle super calls, coordinate
-filtering, and callback dispatch, making it the smallest useful follow-up for the inherited-member shim. Keep
-`TIInventoryTile` separate until AE2's `rebuildSlotMap` and inventory-field behavior are frozen; keep
-`TRandomDisplayTickTile` with the client-side test work.
+`multipart/scalatraits/`. The no-field, stateful, measured hot-query, and inherited-member cases are all complete
+without a generator change.
+
+`TFluidHandlerTile` is the next one to take. It and `TIInventoryTile` make **no** inherited field reads or virtual
+calls — only `super.*` on overrides, with all state trait-owned — so neither needs an access shim, and `super.*` is
+already proven by `TSlottedTile`'s five super accessors. `TFluidHandlerTile` has no external consumer surface, which
+makes it the cheaper of the two.
+
+Take `TIInventoryTile` after it. AE2's `CableBusPart.notifyNeighbors` does `tile() instanceof TIInventoryTile` then
+calls `rebuildSlotMap()`, so the runtime interface must keep that method public; freeze that plus the inventory-field
+behavior first. Note it is `JInventoryTile`, the concrete class, that is registered — do not collapse the two, because
+AE2 casts to the trait.
+
+`TRandomDisplayTickTile` is registered client-only and reads inherited `partList`, so it needs both a shim and the
+client-side test work. It also extends `TileMultipartClient`, which is still Scala.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

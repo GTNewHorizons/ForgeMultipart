@@ -1529,3 +1529,59 @@ zero and rose 2.89x. Both runs used the same eight-part tile and produced the sa
 - Complete plain-JVM suite: 147 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 46 tests, 0 failures, 0 errors.
 - The public Java list bridge remains for downstream consumers; there are no internal `jPartList()` callers.
+
+## 2026-08-28 — TTileChangeTile Java-trait port
+
+The first Java trait carrying both mutable state and inherited-member access. Nothing in the frozen consumer baseline
+references `TTileChangeTile` or a `$class` helper for it; the load-bearing surface is `INeighborTileChange`, which is
+already Java and byte-for-byte unchanged across the port. ProjRed and Extra Utilities implement that interface on their
+parts and never touch the tile trait.
+
+### Observable behavior
+
+No known runtime divergence. `bindPart` still calls super first and only ever ors the flag in, so a later part that
+does not want weak changes cannot clear it. `copyFrom` still takes the flag from another change tile and leaves it
+untouched for a plain source. `clearParts` still resets both the superclass list and the flag. `partRemoved` still
+recomputes from the remaining published list rather than from the part it is handed, and still short-circuits on the
+first weak part, matching `exists`.
+
+`onNeighborTileChange` keeps the same coordinate filter: it calls super first, computes the offset from the tile's own
+coordinates, and returns unless the offset is axial with an absolute sum of one or two. Two blocks is still reported as
+weak. Dispatch still goes through `operate`, so the null-tile guard and any trait overriding `operate` still apply.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TTileChangeTile` remains a public interface with no fields and the exact same 13 methods: six
+behavior methods, the `weakTileChanges` getter and setter, and five super accessors. The generated composite owns a
+`boolean weakTileChanges` field, and state stays per tile. `ForgeEnvironmentSmokeTest` freezes that shape.
+
+The untransformed artifact changes shape, as with every Java-trait port. Scala emitted an interface, a `$class` helper,
+an `$$anon$1` for the operate callback, and an `$$anonfun$partRemoved$1` for the `exists` scan. Java emits one concrete
+`TileMultipart` subclass, plus the `TTileChangeTileAccess` helper and its callback class. No shipping jar references
+any of the removed classes. The recompile-against-the-raw-dev-jar limitation recorded for `TSlottedTile` applies here
+unchanged.
+
+### Two transformer constraints found by this port
+
+**A Java mixin trait may not carry an inner class.** `registerJavaTrait` rejects a non-empty `InnerClasses` attribute
+outright, so the anonymous `AbstractFunction1` for the `operate` callback could not live in the trait. It moved to
+`TTileChangeTileAccess` as a named class, which the transformer does not process. Any future Java trait needing a
+callback, a lambda or a switch on strings has the same constraint.
+
+**An access shim must not name a compile-time supertype of the trait.** The first attempt typed the shim parameters as
+`TTileChangeTile` and cast to `TileMultipart` inside. Because the untransformed trait extends `TileMultipart`, javac
+elided the cast entirely, and once Forge rewrote the trait to an interface the verifier rejected the resulting
+`getfield` with "Type TTileChangeTile is not assignable to TileMultipart". `TRedstoneTileAccess` avoids this only by
+accident: `IRedstoneTile` is unrelated to `TileMultipart`, so javac was forced to emit a real `checkcast`. The general
+fix, used here, is to type the shim parameters as `Object` so the cast is always emitted.
+
+### Validation
+
+- `TTileChangeTileFunctionalTest`: 7 Forge tests covering the flag lifecycle across bindPart, copyFrom, clearParts and
+  partRemoved, plus the coordinate filter and the per-part dispatch filter.
+- `ForgeEnvironmentSmokeTest.generatesAndCachesTileChangeTileClass`: interface shape, field type, per-tile state and
+  generated-class reuse.
+- All eight were written and passed against the untouched Scala trait first, and pass unchanged after the port.
+- Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 54 tests, 0 failures, 0 errors.
+- `INeighborTileChange` descriptors identical between the reference and ported dev jars.

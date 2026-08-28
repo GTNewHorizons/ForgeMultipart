@@ -22,7 +22,7 @@ import scala.collection.immutable.Nil$;
 class TTileChangeTileFunctionalTest {
 
     @Test
-    void theFlagStartsFalseAndIsPublishedThroughGetWeakChanges() {
+    void theFlagStartsFalseAndIsPublishedThroughGetWeakChanges() throws Exception {
         TileMultipart tile = newTileChangeTile();
 
         assertFalse(weakTileChanges(tile));
@@ -129,8 +129,9 @@ class TTileChangeTileFunctionalTest {
         return (TileMultipart) MultipartMixinFactory.construct(traits, Nil$.MODULE$);
     }
 
-    private static boolean weakTileChanges(TileMultipart tile) {
-        return ((TTileChangeTile) tile).weakTileChanges();
+    /** The accessor is generated onto the runtime interface, so it is not visible to this source set. */
+    private static boolean weakTileChanges(TileMultipart tile) throws Exception {
+        return (Boolean) tile.getClass().getMethod("weakTileChanges").invoke(tile);
     }
 
     private static scala.collection.Seq<TMultiPart> seq(TMultiPart... parts) {
