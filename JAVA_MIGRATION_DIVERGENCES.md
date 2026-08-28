@@ -1266,3 +1266,48 @@ failure rather than a silent one, but it will recur in every remaining renderer 
 - What stays manual, and it is everything this class actually does: static block rendering, dynamic part rendering,
   the breaking overlay on the struck part, inventory rendering, and the render id being claimed exactly once. None of
   it can run without a client, so all of it is on the checklist.
+
+## 2026-08-28 — IRedstonePart and RedstoneInteractions Java port
+
+The complete source unit: six abstract interfaces plus the routing singleton. ProjectRed, ProjectBlue, WR-CBE,
+Extra Utilities, OpenComputers and AE2 consume this surface; ProjectRed also reads `RedstoneInteractions$.MODULE$`
+directly, so the companion cannot be collapsed into a static utility class.
+
+### Observable behavior
+
+No known divergence. Plain, face, and custom-mask parts retain the same precedence and bit masks. Connector tiles
+still win over connector blocks, which still win over vanilla handling. Neighbor lookups retain the same coordinate
+offset and opposite-side transform. Full-connect blocks, wire/comparator visual masks, repeater orientation, the
+redstone-wire metadata fallback, and `Block.canConnectRedstone` retain their existing branches. Java uses
+`Objects.equals` where Scala used null-safe `==`.
+
+`vanillaSideMap`, `sideVanillaMap`, and `fullVanillaBlocks` remain singleton-owned objects returned by identity from
+both published classes. `fullVanillaBlocks` deliberately remains a `scala.collection.immutable.Set<Block>` so its
+descriptor and existing Scala consumers do not change.
+
+### Supported JVM API
+
+The emitted class list is unchanged: the six interface classes, `RedstoneInteractions`, and
+`RedstoneInteractions$`. Every public member and descriptor is unchanged. `RedstoneInteractions` remains the static
+façade and `RedstoneInteractions$.MODULE$` remains the implementation instance. The Java façade necessarily has a
+private constructor where Scala's static-forwarder class emitted none; no consumer references constructors on either
+class.
+
+The six Scala traits contained only abstract members, so they emitted no `$class` helpers and need no compatibility
+bridges. Their Scala signatures disappear, but inheritance and JVM method descriptors are identical.
+
+### Performance boundary
+
+The fresh Scala baseline measured 80.4 B per generated redstone three-query iteration; the Java result measured
+80.5 B. Post-port JFR still attributes the work to Scala `List.foreach`, `Iterator.foreach`, `PartMap.edgeBetween`, and
+the generated strong-power closure in `scalatraits/TRedstoneTile.scala`. This port therefore claims no performance
+gain. Removing that allocation requires the later `registerJavaTrait` conversion and is explicitly deferred.
+
+### Validation
+
+- `RedstoneInteractionsCharacterizationTest`: 6 tests, covering every interface shape and pure routing branch.
+- Complete plain-JVM suite: 139 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 31 tests, 0 failures, 0 errors; three tests cover initialized vanilla state,
+  actual world routing, and a generated redstone tile.
+- Clean `spotlessApply checkstyleTest build`: passing.
+- Class list and public members diffed against the pre-port build; no characterization assertion changed.

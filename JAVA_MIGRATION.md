@@ -24,8 +24,8 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
-and focused pre-optimization profile are complete. Phase 4 can now begin with the measured `TileMultipart` traversal
-path; see `JAVA_MIGRATION_PROFILE.md`.
+focused profile, first traversal optimization, and complete redstone interaction helper unit are complete. Phase 4
+continues with `MicroRecipe`'s non-local-return category; see `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -322,18 +322,18 @@ and the already-ported registry again supports Schematica.
 
 ### Phase 4 — Convert measured hot paths
 
-- [ ] Characterize result ordering, callback timing, early exits, and edge cases before changing traversal code.
-- [ ] Rewrite `TileMultipart.updateEntity()` as allocation-free indexed or array traversal.
+- [x] Characterize result ordering, callback timing, early exits, and edge cases before changing traversal code.
+- [x] Rewrite `TileMultipart` update/operate traversal without per-call collection allocation.
 - [ ] Rewrite redstone queries without closure allocation or `IntRef` boxing.
 - [ ] Replace non-local returns in slot/recipe scans with ordinary Java control flow.
 - [ ] Use fastutil only where profiling and data shape justify it.
-- [ ] Re-profile the same scenarios and record both improvements and regressions.
+- [x] Re-profile the same scenarios and record both improvements and regressions.
 
-Status: ready to start. The compatibility gate and initial profile are complete. First freeze `operate` behavior when
-callbacks add or remove parts, then remove the measured per-traversal `ArrayList`/array/wrapper materialization while
-retaining the public Scala `Seq` and `operate(Function1)` ABI. Re-run the focused profile immediately. The next broader
-unit is the whole `IRedstonePart.scala` file: its six related traits and load-bearing `RedstoneInteractions$` must be
-characterized and ported together.
+Status: active. `operate` now preserves its captured-sequence mutation semantics without collection materialization,
+and the six-interface `IRedstonePart`/`RedstoneInteractions$` unit is ported with its class list and descriptors intact.
+The comparison proves its allocation is owned by `scalatraits/TRedstoneTile.scala`, so that part waits for Phase 5.
+Next characterize and port `MicroRecipe.scala`, replacing its closure-backed scans and non-local returns with ordinary
+Java loops.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
@@ -402,7 +402,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 130 plain-JVM tests and 28 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 139 plain-JVM tests and 31 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 
@@ -643,3 +643,17 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   allocates 80.5 bytes. CPU and allocation sites point to `TileMultipart.parts()` collection copies and Scala
   redstone `IntRef`/closure traversal. Full methodology and rerun commands are in `JAVA_MIGRATION_PROFILE.md`.
 - The expanded baseline is 130 plain-JVM tests and 28 Forge server tests, all passing.
+
+### 2026-08-28
+
+- Ported all six interfaces and `RedstoneInteractions` from `IRedstonePart.scala` as one unit. The emitted class list is
+  unchanged, every public descriptor is unchanged, and `RedstoneInteractions$.MODULE$` remains the implementation
+  singleton behind the static façade.
+- Added six plain-JVM tests for interface shape, façade/companion members, maps, part-mask precedence, connector routing,
+  and neighbor coordinate transforms, plus three Forge tests for initialized vanilla blocks, world power routing, the
+  redstone-wire metadata fallback, and generated `IRedstoneTile` selection.
+- Re-profiled immediately before and after the port. Allocation stayed at roughly 4.02 GB / 80.5 B per generated
+  three-query iteration, and JFR retained the same `TRedstoneTile` Scala closure/iterator sites. That cost belongs to
+  the Phase 5 generated-trait conversion, not this helper unit.
+- Chose `MicroRecipe.scala` as the next independent Phase 4 unit because its nested collection scans compile early
+  exits into `NonLocalReturnControl`; characterize all five recipe paths and precedence before porting it.

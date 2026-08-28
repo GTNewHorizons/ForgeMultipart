@@ -1,4 +1,4 @@
-# Java migration — focused performance baseline and first result
+# Java migration — focused performance baseline and results
 
 This is the reproducible pre-optimization baseline for Phase 4. It runs inside the real deobfuscated Forge dedicated
 server, using the same generated tiles as the functional suite. It is intentionally focused rather than a claim about
@@ -102,5 +102,21 @@ but its code did not change and it now starts several seconds earlier because th
 not attribute that timing difference to this traversal change. Re-baseline the redstone unit immediately before its
 own implementation comparison.
 
-Next characterize and port the complete `IRedstonePart.scala` unit and eliminate the measured redstone
-`IntRef`/closure paths without splitting its load-bearing `RedstoneInteractions$` singleton.
+## Redstone helper-unit comparison captured 2026-08-28
+
+Immediately before converting `IRedstonePart.scala`, the same workload measured `redstoneQueries` at 7.603 s,
+6,575,956 iterations/s, 4,022,151,064 allocated bytes, and 80.4 B/iteration. After its six interfaces and
+`RedstoneInteractions` were converted together, the retained report measured 3.880 s, 12,884,996 iterations/s,
+4,023,003,032 allocated bytes, and 80.5 B/iteration. Both runs produced checksum `3315999992`.
+
+The allocation result is unchanged. The elapsed-time difference is not treated as a port win: earlier unchanged
+Scala runs ranged from 3.689 to 7.603 s on this machine. More importantly, the post-port JFR has the same dominant
+sites: Scala `List.foreach`, `Iterator.foreach`, `PartMap.edgeBetween`, and
+`TRedstoneTile$$anonfun$strongPowerLevel$1`.
+
+That evidence corrects the earlier plan. `IRedstonePart.scala` owned the public interfaces and routing helpers, but the
+measured `IntRef`, iterator, and closure allocations are emitted by `scalatraits/TRedstoneTile.scala`. Removing them
+requires the Phase 5 `registerJavaTrait` path and must not be smuggled into this otherwise descriptor-identical port.
+
+The next independent Phase 4 unit is `MicroRecipe.scala`: characterize every recipe shape and precedence rule, then
+replace its closure-backed scans and non-local returns with ordinary Java loops.
