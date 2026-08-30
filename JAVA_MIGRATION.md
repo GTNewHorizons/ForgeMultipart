@@ -25,10 +25,11 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
 focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
-first five Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
+first six Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
 and lifecycle rewriting, `TRedstoneTile` removed the measured redstone allocation, `TTileChangeTile` exercised mutable
-state plus inherited access, and `TFluidHandlerTile` preserved ordered Forge fluid distribution. All retain their exact
-runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
+state plus inherited access, `TFluidHandlerTile` preserved ordered Forge fluid distribution, and
+`TIInventoryTile`/`JInventoryTile` preserved AE2's direct rebuild linkage plus flattened sided inventory routing. All
+retain their exact runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -360,7 +361,7 @@ Exit condition: identified steady-state Scala allocation sites are removed with 
 - [ ] Preserve pass-through interface behavior.
 - [x] Keep the completed OpenComputers `TSlottedTile.v_partMap` mutation/rebinding case green and cover ProjectRed/
   Extra Utilities behavior before `TRedstoneTile`.
-- [ ] Explicitly cover AE2's `TIInventoryTile.rebuildSlotMap` before the inventory trait.
+- [x] Explicitly cover AE2's `TIInventoryTile.rebuildSlotMap` before the inventory trait.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
 
@@ -416,7 +417,7 @@ The work should move from low to high risk while keeping a buildable mixed-langu
 Extensive tests are both possible and recommended here. Their purpose is not to prove that the current Scala behavior is ideal; it is to make its observable behavior explicit before translation, so every later difference is intentional.
 
 The repository now has a Java-8-compatible JUnit Jupiter suite and a small Forge integration runner. The current
-baseline is 141 plain-JVM tests and 37 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
+baseline is 153 plain-JVM tests and 70 Forge server tests. Minecraft 1.7.10 does not provide the modern GameTest
 framework, so game-dependent coverage continues through the existing narrow Forge harness rather than a second test
 framework.
 

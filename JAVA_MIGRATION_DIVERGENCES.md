@@ -1640,3 +1640,56 @@ multipart fluid distribution. This is a structural removal, not a throughput or 
 - Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 62 tests, 0 failures, 0 errors.
 - The frozen consumer inventory and audited source consumers contain no `TFluidHandlerTile` reference.
+
+## 2026-08-30 — TIInventoryTile/JInventoryTile Java-trait port
+
+AE2 is the load-bearing consumer for this port. `CableBusPart.notifyNeighbors` checks a generated tile with
+`instanceof TIInventoryTile` and directly invokes `rebuildSlotMap()`. The registered trait input is separately named
+`JInventoryTile`; preserving only one of those types would break either registration or AE2 linkage.
+
+### Observable behavior
+
+No known runtime divergence. Each generated tile starts with distinct empty inventory-list and slot-map instances.
+Binding appends only `IInventory` parts in order, removal deletes the matching inventory, and clear empties both the
+superclass part list and inventory state. Copying from another inventory tile shares its inventory list by identity and
+rebuilds a distinct slot map; copying from a plain tile leaves both current references untouched.
+
+The slot map still flattens every inventory in list order and routes each global slot to its original inventory and
+local index. The fixed name, custom-name flag, stack limit, usability and no-op open/close behavior are unchanged.
+Sided access still exposes only `ISidedInventory` slots, while its global base advances across every inventory;
+insert/extract checks still delegate to sided inventories and return true for ordinary inventories.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TIInventoryTile` remains a public interface extending exactly `ISidedInventory`, with no fields and
+the exact same 28 methods: 20 behavior/inventory methods, four public state accessors, and four super accessors.
+`JInventoryTile` remains a public child interface with no fields and the exact same 36 methods, adding four private-
+field accessors and four `JInventoryTile` super bridges. The generated composite still owns the two private fields
+`codechicken$multipart$scalatraits$JInventoryTile$$invList` and
+`codechicken$multipart$scalatraits$JInventoryTile$$slotMap`, with `LinkedList` and `scala.Tuple2[]` descriptors.
+
+The raw dev artifact now contains a Java interface `TIInventoryTile`, a concrete Java `JInventoryTile` mixin input,
+and package-private `JInventoryTileAccess` instead of the Scala interface, `$class` helper and concrete forwarding
+class. No frozen consumer references `TIInventoryTile$class` or names `JInventoryTile`; AE2's load-bearing
+`TIInventoryTile.rebuildSlotMap()` descriptor is unchanged. As with the other Java-trait ports, consumers compiling
+against the untransformed dev jar should use a transformed compile stub when they name the registered mixin type.
+
+### Transformer constraint
+
+The Java-trait stack analyzer has no case for JVM opcode `NEWARRAY` (`188`). Creating the primitive result array in
+`getAccessibleSlotsFromSide` initially failed trait registration with `scala.MatchError: 188`. The method now collects
+the same ordered boxed slots and delegates only the final `int[]` allocation/copy to package-private
+`JInventoryTileAccess`. Reference-array allocation remains inside the trait because its `ANEWARRAY` opcode is already
+supported. The helper adds no public surface.
+
+### Validation
+
+- `TIInventoryTileFunctionalTest`: 7 Forge tests covering list/map lifecycle and identity, flattened routing, the
+  direct AE2-shaped rebuild call, fixed metadata, sided global offsets, and insert/extract delegation.
+- `ForgeEnvironmentSmokeTest.generatesAndCachesInventoryTileClassWithBothPublicTraitInterfaces`: exact 28- and
+  36-method runtime interfaces, inheritance, generated private fields, distinct initialization, setter rebinding, and
+  generated-class reuse.
+- All eight tests passed against the untouched Scala implementation first and pass unchanged after the port.
+- Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 70 tests, 0 failures, 0 errors.
+- Raw `javap` descriptors for both public types match the reference, including `scala.Tuple2[]` state accessors.

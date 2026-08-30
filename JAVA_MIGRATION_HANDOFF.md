@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 81 commits including separate characterization and port commits for
-`TFluidHandlerTile`.
+Branch: `algent/java`. Base: `master`. 83 commits including separate characterization and port commits for
+`TIInventoryTile`/`JInventoryTile`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **153 plain-JVM tests, 62 Forge server tests, all passing at their last completed runs.**
+Current baseline: **153 plain-JVM tests, 70 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -193,6 +193,10 @@ as trait-owned state without checking its owner. `TFluidHandlerTile` therefore k
 writes in package-private `TFluidHandlerTileAccess`. A static helper outside the transformed class is enough when no
 trait-to-superclass cast is involved.
 
+**Java traits cannot allocate primitive arrays.** The stack analyzer has no case for JVM opcode `NEWARRAY` and throws
+`MatchError: 188` while registering the trait. `JInventoryTile` therefore converts its collected sided slots to
+`int[]` in package-private `JInventoryTileAccess`. Reference arrays use `ANEWARRAY` and remain safe inside traits.
+
 **Type the access shim's parameters `Object`.** `TTileChangeTileAccess` first typed them as the trait itself and cast
 to `TileMultipart` inside. Because the untransformed trait extends `TileMultipart`, javac elided the cast, and once
 Forge rewrote the trait to an interface the verifier rejected the `getfield`. `TRedstoneTileAccess` only escapes this
@@ -210,7 +214,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
-`TRedstoneTile`, `TTileChangeTile`, and `TFluidHandlerTile` Java-trait ports.
+`TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, and `TIInventoryTile`/`JInventoryTile` Java-trait ports.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -225,7 +229,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-87 Java files, 41 Scala files, ~5,556 Scala lines left (non-blank; that is the metric this figure has always used).
+89 Java files, 40 Scala files, ~5,453 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -294,6 +298,13 @@ field initialization, setter rebinding, and class-cache behavior. No shipping co
 `$class` or closure classes. A narrow access helper is required for `FluidStack.amount` because the transformer treats
 all direct field reads inside a Java trait as trait-owned state.
 
+`TIInventoryTile` and `JInventoryTile` are now Java without collapsing their distinct roles. AE2 still casts generated
+tiles to the public 28-method `TIInventoryTile` interface and calls `rebuildSlotMap`; the registered `JInventoryTile`
+still rewrites to a 36-method child interface carrying its private-state accessors and both super-bridge layers. Seven
+behavior tests freeze inventory-list sharing, flattened routing, sided offsets and the direct rebuild call. The
+generated composite retains its two private prefixed fields and per-tile initialization. Primitive `int[]` creation is
+isolated in `JInventoryTileAccess` because the transformer cannot analyze `NEWARRAY`.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -302,13 +313,10 @@ all direct field reads inside a Java trait as trait-owned state.
 `multipart/scalatraits/`. The no-field, stateful, measured hot-query, and inherited-member cases are all complete
 without a generator change.
 
-Take `TIInventoryTile` next. AE2's `CableBusPart.notifyNeighbors` does `tile() instanceof TIInventoryTile` then
-calls `rebuildSlotMap()`, so the runtime interface must keep that method public; freeze that plus the inventory-field
-behavior first. Note it is `JInventoryTile`, the concrete class, that is registered — do not collapse the two, because
-AE2 casts to the trait.
-
-`TRandomDisplayTickTile` is registered client-only and reads inherited `partList`, so it needs both a shim and the
-client-side test work. It also extends `TileMultipartClient`, which is still Scala.
+Take the client tile pair next: `TileMultipartClient` and `TRandomDisplayTickTile`. The latter is the only Scala file
+left in `multipart/scalatraits/`, is registered client-only, and reads inherited `partList`, so it needs both an access
+shim and client-side characterization rather than relying on the dedicated-server harness. Audit the base trait's
+consumer-visible shape before deciding whether to port them together.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
@@ -322,7 +330,7 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   work and is required before release claims about real TPS.
 - The server side of flag-sensitive pass-through registration is automated; client-side exclusion still belongs to
   the packaged-client/manual compatibility run.
-- Shipping consumers compiled against the old `TSlottedTile` and `TRedstoneTile` interfaces remain binary-compatible
+- Shipping consumers compiled against the old `TSlottedTile`, `TRedstoneTile`, and `TIInventoryTile` interfaces remain binary-compatible
   because Forge still exposes those exact interfaces at runtime. A consumer recompiled against the untransformed dev
   jar instead sees concrete Java mixin inputs and can emit class/field opcodes that are invalid after Forge rewrites
   them to interfaces. Provide a transformed compile stub or downstream source guidance before claiming
