@@ -1917,3 +1917,43 @@ constructor. Neither changes runtime annotation data or the callable public surf
   lifecycle, initializes every proxy item and builds a usable material ID map before shutting down cleanly.
 - Raw `javap` comparison confirms identical callable public names/descriptors; reflection confirms identical FML
   annotations, and the emitted class list is unchanged.
+
+## 2026-08-30 — MicroblockEventHandler Java port
+
+The ForgeMicroblock client event handler is now a Java facade/companion pair. The server proxy explicitly registers
+`MicroblockEventHandler$.MODULE$`, preserving the Scala object's identity.
+
+### Observable behavior
+
+No known runtime divergence. Post-stitch handling still reloads material icons only for texture-map type zero.
+Highlight handling retains the same ordered guards for a non-null current stack, the microblock item, a non-null hit
+and a block hit. It then pushes the GL matrix, translates to world coordinates, delegates to the item renderer, cancels
+only when that renderer succeeds, and pops the matrix in the same sequence.
+
+Both handlers remain client-only. On a dedicated server Forge strips both methods from both singleton types before
+the proxy registers the companion. Registration still reaches the event bus and records the same companion owner, but
+there are correctly no server-side subscribers.
+
+### ABI, annotations and source compatibility
+
+`MicroblockEventHandler` retains the exact two public static methods. `MicroblockEventHandler$` retains `MODULE$` and
+the matching two public instance methods. Every method still carries `@SubscribeEvent` with `NORMAL` priority and
+`receiveCanceled = false`, plus `@SideOnly(CLIENT)`; neither class is itself side-only. Public names and descriptors are
+identical to the reference, and both jars emit exactly `MicroblockEventHandler.class` and
+`MicroblockEventHandler$.class`.
+
+The in-repo Scala registration now spells the object value as `MicroblockEventHandler$.MODULE$`. Compiled external
+callers and event-bus identity are unchanged, and no frozen binary or audited source consumer names either type.
+
+Accepted divergence: Scala signature/marker attributes disappear, and the static Java facade gains only a private
+constructor. Neither changes runtime annotations or the callable public surface.
+
+### Validation
+
+- `MicroblockEventHandlerCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- `MicroblockEventHandlerFunctionalTest`: 1 Forge test, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 164 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 86 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public members, reflection confirms identical annotations, and
+  the emitted class list is unchanged.
+- Texture stitching and placement-highlight rendering require a client and remain on the manual checklist.

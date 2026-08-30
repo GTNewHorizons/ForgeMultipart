@@ -772,3 +772,15 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Scala cannot apply property-assignment syntax to a Java-authored setter. The compiled accessor ABI is unchanged.
 - All 162 plain-JVM and all 85 Java 8 Forge dedicated-server tests pass. Startup and lifecycle dispatch are not a
   meaningful focused throughput or allocation target; `MicroblockEventHandler.scala` is the next target.
+- Reproduced the reported stale incremental `@Mod(version)` failure immediately after a commit. Gradle reran
+  `compileScala`, but Zinc retained the joint-compiled Java classes that had inlined the previous `Tags.VERSION`.
+- Configured `compileScala` to force Zinc recompilation whenever Gradle schedules the task. The focused version test
+  passes without cleaning both before and after a commit changes the generated version, so the assertion remains.
+- Characterized `MicroblockEventHandler` against untouched Scala. Two plain-JVM cases freeze both singleton types, all
+  four public event methods, normal event metadata and both client-only boundaries. One Forge case freezes companion
+  registration and complete method stripping on a dedicated server.
+- Ported the handler to a Java facade/companion pair and changed the one Scala registration to name `MODULE$`
+  explicitly. Texture-atlas filtering, highlight guards, matrix/render sequence and cancellation behavior are
+  unchanged; their actual rendering remains on the client manual checklist.
+- All 164 plain-JVM and all 86 Java 8 Forge dedicated-server tests pass. This event-only adapter is not a meaningful
+  focused performance target; `microblock/handler/packethandlers.scala` is next.

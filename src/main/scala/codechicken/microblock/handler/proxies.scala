@@ -49,7 +49,7 @@ class MicroblockProxy_serverImpl {
     GameRegistry.registerItem(stoneRod, "stoneRod")
 
     OreDictionary.registerOre("rodStone", stoneRod)
-    MinecraftForge.EVENT_BUS.register(MicroblockEventHandler)
+    MinecraftForge.EVENT_BUS.register(MicroblockEventHandler$.MODULE$)
 
     useSawIcons = config
       .getTag("useSawIcons")

@@ -14,7 +14,8 @@ release that includes those ports.
 | Hit a part repeatedly without breaking it | Hit particles spawn on the struck face, using that face's icon | `IconHitEffects.addHitEffects` |
 | Break a part fully | Destroy particles use all six side icons and are scaled to the part's bounds | `IconHitEffects.addDestroyEffects` |
 | Break a hollow cover | Destroy particles use the full block bounds, not the part bounds | `addDestroyEffects` scaleDensity false |
-| Hover a microblock placement target | The placement highlight renders, and a mod supplying its own highlight renderer overrides it | `MicroMaterialRegistry.renderHighlight` |
+| Hover a microblock placement target | The placement highlight renders, and a mod supplying its own highlight renderer overrides it | `MicroblockEventHandler.drawBlockHighlight` / `MicroMaterialRegistry.renderHighlight` |
+| Reload client resources after placing several microblock materials | The texture atlas reloads every material icon without missing textures | `MicroblockEventHandler.postTextureStitch` |
 | Look at a saw in inventory and in hand | The saw item renders with its custom transform | `ItemSaw` `IItemRenderer` |
 | Place microblocks of several materials, including glass | Transparent materials render in the correct pass and are not opaque | `IMicroMaterial.canRenderInPass` |
 | Change a mixed multipart tile containing static and dynamically rendered parts | Static parts remain in the block render, dynamic parts remain in the TESR pass, and neither disappears after a part update | `TileMultipartClient` render caches |

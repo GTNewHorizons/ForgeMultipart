@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 93 commits including separate characterization and port commits for
-`MicroblockMod`.
+Branch: `algent/java`. Base: `master`. 96 commits including the incremental-version build fix and separate
+characterization and port commits for `MicroblockEventHandler`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **162 plain-JVM tests, 85 Forge server tests, all passing at their last completed runs.**
+Current baseline: **164 plain-JVM tests, 86 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -156,6 +156,11 @@ raw jar but inherits `@SideOnly(CLIENT)` from the client override, so Forge stri
 and a Java call fails with `NoSuchMethodError`. Call `MultipartProxy$.MODULE$.postInit()` as the Scala reference did;
 after side stripping, virtual resolution reaches the server superclass implementation.
 
+**Generated version constants require full Zinc recompilation.** `Tags.VERSION` is a compile-time constant embedded in
+the joint-compiled Java `@Mod` annotations. Gradle notices the generated classpath change, but Zinc does not invalidate
+those Java consumers. `compileScala.scalaCompileOptions.force = true` keeps incremental jars current; do not remove the
+version assertions or this build guard without replacing both with an equivalent mechanism.
+
 **Classes that cannot class-initialize headless make good probes.** `MultipartSaveLoad` reflects into `TileEntity`'s
 static maps through `ObfMapping` and always throws under a plain JVM. That turns "did this branch reach the loader?"
 into an assertion: returning normally proves the guard short-circuited, and `assertThrows(LinkageError.class, ...)`
@@ -236,7 +241,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
-`MultipartEventHandler`, and `MicroblockMod`.
+`MultipartEventHandler`, `MicroblockMod`, and `MicroblockEventHandler`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -251,7 +256,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-101 Java files, 34 Scala files, ~5,112 Scala lines left (non-blank; that is the metric this figure has always used).
+103 Java files, 33 Scala files, ~5,071 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -353,6 +358,11 @@ lifecycle/IMC methods, the mutable `angelicaCompat` accessors and `MODULE$` reta
 annotations. FML still uses the companion as its mod instance and completes the full microblock server lifecycle. Two
 plain-JVM and one Forge test freeze the shape, shared compatibility hook, companion identity and initialized registry.
 
+`MicroblockEventHandler` is now Java. Both singleton class names, all four public event methods, both event annotations
+and both client-only boundaries retain their exact shape. The proxy registers `MicroblockEventHandler$.MODULE$`
+explicitly. Two plain-JVM tests freeze the raw ABI; one Forge test proves the client methods are stripped on a
+dedicated server while the companion still reaches event-bus registration.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -361,11 +371,10 @@ plain-JVM and one Forge test freeze the shape, shared compatibility hook, compan
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/handler/MicroblockEventHandler.scala` next. Freeze both singleton class names and all four public
-event-method descriptors, both `@SubscribeEvent` annotations and both `@SideOnly(CLIENT)` boundaries. Preserve the
-companion identity registered on `MinecraftForge.EVENT_BUS`; the dedicated server can verify registration and safe
-side stripping, while texture stitching and highlight rendering remain client-only manual checks. Keep the
-characterization and port commits separate.
+Take `microblock/handler/packethandlers.scala` next; at 66 nonblank lines it is the smallest remaining handler unit.
+Freeze `MicroblockPH.registryChannel`, both packet-handler facade/companion surfaces and their exact interfaces before
+changing it. Cover the single-player client skip, missing-material disconnect, server handshake channel/type and ID-map
+payload, and the no-op server packet callback. Keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
