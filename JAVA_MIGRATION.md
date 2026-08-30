@@ -25,9 +25,10 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
 focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
-first three Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
-and lifecycle rewriting, and `TRedstoneTile` removed the measured redstone allocation while retaining its exact runtime
-interface. See `JAVA_MIGRATION_PROFILE.md`.
+first five Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
+and lifecycle rewriting, `TRedstoneTile` removed the measured redstone allocation, `TTileChangeTile` exercised mutable
+state plus inherited access, and `TFluidHandlerTile` preserved ordered Forge fluid distribution. All retain their exact
+runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The

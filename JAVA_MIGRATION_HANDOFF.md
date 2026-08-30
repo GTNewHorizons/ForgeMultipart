@@ -12,7 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 79 commits including the separate `TTileChangeTile` characterization and port.
+Branch: `algent/java`. Base: `master`. 81 commits including separate characterization and port commits for
+`TFluidHandlerTile`.
 
 ## The one rule that matters
 
@@ -66,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **153 plain-JVM tests, 54 Forge server tests, all passing at their last completed runs.**
+Current baseline: **153 plain-JVM tests, 62 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -187,6 +188,11 @@ mistaken for trait-owned state, and an inherited virtual call takes a broken cas
 coordinate, `partList`, and virtual `partMap` access in package-private `TRedstoneTileAccess`; use that pattern or fix
 and characterize the generator before converting another trait with the same bytecode shape.
 
+**Java traits also cannot directly read fields owned by method arguments.** The transformer rewrites every `GETFIELD`
+as trait-owned state without checking its owner. `TFluidHandlerTile` therefore keeps `FluidStack.amount` reads and
+writes in package-private `TFluidHandlerTileAccess`. A static helper outside the transformed class is enough when no
+trait-to-superclass cast is involved.
+
 **Type the access shim's parameters `Object`.** `TTileChangeTileAccess` first typed them as the trait itself and cast
 to `TileMultipart` inside. Because the untransformed trait extends `TileMultipart`, javac elided the cast, and once
 Forge rewrote the trait to an interface the verifier rejected the `getfield`. `TRedstoneTileAccess` only escapes this
@@ -204,7 +210,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
-`TRedstoneTile` Java-trait ports.
+`TRedstoneTile`, `TTileChangeTile`, and `TFluidHandlerTile` Java-trait ports.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -219,7 +225,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-86 Java files, 42 Scala files, ~5,676 Scala lines left (non-blank; that is the metric this figure has always used).
+87 Java files, 41 Scala files, ~5,556 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -281,6 +287,13 @@ methods, including public array getter/setter and five super accessors. Each til
 copying shares the source array exactly as before; external array mutation plus `bindPart`, clear/removal behavior,
 occupied-slot rejection, value equality, actual add/remove/move lifecycle, and generated-class caching are all green.
 
+`TFluidHandlerTile` is now Java. Seven behavior tests freeze ordered tank binding, shared-list copying, removal and
+clear behavior, flattened tank information, capability short-circuiting, decreasing fill copies, and both simulated
+drain forms. Its generated runtime interface still extends exactly `IFluidHandler` and keeps the same 16 methods,
+field initialization, setter rebinding, and class-cache behavior. No shipping consumer references its removed raw
+`$class` or closure classes. A narrow access helper is required for `FluidStack.amount` because the transformer treats
+all direct field reads inside a Java trait as trait-owned state.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -289,12 +302,7 @@ occupied-slot rejection, value equality, actual add/remove/move lifecycle, and g
 `multipart/scalatraits/`. The no-field, stateful, measured hot-query, and inherited-member cases are all complete
 without a generator change.
 
-`TFluidHandlerTile` is the next one to take. It and `TIInventoryTile` make **no** inherited field reads or virtual
-calls — only `super.*` on overrides, with all state trait-owned — so neither needs an access shim, and `super.*` is
-already proven by `TSlottedTile`'s five super accessors. `TFluidHandlerTile` has no external consumer surface, which
-makes it the cheaper of the two.
-
-Take `TIInventoryTile` after it. AE2's `CableBusPart.notifyNeighbors` does `tile() instanceof TIInventoryTile` then
+Take `TIInventoryTile` next. AE2's `CableBusPart.notifyNeighbors` does `tile() instanceof TIInventoryTile` then
 calls `rebuildSlotMap()`, so the runtime interface must keep that method public; freeze that plus the inventory-field
 behavior first. Note it is `JInventoryTile`, the concrete class, that is registered — do not collapse the two, because
 AE2 casts to the trait.

@@ -1585,3 +1585,58 @@ fix, used here, is to type the shim parameters as `Object` so the cast is always
 - Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 54 tests, 0 failures, 0 errors.
 - `INeighborTileChange` descriptors identical between the reference and ported dev jars.
+
+## 2026-08-30 — TFluidHandlerTile Java-trait port
+
+No frozen binary or audited source consumer names `TFluidHandlerTile` or its `$class` helper. The load-bearing surface
+is Forge's `IFluidHandler`, which generated multipart tiles still implement with the same six fluid method
+descriptors.
+
+### Observable behavior
+
+No known runtime divergence. Every generated tile receives a distinct `LinkedList`; `copyFrom` still shares that list
+by identity only for another fluid tile. Fluid parts are appended in binding order, removal deletes the first equal
+entry, and clear empties both the superclass part list and the existing tank list.
+
+`getTankInfo` still visits every handler twice, first to size the result and then to flatten each returned array in
+part order. Fill still passes a fresh copy with the decreasing remaining amount to every handler, including handlers
+reached after the full quantity has been accepted. `canFill` and `canDrain` still stop at the first matching handler.
+
+Both drain overloads still simulate every handler first, accept the first positive fluid and only later matching
+fluids, and commit only accepted simulations when requested. The first accepted simulated stack remains the returned
+object, with its amount replaced by the total. The stack overload still passes decreasing copies and leaves the
+caller's stack unchanged.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TFluidHandlerTile` remains a public interface extending exactly `IFluidHandler`, with no fields and
+the same 16 abstract methods: ten behavior methods, the `tankList` getter and setter, and four super accessors. The
+generated composite still owns and initializes a `LinkedList tankList` field, permits setter rebinding, and reuses its
+class for equal trait sets.
+
+The untransformed artifact changes from a Scala interface, `$class` helper, and eight `$$anonfun$` classes to one
+concrete Java `TileMultipart` subclass plus package-private `TFluidHandlerTileAccess`. No shipping consumer references
+the removed classes. The raw-dev-jar source-build limitation recorded for `TSlottedTile` applies unchanged.
+
+### Transformer constraint
+
+The Java-trait transformer rewrites every `GETFIELD` instruction as access to trait-owned state without checking the
+instruction's owner. The first port therefore failed registration on the public `FluidStack.amount` field with
+`key not found: amount`. `TFluidHandlerTileAccess` now owns those reads, writes, and amount-adjusted copies outside the
+transformed class. It adds no public surface and requires no generator change.
+
+### Performance boundary
+
+Ordinary loops remove the eight Scala closure classes, but no representative workload in the retained profiler uses
+multipart fluid distribution. This is a structural removal, not a throughput or allocation claim.
+
+### Validation
+
+- `TFluidHandlerTileFunctionalTest`: 7 Forge tests covering list lifecycle and identity, tank-info order, fill
+  distribution, capability short-circuiting, fluid matching, simulation, commit behavior, and both drain overloads.
+- `ForgeEnvironmentSmokeTest.generatesAndCachesFluidHandlerTileClass`: exact 16-method runtime interface, parent
+  interface, generated field, distinct initialization, setter rebinding, and generated-class reuse.
+- All eight tests passed against the untouched Scala trait first and pass unchanged after the port.
+- Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 62 tests, 0 failures, 0 errors.
+- The frozen consumer inventory and audited source consumers contain no `TFluidHandlerTile` reference.
