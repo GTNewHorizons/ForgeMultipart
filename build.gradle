@@ -7,3 +7,8 @@ plugins {
 tasks.test {
     useJUnitPlatform()
 }
+
+tasks.named('compileScala') {
+    // Zinc does not invalidate joint-compiled Java annotations when Tags.VERSION changes.
+    scalaCompileOptions.force = true
+}
