@@ -43,10 +43,12 @@ import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TFacePart;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
+import codechicken.multipart.TileMultipartClient;
 import codechicken.multipart.asm.MultipartMixinFactory;
 import codechicken.multipart.scalatraits.JInventoryTile;
 import codechicken.multipart.scalatraits.TFluidHandlerTile;
 import codechicken.multipart.scalatraits.TIInventoryTile;
+import codechicken.multipart.scalatraits.TRandomDisplayTickTile;
 import codechicken.multipart.scalatraits.TSlottedTile;
 import codechicken.multipart.scalatraits.TTileChangeTile;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -463,6 +465,93 @@ class ForgeEnvironmentSmokeTest {
         javaTrait.getMethod("slotMap_$eq", scala.Tuple2[].class).invoke(first, (Object) replacementMap);
         assertSame(replacementList, javaTrait.getMethod("invList").invoke(first));
         assertSame(replacementMap, javaTrait.getMethod("slotMap").invoke(first));
+    }
+
+    @Test
+    void generatesClientAndRandomDisplayTickTraitsWithTheirExactHierarchy() throws Exception {
+        int clientTraitId = MultipartMixinFactory.getId(TileMultipartClient.class.getName().replace('.', '/'));
+        int randomTraitId = MultipartMixinFactory.getId(TRandomDisplayTickTile.class.getName().replace('.', '/'));
+        assertFalse(clientTraitId < 0);
+        assertFalse(randomTraitId < 0);
+
+        BitSet clientTraits = new BitSet();
+        clientTraits.set(clientTraitId);
+        Object first = MultipartMixinFactory.construct(clientTraits, Nil$.MODULE$);
+        Object second = MultipartMixinFactory.construct(clientTraits, Nil$.MODULE$);
+        BitSet randomTraits = (BitSet) clientTraits.clone();
+        randomTraits.set(randomTraitId);
+        Object randomTile = MultipartMixinFactory.construct(randomTraits, Nil$.MODULE$);
+        Class<?> clientTrait = Class.forName("codechicken.multipart.TileMultipartClient");
+        Class<?> randomTrait = Class.forName("codechicken.multipart.scalatraits.TRandomDisplayTickTile");
+
+        assertTrue(first instanceof TileMultipart);
+        assertTrue(first instanceof TileMultipartClient);
+        assertTrue(randomTile instanceof TileMultipartClient);
+        assertTrue(randomTile instanceof TRandomDisplayTickTile);
+        assertTrue(clientTrait.isInterface());
+        assertTrue(randomTrait.isInterface());
+        assertEquals(0, clientTrait.getInterfaces().length);
+        assertArrayEquals(new Class<?>[] { TileMultipartClient.class }, randomTrait.getInterfaces());
+        assertNotSame(first, second);
+        assertSame(first.getClass(), second.getClass());
+        assertNotSame(first.getClass(), randomTile.getClass());
+        assertEquals(0, clientTrait.getDeclaredFields().length);
+        assertEquals(0, randomTrait.getDeclaredFields().length);
+
+        org.objectweb.asm.tree.ClassNode clientNode = codechicken.multipart.asm.ASMMixinCompiler$.MODULE$
+                .classNode("codechicken/multipart/TileMultipartClient");
+        org.objectweb.asm.tree.ClassNode randomNode = codechicken.multipart.asm.ASMMixinCompiler$.MODULE$
+                .classNode("codechicken/multipart/scalatraits/TRandomDisplayTickTile");
+        assertTrue((clientNode.access & org.objectweb.asm.Opcodes.ACC_INTERFACE) != 0);
+        assertTrue((randomNode.access & org.objectweb.asm.Opcodes.ACC_INTERFACE) != 0);
+        assertEquals(Collections.emptyList(), clientNode.interfaces);
+        assertEquals(Collections.singletonList("codechicken/multipart/TileMultipartClient"), randomNode.interfaces);
+        assertEquals(0, clientNode.fields.size());
+        assertEquals(0, randomNode.fields.size());
+
+        Set<String> clientSignatures = new TreeSet<>();
+        for (org.objectweb.asm.tree.MethodNode method : clientNode.methods) {
+            clientSignatures.add(method.name + method.desc);
+        }
+        String prefix = "codechicken$multipart$TileMultipartClient$$";
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                prefix + "cachedRenderBounds()Lnet/minecraft/util/AxisAlignedBB;",
+                                prefix + "cachedRenderBounds_$eq(Lnet/minecraft/util/AxisAlignedBB;)V",
+                                prefix + "dynamicCache()[Lcodechicken/multipart/TMultiPart;",
+                                prefix + "dynamicCache_$eq([Lcodechicken/multipart/TMultiPart;)V",
+                                prefix + "staticCache()[Lcodechicken/multipart/TMultiPart;",
+                                prefix + "staticCache_$eq([Lcodechicken/multipart/TMultiPart;)V",
+                                prefix + "super$markRender()V",
+                                "getRenderBoundingBox()Lnet/minecraft/util/AxisAlignedBB;",
+                                "hasDynamicParts()Z",
+                                "hasDynamicParts_$eq(Z)V",
+                                "markRender()V",
+                                "randomDisplayTick(Ljava/util/Random;)V",
+                                "renderDynamic(Lcodechicken/lib/vec/Vector3;FI)V",
+                                "renderStatic(Lnet/minecraft/world/IBlockAccess;Lcodechicken/lib/vec/Vector3;"
+                                        + "Lnet/minecraft/client/renderer/RenderBlocks;)Z",
+                                "shouldRenderInPass(I)Z",
+                                "updateRenderCache()V")),
+                clientSignatures);
+
+        Set<String> randomSignatures = new TreeSet<>();
+        for (org.objectweb.asm.tree.MethodNode method : randomNode.methods) {
+            randomSignatures.add(method.name + method.desc);
+        }
+        assertEquals(new TreeSet<>(Arrays.asList("randomDisplayTick(Ljava/util/Random;)V")), randomSignatures);
+
+        assertGeneratedField(first, prefix + "cachedRenderBounds", net.minecraft.util.AxisAlignedBB.class);
+        assertGeneratedField(first, prefix + "staticCache", TMultiPart[].class);
+        assertGeneratedField(first, prefix + "dynamicCache", TMultiPart[].class);
+        assertGeneratedField(first, "hasDynamicParts", boolean.class);
+    }
+
+    private static void assertGeneratedField(Object tile, String name, Class<?> type) throws Exception {
+        java.lang.reflect.Field field = tile.getClass().getDeclaredField(name);
+        assertEquals(type, field.getType());
+        assertTrue(Modifier.isPrivate(field.getModifiers()));
     }
 
     @Test
