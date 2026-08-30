@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 89 commits including separate characterization and port commits for
-`MultipartMod`.
+Branch: `algent/java`. Base: `master`. 91 commits including separate characterization and port commits for
+`MultipartEventHandler`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **158 plain-JVM tests, 81 Forge server tests, all passing at their last completed runs.**
+Current baseline: **160 plain-JVM tests, 84 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -235,7 +235,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
-`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule` and `MultipartMod`.
+`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`, and
+`MultipartEventHandler`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -250,7 +251,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-97 Java files, 36 Scala files, ~5,241 Scala lines left (non-blank; that is the metric this figure has always used).
+99 Java files, 35 Scala files, ~5,164 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -342,6 +343,11 @@ methods and `MultipartMod$.MODULE$` retain their exact public descriptors and an
 as the mod instance, and `MultipartPH.channel()` still returns that same companion with its original descriptor. Two
 plain-JVM and two Forge tests freeze the shape, identity, completed lifecycle and server-stop cleanup.
 
+`MultipartEventHandler` is now Java. Both singleton class names, all twelve public event methods, every event priority,
+and the client-only highlight boundary retain their exact shape. The proxy now names `MultipartEventHandler$.MODULE$`
+explicitly, and that same companion remains registered on both event buses. Two plain-JVM and three Forge tests freeze
+the ABI, annotations, bus identity, load/unload cleanup, chunk watches and END-phase tick dispatch.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -350,10 +356,10 @@ plain-JVM and two Forge tests freeze the shape, identity, completed lifecycle an
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `multipart/handler/MultipartEventHandler.scala` next. Preserve both singleton types and event-bus identity; freeze
-every `@SubscribeEvent` priority plus the client-only highlight annotation before changing it. Exercise load/unload,
-chunk watch/unwatch and end-of-server-tick dispatch where the Forge harness can observe them, and keep the
-characterization and port commits separate.
+Take `microblock/handler/MicroblockMod.scala` next. Reuse the annotated facade/companion pattern, but also freeze the
+two `angelicaCompat` accessors alongside `MODULE$`, the exact `@Mod` metadata and all five handler annotations. Confirm
+that FML still uses the companion and completes the server lifecycle. Call `MicroblockProxy$.MODULE$` directly because
+its client overrides carry `@SideOnly`, and keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

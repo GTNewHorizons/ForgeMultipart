@@ -78,8 +78,8 @@ class MultipartProxy_serverImpl {
   def init() {}
 
   def postInit() {
-    FMLCommonHandler.instance().bus().register(MultipartEventHandler)
-    MinecraftForge.EVENT_BUS.register(MultipartEventHandler)
+    FMLCommonHandler.instance().bus().register(MultipartEventHandler$.MODULE$)
+    MinecraftForge.EVENT_BUS.register(MultipartEventHandler$.MODULE$)
     PacketCustom.assignHandler(MultipartSPH.channel, MultipartSPH)
     PacketCustom.assignHandshakeHandler(
       MultipartSPH.registryChannel,

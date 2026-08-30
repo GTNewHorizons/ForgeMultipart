@@ -1829,3 +1829,49 @@ exactly `MultipartMod.class` and `MultipartMod$.class`.
   startup phase, reaches server-started tests, and shuts down cleanly.
 - Raw `javap` comparison confirms identical public names/descriptors for `MultipartMod`, `MultipartMod$` and
   `MultipartPH`; reflection confirms identical FML annotations.
+
+## 2026-08-30 — MultipartEventHandler Java port
+
+The ForgeMultipart event handler is now an annotated Java facade/companion pair. The server proxy registers
+`MultipartEventHandler$.MODULE$` explicitly on both the FML and MinecraftForge event buses, preserving the same target
+identity as the Scala object expression.
+
+### Observable behavior
+
+No known runtime divergence. Chunk-data loading still runs at `HIGHEST` priority and delegates to
+`MultipartSaveLoad.loadTiles`. World unload still removes server packet state, clears the client tile cache for remote
+worlds, and otherwise clears the loading-world reference. Watch and unwatch events still update the two-stage chunk
+watcher state, and only the END server-tick phase flushes packets and promotes queued watches.
+
+The highlight handler retains both `@SubscribeEvent` and `@SideOnly(CLIENT)`. Its null, block-hit and multipart-tile
+guards remain short-circuiting; a successful `BlockMultipart.drawHighlight` call still cancels the event. This client
+rendering path remains on the manual checklist because the automated harness is a dedicated server.
+
+Server ticking still wraps the configuration manager's live `java.util.List` with Scala's `JavaConverters` buffer
+adapter before calling `MultipartSPH.onTickEnd`. This preserves the original `scala.collection.Seq` contract without
+copying the player list or adding a new traversal.
+
+### ABI, annotations and source compatibility
+
+`MultipartEventHandler` retains the exact six public static methods. `MultipartEventHandler$` retains `MODULE$` and
+the matching six public instance methods. Every method still carries `@SubscribeEvent`; only `tileEntityLoad` uses
+`HIGHEST`, the other five use `NORMAL`, none receive canceled events, and only `drawBlockHighlight` carries
+`@SideOnly(CLIENT)`.
+
+The in-repo Scala registrations now spell the handler value as `MultipartEventHandler$.MODULE$`. The registered
+runtime identity is unchanged, and no frozen binary or audited source consumer names either handler class.
+
+Accepted divergence: the Scala signature/marker attributes disappear, and the static Java facade gains only a private
+constructor. These do not change the runtime annotation data or callable public surface. The emitted class list remains
+exactly `MultipartEventHandler.class` and `MultipartEventHandler$.class`.
+
+### Validation
+
+- `MultipartEventHandlerCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartEventHandlerFunctionalTest`: 3 Forge tests, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 160 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 84 tests, 0 failures, 0 errors.
+- The Forge run confirms the companion identity on both event buses and exercises load/unload, watch/unwatch and both
+  server-tick phases before shutting down cleanly.
+- Raw `javap` comparison confirms identical public fields, method names and descriptors for both handler types;
+  reflection confirms identical event annotations, and both jars emit exactly the same two handler classes.

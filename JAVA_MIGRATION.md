@@ -755,3 +755,10 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Scala bytecode and allowing virtual resolution to reach the server implementation.
 - All 158 plain-JVM tests and all 81 Java 8 Forge dedicated-server tests pass. Mod lifecycle dispatch is startup-only,
   so it is not a meaningful focused throughput or allocation target.
+- Characterized `MultipartEventHandler` against untouched Scala. Two plain-JVM cases freeze both singleton types, all
+  twelve public event methods, priorities and the client-only highlight boundary; three Forge cases freeze companion
+  registration on both buses, chunk load/unload cleanup, queued watches and END-phase tick dispatch.
+- Ported the singleton to a Java facade/companion pair with unchanged public names, descriptors and annotations. The
+  proxy now names `MultipartEventHandler$.MODULE$` explicitly, preserving the exact object registered on both buses.
+- Server ticking still passes the configuration manager's live player list through Scala's Java-list buffer adapter;
+  no copy or new traversal was introduced. All 160 plain-JVM and all 84 Java 8 Forge dedicated-server tests pass.
