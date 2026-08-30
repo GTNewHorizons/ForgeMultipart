@@ -736,3 +736,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   The runtime trait surfaces remain exact; the raw dev-jar source-build limitation remains documented.
 - All 153 plain-JVM tests and all 77 Java 8 Forge dedicated-server tests pass. Actual static/dynamic rendering and
   particle appearance remain client-only manual checks.
+- Characterized `MultipartCompatiblity` and `MCPCCompatModule` against untouched Scala. Three plain-JVM cases freeze
+  both static facades, both `MODULE$` companions, the private Scala `Function4` field, default allow behavior and
+  callback identity; two Forge cases freeze non-MCPC loading and the logged missing-hook fallback.
+- Ported both singletons to four Java types with unchanged public names and descriptors. The callback still propagates
+  reflection and cast failures unchanged, while the two Scala anonymous-function artifacts become private named Java
+  callback classes. No frozen binary or audited source consumer names those implementation classes.
+- All 156 plain-JVM tests and all 79 Java 8 Forge dedicated-server tests pass. This initialization-only hook is not a
+  meaningful target for the focused allocation benchmark; successful MCPC integration remains environment-dependent.

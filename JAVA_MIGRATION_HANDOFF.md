@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 85 commits including separate characterization and port commits for
-`TileMultipartClient`/`TRandomDisplayTickTile`.
+Branch: `algent/java`. Base: `master`. 87 commits including separate characterization and port commits for
+`MultipartCompatiblity`/`MCPCCompatModule`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **153 plain-JVM tests, 77 Forge server tests, all passing at their last completed runs.**
+Current baseline: **156 plain-JVM tests, 79 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -230,7 +230,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
-`TRandomDisplayTickTile` Java-trait ports.
+`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -245,7 +245,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-91 Java files, 38 Scala files, ~5,328 Scala lines left (non-blank; that is the metric this figure has always used).
+95 Java files, 37 Scala files, ~5,285 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -327,6 +327,11 @@ shape guard pins the exact 16-method base interface, one-method child interface,
 and class caching. GuideNH only loads `TileMultipartClient` by name for `isInstanceOf`; no audited consumer references
 either removed `$class` helper. The true client rendering and particle paths remain on the manual checklist.
 
+`MultipartCompatiblity` and `MCPCCompatModule` are now Java. Their two static facades, two companion singletons and
+mutable Scala `Function4` callback retain their exact public descriptors. Three plain-JVM tests freeze the raw shape,
+default allow behavior and shared setter identity; two Forge tests freeze non-MCPC loading and the logged missing-hook
+fallback. The optional successful MCPC hook still needs a real patched `World` implementation to exercise end to end.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -335,9 +340,9 @@ either removed `$class` helper. The true client rendering and particle paths rem
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `multipart/handler/MultipartCompatiblity.scala` next as the smallest medium-risk Phase 6 handler unit. Preserve
-the misspelled public singleton name and its Scala `Function4` accessor, characterize the default allow path and the
-reflective MCPC hook failure path first, and keep the characterization/port commits separate.
+Take `multipart/handler/MultipartMod.scala` next as the next small, independent handler unit. Freeze both singleton
+types, the exact `@Mod` metadata and all five FML lifecycle annotations before changing it, then exercise pre/init/
+post-init and server cleanup through the Forge harness. Keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

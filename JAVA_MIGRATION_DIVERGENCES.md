@@ -1748,3 +1748,41 @@ remain ordinary private fields. Trait registration moved before `BlockMultipart`
 - All seven tests passed against the untouched Scala implementation before the port; all 77 Forge tests pass after it.
 - Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
 - Actual block/TESR rendering and particle appearance require a client and remain on the manual checklist.
+
+## 2026-08-30 — MultipartCompatiblity/MCPCCompatModule Java port
+
+The intentionally misspelled `MultipartCompatiblity` singleton and its optional MCPC integration companion are now
+Java. The in-repo placement gate still reads the same mutable callback, and no frozen binary or audited source consumer
+names either singleton or its generated closure classes directly.
+
+### Observable behavior
+
+No known runtime divergence. The callback initially allows every placement. `load()` still performs a case-sensitive
+`"mcpc"` check against FML's mod name and otherwise leaves the current callback untouched. MCPC loading still looks
+for `World.canPlaceMultipart(Block, int, int, int)`, installs the reflective callback only after a successful lookup,
+and logs `Failed to integrate MCPC placement hooks` without replacing the previous callback when lookup fails.
+
+The installed callback passes `MultipartProxy.block()` and the same boxed coordinates to `Method.invoke`, casts the
+result to `Boolean`, and returns its primitive value. Java's checked-reflection restriction is bridged with a private
+unchecked throw helper so invocation, access and target failures propagate as the same exception objects rather than
+being wrapped in a new exception type.
+
+### ABI and emitted classes
+
+The public surface is descriptor-identical to the reference: static `load`, `canAddPart` and `canAddPart_$eq` remain on
+`MultipartCompatiblity`; the companion retains `MODULE$`, the private `scala.Function4` field and the three matching
+instance methods; `MCPCCompatModule` and `MCPCCompatModule$` retain their static and instance `load` methods.
+
+Accepted divergence: `MultipartCompatiblity$$anonfun$1` and `MCPCCompatModule$$anonfun$load$1` are replaced by the
+private Java callback classes `MultipartCompatiblity$$AllowPlacement` and `MCPCCompatModule$$MCPCPlacement`. These are
+closure implementation details with no consumer reference. The four public facade/companion class names are retained.
+
+### Validation
+
+- `MultipartCompatiblityCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartCompatiblityFunctionalTest`: 2 Forge tests, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 156 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 79 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical public names and descriptors for all four public types.
+- The successful reflective path requires an MCPC-patched `World` and remains an environment-specific integration
+  check; the stock development server covers its failure fallback only.
