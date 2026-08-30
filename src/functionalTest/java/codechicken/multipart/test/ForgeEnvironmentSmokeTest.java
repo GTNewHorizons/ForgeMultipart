@@ -1,5 +1,6 @@
 package codechicken.multipart.test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -15,11 +16,13 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
+import net.minecraftforge.fluids.IFluidHandler;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +41,7 @@ import codechicken.multipart.TFacePart;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.asm.MultipartMixinFactory;
+import codechicken.multipart.scalatraits.TFluidHandlerTile;
 import codechicken.multipart.scalatraits.TSlottedTile;
 import codechicken.multipart.scalatraits.TTileChangeTile;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -259,6 +263,67 @@ class ForgeEnvironmentSmokeTest {
         trait.getMethod("weakTileChanges_$eq", boolean.class).invoke(first, true);
         assertEquals(true, trait.getMethod("weakTileChanges").invoke(first));
         assertEquals(false, trait.getMethod("weakTileChanges").invoke(second), "State is per tile");
+    }
+
+    @Test
+    void generatesAndCachesFluidHandlerTileClass() throws Exception {
+        int traitId = MultipartMixinFactory.getId(TFluidHandlerTile.class.getName().replace('.', '/'));
+        assertFalse(traitId < 0);
+
+        BitSet traits = new BitSet();
+        traits.set(traitId);
+        Object first = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Object second = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Class<?> trait = Class.forName("codechicken.multipart.scalatraits.TFluidHandlerTile");
+
+        assertTrue(first instanceof TileMultipart);
+        assertTrue(first instanceof IFluidHandler);
+        assertTrue(trait.isInterface());
+        assertArrayEquals(new Class<?>[] { IFluidHandler.class }, trait.getInterfaces());
+        assertNotSame(first, second);
+        assertSame(first.getClass(), second.getClass());
+        assertEquals(0, trait.getDeclaredFields().length);
+        Set<String> signatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : trait.getDeclaredMethods()) {
+            signatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        String prefix = "codechicken$multipart$scalatraits$TFluidHandlerTile$$super$";
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                "canDrain(Lnet/minecraftforge/common/util/ForgeDirection;"
+                                        + "Lnet/minecraftforge/fluids/Fluid;)Z",
+                                "canFill(Lnet/minecraftforge/common/util/ForgeDirection;"
+                                        + "Lnet/minecraftforge/fluids/Fluid;)Z",
+                                "clearParts()V",
+                                "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                "drain(Lnet/minecraftforge/common/util/ForgeDirection;IZ)"
+                                        + "Lnet/minecraftforge/fluids/FluidStack;",
+                                "drain(Lnet/minecraftforge/common/util/ForgeDirection;"
+                                        + "Lnet/minecraftforge/fluids/FluidStack;Z)"
+                                        + "Lnet/minecraftforge/fluids/FluidStack;",
+                                "fill(Lnet/minecraftforge/common/util/ForgeDirection;"
+                                        + "Lnet/minecraftforge/fluids/FluidStack;Z)I",
+                                "getTankInfo(Lnet/minecraftforge/common/util/ForgeDirection;)"
+                                        + "[Lnet/minecraftforge/fluids/FluidTankInfo;",
+                                "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                "tankList()Ljava/util/LinkedList;",
+                                "tankList_$eq(Ljava/util/LinkedList;)V",
+                                prefix + "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                prefix + "clearParts()V",
+                                prefix + "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                prefix + "partRemoved(Lcodechicken/multipart/TMultiPart;I)V")),
+                signatures);
+
+        assertEquals(LinkedList.class, first.getClass().getDeclaredField("tankList").getType());
+        LinkedList<?> firstList = (LinkedList<?>) trait.getMethod("tankList").invoke(first);
+        LinkedList<?> secondList = (LinkedList<?>) trait.getMethod("tankList").invoke(second);
+        assertNotSame(firstList, secondList, "State is per tile");
+
+        LinkedList<IFluidHandler> replacement = new LinkedList<>();
+        trait.getMethod("tankList_$eq", LinkedList.class).invoke(first, replacement);
+        assertSame(replacement, trait.getMethod("tankList").invoke(first));
     }
 
     @Test
