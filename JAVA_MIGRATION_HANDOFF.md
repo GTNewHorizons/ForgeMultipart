@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 91 commits including separate characterization and port commits for
-`MultipartEventHandler`.
+Branch: `algent/java`. Base: `master`. 93 commits including separate characterization and port commits for
+`MicroblockMod`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **160 plain-JVM tests, 84 Forge server tests, all passing at their last completed runs.**
+Current baseline: **162 plain-JVM tests, 85 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -235,8 +235,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
-`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`, and
-`MultipartEventHandler`.
+`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
+`MultipartEventHandler`, and `MicroblockMod`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -251,7 +251,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-99 Java files, 35 Scala files, ~5,164 Scala lines left (non-blank; that is the metric this figure has always used).
+101 Java files, 34 Scala files, ~5,112 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -348,6 +348,11 @@ and the client-only highlight boundary retain their exact shape. The proxy now n
 explicitly, and that same companion remains registered on both event buses. Two plain-JVM and three Forge tests freeze
 the ABI, annotations, bus identity, load/unload cleanup, chunk watches and END-phase tick dispatch.
 
+`MicroblockMod` is now Java while remaining a Scala-language FML mod. Both annotated singleton class names, all ten
+lifecycle/IMC methods, the mutable `angelicaCompat` accessors and `MODULE$` retain their exact public descriptors and
+annotations. FML still uses the companion as its mod instance and completes the full microblock server lifecycle. Two
+plain-JVM and one Forge test freeze the shape, shared compatibility hook, companion identity and initialized registry.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -356,10 +361,11 @@ the ABI, annotations, bus identity, load/unload cleanup, chunk watches and END-p
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/handler/MicroblockMod.scala` next. Reuse the annotated facade/companion pattern, but also freeze the
-two `angelicaCompat` accessors alongside `MODULE$`, the exact `@Mod` metadata and all five handler annotations. Confirm
-that FML still uses the companion and completes the server lifecycle. Call `MicroblockProxy$.MODULE$` directly because
-its client overrides carry `@SideOnly`, and keep the characterization and port commits separate.
+Take `microblock/handler/MicroblockEventHandler.scala` next. Freeze both singleton class names and all four public
+event-method descriptors, both `@SubscribeEvent` annotations and both `@SideOnly(CLIENT)` boundaries. Preserve the
+companion identity registered on `MinecraftForge.EVENT_BUS`; the dedicated server can verify registration and safe
+side stripping, while texture stitching and highlight rendering remain client-only manual checks. Keep the
+characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

@@ -129,7 +129,7 @@ class MicroblockProxy_clientImpl extends MicroblockProxy_serverImpl {
     PacketCustom.assignHandler(MicroblockCPH.registryChannel, MicroblockCPH)
 
     if (Loader.isModLoaded("angelica"))
-      MicroblockMod.angelicaCompat = new AngelicaCompat
+      MicroblockMod.angelicaCompat_$eq(new AngelicaCompat)
   }
 
   @SideOnly(Side.CLIENT)

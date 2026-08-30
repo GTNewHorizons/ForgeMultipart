@@ -762,3 +762,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   proxy now names `MultipartEventHandler$.MODULE$` explicitly, preserving the exact object registered on both buses.
 - Server ticking still passes the configuration manager's live player list through Scala's Java-list buffer adapter;
   no copy or new traversal was introduced. All 160 plain-JVM and all 84 Java 8 Forge dedicated-server tests pass.
+- Characterized `MicroblockMod` against untouched Scala. Two plain-JVM cases freeze both annotated singleton types,
+  all ten lifecycle/IMC methods, the mutable `angelicaCompat` accessors and shared identity; one Forge case freezes
+  FML's companion mod instance and the completed microblock lifecycle.
+- Ported the singleton to an annotated Java facade/companion pair while retaining `modLanguage = "scala"`. Lifecycle
+  dispatch calls `MicroblockProxy$.MODULE$` directly, matching the reference bytecode and avoiding side-only static
+  forwarders that Forge strips on a dedicated server.
+- The internal client assignment now calls the preserved `angelicaCompat_$eq` method explicitly because recompiled
+  Scala cannot apply property-assignment syntax to a Java-authored setter. The compiled accessor ABI is unchanged.
+- All 162 plain-JVM and all 85 Java 8 Forge dedicated-server tests pass. Startup and lifecycle dispatch are not a
+  meaningful focused throughput or allocation target; `MicroblockEventHandler.scala` is the next target.

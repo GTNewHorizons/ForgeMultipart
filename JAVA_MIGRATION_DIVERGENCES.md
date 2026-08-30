@@ -1875,3 +1875,45 @@ exactly `MultipartEventHandler.class` and `MultipartEventHandler$.class`.
   server-tick phases before shutting down cleanly.
 - Raw `javap` comparison confirms identical public fields, method names and descriptors for both handler types;
   reflection confirms identical event annotations, and both jars emit exactly the same two handler classes.
+
+## 2026-08-30 — MicroblockMod Java port
+
+The ForgeMicroblock FML entry point is now an annotated Java facade/companion pair. It deliberately remains a
+`modLanguage = "scala"` mod, so FML continues to load `MicroblockMod$.MODULE$` as the mod instance.
+
+### Observable behavior
+
+No known runtime divergence. Pre-initialization still initializes the proxy, loads default content and parses the
+configuration directory in order. Initialization still registers recipes before loading configured materials.
+Post-initialization still builds the material ID map before finalizing the proxy, and server startup still rebuilds
+that map. IMC messages still reach `ConfigContent` through Scala's live Java-list buffer adapter.
+
+The proxy calls use `MicroblockProxy$.MODULE$`, matching the original Scala bytecode. This is required on a dedicated
+server because the generated static `init` and `postInit` forwarders inherit `@SideOnly(CLIENT)` and Forge strips them;
+virtual companion dispatch safely reaches the server implementation.
+
+### ABI, annotations and source compatibility
+
+`MicroblockMod` retains the exact five public static event methods and two static `angelicaCompat` accessors.
+`MicroblockMod$` retains `MODULE$`, the matching five instance event methods, two instance accessors and its private
+`AngelicaCompat` field. Both classes carry the same `@Mod` values, and exactly the five lifecycle/IMC methods carry
+`@Mod.EventHandler`. Public names and descriptors are identical to the reference, and both jars emit exactly
+`MicroblockMod.class` and `MicroblockMod$.class`.
+
+The internal Scala property assignment now spells the preserved binary setter explicitly as
+`MicroblockMod.angelicaCompat_$eq(...)`. Scala's assignment rewrite is unavailable when the setter is authored in
+Java, but compiled callers already target that same method name and descriptor. Reads remain unchanged.
+
+Accepted divergence: Scala signature/marker attributes disappear, and the static Java facade gains only a private
+constructor. Neither changes runtime annotation data or the callable public surface.
+
+### Validation
+
+- `MicroblockModCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- `MicroblockModFunctionalTest`: 1 Forge test, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 162 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 85 tests, 0 failures, 0 errors.
+- The Forge run loads all nine mods, identifies `MicroblockMod$.MODULE$` as the ForgeMicroblock instance, completes the
+  lifecycle, initializes every proxy item and builds a usable material ID map before shutting down cleanly.
+- Raw `javap` comparison confirms identical callable public names/descriptors; reflection confirms identical FML
+  annotations, and the emitted class list is unchanged.
