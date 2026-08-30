@@ -17,6 +17,8 @@ release that includes those ports.
 | Hover a microblock placement target | The placement highlight renders, and a mod supplying its own highlight renderer overrides it | `MicroMaterialRegistry.renderHighlight` |
 | Look at a saw in inventory and in hand | The saw item renders with its custom transform | `ItemSaw` `IItemRenderer` |
 | Place microblocks of several materials, including glass | Transparent materials render in the correct pass and are not opaque | `IMicroMaterial.canRenderInPass` |
+| Change a mixed multipart tile containing static and dynamically rendered parts | Static parts remain in the block render, dynamic parts remain in the TESR pass, and neither disappears after a part update | `TileMultipartClient` render caches |
+| Watch a multipart torch long enough to emit display particles | Only parts implementing `IRandomDisplayTick` emit particles, with no duplicate or missing callbacks | `TRandomDisplayTickTile.randomDisplayTick` |
 
 ## Placement and interaction
 

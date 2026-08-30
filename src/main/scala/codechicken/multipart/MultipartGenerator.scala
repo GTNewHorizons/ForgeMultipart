@@ -35,7 +35,9 @@ object MultipartGenerator extends ScratchBitSet {
   private val partTraitMap_c = Map[Class[_], BitSet]()
   private val partTraitMap_s = Map[Class[_], BitSet]()
   private val clientTraitId =
-    MultipartMixinFactory.registerTrait(classOf[TileMultipartClient])
+    MultipartMixinFactory.registerTrait(
+      "codechicken.multipart.TileMultipartClient"
+    )
 
   private def partTraitMap(client: Boolean) =
     if (client) partTraitMap_c else partTraitMap_s

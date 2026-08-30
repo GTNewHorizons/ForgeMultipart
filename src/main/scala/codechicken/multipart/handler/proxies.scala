@@ -28,15 +28,6 @@ class MultipartProxy_serverImpl {
     config = new ConfigFile(new File(cfgdir, "multipart.cfg"))
       .setComment("Multipart API config file")
 
-    GameRegistry.registerBlock(
-      new BlockMultipart().setBlockName("multipart"),
-      null,
-      "block"
-    )
-    block = Block.blockRegistry
-      .getObject("ForgeMultipart:block")
-      .asInstanceOf[BlockMultipart]
-
     MultipartGenerator.registerTrait(
       "codechicken.multipart.TSlottedPart",
       "codechicken.multipart.scalatraits.TSlottedTile"
@@ -71,6 +62,15 @@ class MultipartProxy_serverImpl {
       null,
       "codechicken.multipart.scalatraits.TTileChangeTile"
     )
+
+    GameRegistry.registerBlock(
+      new BlockMultipart().setBlockName("multipart"),
+      null,
+      "block"
+    )
+    block = Block.blockRegistry
+      .getObject("ForgeMultipart:block")
+      .asInstanceOf[BlockMultipart]
 
     MultipartSaveLoad.hookLoader()
   }

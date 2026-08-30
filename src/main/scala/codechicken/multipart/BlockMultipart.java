@@ -194,9 +194,9 @@ public class BlockMultipart extends Block {
     public boolean addHitEffects(World world, MovingObjectPosition hit, EffectRenderer effectRenderer) {
         TileMultipartClient tile = getClientTile(world, hit.blockX, hit.blockY, hit.blockZ);
         if (tile != null) {
-            // TileMultipartClient is a Scala trait, so it is a bare interface here and carries no TileMultipart
-            // members.
-            TileMultipart parts = (TileMultipart) tile;
+            // The mixin transformer turns TileMultipartClient into an interface at runtime, so retain the cast in
+            // bytecode even though the Java source model extends TileMultipart.
+            TileMultipart parts = TileMultipart.class.cast(tile);
             Tuple2<Object, ExtendedMOP> reduced = reduceMOP(hit);
             int index = (Integer) reduced._1();
             if (index < parts.partList().size()) {
@@ -291,7 +291,7 @@ public class BlockMultipart extends Block {
     public void randomDisplayTick(World world, int x, int y, int z, Random random) {
         TileMultipartClient tile = getClientTile(world, x, y, z);
         if (tile != null) {
-            tile.randomDisplayTick(random);
+            TileMultipart.class.cast(tile).randomDisplayTick(random);
         }
     }
 

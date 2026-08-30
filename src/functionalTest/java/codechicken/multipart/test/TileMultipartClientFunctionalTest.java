@@ -7,6 +7,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,11 +45,11 @@ class TileMultipartClientFunctionalTest {
         setParts(tile, dynamicOnly, fixed, ticking);
 
         TileMultipartClient client = (TileMultipartClient) tile;
-        client.updateRenderCache();
+        invokeUpdateRenderCache(client);
 
         assertArrayEquals(new TMultiPart[] { fixed }, staticCache(client));
         assertArrayEquals(new TMultiPart[] { dynamicOnly, ticking }, dynamicCache(client));
-        assertTrue(client.hasDynamicParts());
+        assertTrue((Boolean) invokeClient(client, "hasDynamicParts", boolean.class));
         assertEquals(1, dynamicOnly.doesTickCalls);
         assertEquals(1, dynamicOnly.dynamicCalls);
         assertEquals(1, fixed.doesTickCalls);
@@ -66,11 +68,11 @@ class TileMultipartClientFunctionalTest {
         tile.partList_$eq(null);
 
         TileMultipartClient client = (TileMultipartClient) tile;
-        client.updateRenderCache();
+        invokeUpdateRenderCache(client);
 
         assertEquals(0, staticCache(client).length);
         assertEquals(0, dynamicCache(client).length);
-        assertFalse(client.hasDynamicParts());
+        assertFalse((Boolean) invokeClient(client, "hasDynamicParts", boolean.class));
         assertBounds(cachedBounds(client), -3.0, 7.0, 11.0, -2.0, 8.0, 12.0);
     }
 
@@ -84,8 +86,9 @@ class TileMultipartClientFunctionalTest {
         assertNull(staticCache(client));
         assertNull(cachedBounds(client));
 
-        assertFalse(client.shouldRenderInPass(17));
-        AxisAlignedBB bounds = client.getRenderBoundingBox();
+        assertFalse(
+                (Boolean) invokeClient(client, "shouldRenderInPass", boolean.class, new Class<?>[] { int.class }, 17));
+        AxisAlignedBB bounds = (AxisAlignedBB) invokeClient(client, "getRenderBoundingBox", AxisAlignedBB.class);
 
         assertEquals(0, staticCache(client).length);
         assertEquals(0, dynamicCache(client).length);
@@ -95,24 +98,32 @@ class TileMultipartClientFunctionalTest {
 
     @Test
     void dynamicRenderingReturnsBeforeTouchingTheCacheWhenTheFlagIsFalse() throws Exception {
-        TileMultipartClient client = (TileMultipartClient) newClientTile();
+        TileMultipart tile = newClientTile();
+        TileMultipartClient client = (TileMultipartClient) tile;
         RenderPart dynamic = new RenderPart("dynamic", true, false, Cuboid6.full);
         setDynamicCache(client, new TMultiPart[] { dynamic });
-        client.hasDynamicParts_$eq(false);
+        invokeClient(client, "hasDynamicParts_$eq", void.class, new Class<?>[] { boolean.class }, false);
 
-        client.renderDynamic(null, 0.5F, 1);
+        invokeClient(
+                client,
+                "renderDynamic",
+                void.class,
+                new Class<?>[] { codechicken.lib.vec.Vector3.class, float.class, int.class },
+                null,
+                0.5F,
+                1);
 
         assertEquals(0, dynamic.renderDynamicCalls);
     }
 
     @Test
-    void baseRandomDisplayTickIsANoOp() {
+    void baseRandomDisplayTickIsANoOp() throws Exception {
         TileMultipartClient client = (TileMultipartClient) newClientTile();
-        client.randomDisplayTick(new Random(1L));
+        invokeClient(client, "randomDisplayTick", void.class, new Class<?>[] { Random.class }, new Random(1L));
     }
 
     @Test
-    void randomDisplayTickVisitsOnlyMatchingPartsInOrderWithTheSameRandom() {
+    void randomDisplayTickVisitsOnlyMatchingPartsInOrderWithTheSameRandom() throws Exception {
         TileMultipart tile = newRandomDisplayTickTile();
         List<String> calls = new ArrayList<>();
         DisplayPart first = new DisplayPart("first", calls);
@@ -121,7 +132,12 @@ class TileMultipartClientFunctionalTest {
         setParts(tile, first, skipped, second);
         Random random = new Random(2L);
 
-        ((TRandomDisplayTickTile) tile).randomDisplayTick(random);
+        invokeClient(
+                (TileMultipartClient) tile,
+                "randomDisplayTick",
+                void.class,
+                new Class<?>[] { Random.class },
+                random);
 
         assertEquals(Arrays.asList("first", "second"), calls);
         assertSame(random, first.lastRandom);
@@ -144,6 +160,30 @@ class TileMultipartClientFunctionalTest {
 
     private static void setParts(TileMultipart tile, TMultiPart... parts) {
         tile.partList_$eq(JavaConversions.asScalaBuffer(Arrays.asList(parts)).toList());
+    }
+
+    private static void invokeUpdateRenderCache(TileMultipartClient client) throws Exception {
+        invokeClient(client, "updateRenderCache", void.class);
+    }
+
+    private static Object invokeClient(TileMultipartClient client, String name, Class<?> returnType, Object... args)
+            throws Exception {
+        return invokeClient(client, name, returnType, new Class<?>[0], args);
+    }
+
+    private static Object invokeClient(TileMultipartClient client, String name, Class<?> returnType,
+            Class<?>[] parameterTypes, Object... args) throws Exception {
+        try {
+            return MethodHandles.publicLookup()
+                    .findVirtual(TileMultipartClient.class, name, MethodType.methodType(returnType, parameterTypes))
+                    .bindTo(client).invokeWithArguments(args);
+        } catch (Exception exception) {
+            throw exception;
+        } catch (Error error) {
+            throw error;
+        } catch (Throwable throwable) {
+            throw new AssertionError(throwable);
+        }
     }
 
     private static TMultiPart[] staticCache(TileMultipartClient client) throws Exception {

@@ -556,7 +556,7 @@ object ASMMixinCompiler {
         "Cannot register abstract class " + cnode.name + " as a java mixin trait. Use scala"
       )
 
-    // val parentTraits = getAndRegisterParentTraits(cnode)
+    val parentTrait = getMixinInfo(cnode.superName)
     val fields = cnode.fields
       .map(f => (f.name, FieldMixin(f.name, f.desc, f.access)))
       .toMap
@@ -591,7 +591,7 @@ object ASMMixinCompiler {
       cnode.name,
       null,
       "java/lang/Object",
-      Array(cnode.interfaces: _*)
+      (cnode.interfaces ++ parentTrait.map(_.name)).distinct.toArray
     )
 
     def fname(name: String) = fields(name).accessName(cnode.name)
@@ -787,7 +787,14 @@ object ASMMixinCompiler {
       staticTransform(mv, mnode)
     }
 
-    cnode.methods.foreach(convertMethod)
+    def isGeneratedFieldAccessor(mnode: MethodNode) = fields.values.exists {
+      field =>
+        val name = field.accessName(cnode.name)
+        mnode.name == name && mnode.desc == "()" + field.desc ||
+        mnode.name == name + "_$eq" && mnode.desc == "(" + field.desc + ")V"
+    }
+
+    cnode.methods.filterNot(isGeneratedFieldAccessor).foreach(convertMethod)
 
     define(inode.name, createBytes(inode, 0))
     define(tnode.name, createBytes(tnode, 0))
@@ -796,8 +803,8 @@ object ASMMixinCompiler {
       tnode.name,
       MixinInfo(
         tnode.name,
-        cnode.superName,
-        Seq(),
+        parentTrait.map(_.parent).getOrElse(cnode.superName),
+        parentTrait.toSeq,
         fields.values.toSeq,
         methods,
         supers

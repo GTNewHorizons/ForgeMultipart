@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Consumer;
 
+import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.item.EntityItem;
 import net.minecraft.entity.player.EntityPlayer;
@@ -14,6 +16,7 @@ import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.Vec3;
+import net.minecraft.world.IBlockAccess;
 import net.minecraft.world.World;
 
 import codechicken.lib.data.MCDataOutput;
@@ -258,6 +261,17 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     public void markRender() {
         worldObj.func_147479_m(xCoord, yCoord, zCoord);
     }
+
+    /** Client render hook overridden by generated tiles carrying TileMultipartClient. */
+    public boolean renderStatic(IBlockAccess world, Vector3 position, RenderBlocks renderer) {
+        return false;
+    }
+
+    /** Client render hook overridden by generated tiles carrying TileMultipartClient. */
+    public void renderDynamic(Vector3 position, float frame, int pass) {}
+
+    /** Client particle hook overridden by generated tiles carrying TRandomDisplayTickTile. */
+    public void randomDisplayTick(Random random) {}
 
     /** Helper function for calling a second level notify on a side (eg indirect power from a lever). */
     public void notifyNeighborChange(int side) {

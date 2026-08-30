@@ -25,11 +25,12 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 The binary and source-level consumer audits, low-coupling Phase 3 queue, audit-derived immediate compatibility gate,
 focused profile, first traversal optimization, complete redstone interaction helper unit, `MicroRecipe` port, and the
-first six Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
+first eight Java-trait ports are complete. `TPartialOcclusionTile` proved the no-field path, `TSlottedTile` proved state
 and lifecycle rewriting, `TRedstoneTile` removed the measured redstone allocation, `TTileChangeTile` exercised mutable
 state plus inherited access, `TFluidHandlerTile` preserved ordered Forge fluid distribution, and
-`TIInventoryTile`/`JInventoryTile` preserved AE2's direct rebuild linkage plus flattened sided inventory routing. All
-retain their exact runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
+`TIInventoryTile`/`JInventoryTile` preserved AE2's direct rebuild linkage plus flattened sided inventory routing.
+`TileMultipartClient` and `TRandomDisplayTickTile` complete the built-in trait queue with their render-cache and random
+display-tick behavior intact. All retain their exact runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -356,14 +357,19 @@ Exit condition: identified steady-state Scala allocation sites are removed with 
 - [x] Verify generated field accessors, initialization, copying, lifecycle callbacks, super bridges, and class caching
   on the stateful `TSlottedTile` checkpoint.
 - [x] Characterize ProjectRed/Extra Utilities redstone calls and port `TRedstoneTile` with an immediate paired profile.
-- [ ] Convert remaining traits in small related groups.
-- [ ] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
-- [ ] Preserve pass-through interface behavior.
+- [x] Convert remaining traits in small related groups.
+- [x] Document or deliberately relax the Java trait restrictions only when a real trait requires it.
+- [x] Preserve pass-through interface behavior.
 - [x] Keep the completed OpenComputers `TSlottedTile.v_partMap` mutation/rebinding case green and cover ProjectRed/
   Extra Utilities behavior before `TRedstoneTile`.
 - [x] Explicitly cover AE2's `TIInventoryTile.rebuildSlotMap` before the inventory trait.
 
 Exit condition: built-in behavior is implemented in Java while the established runtime composition mechanism remains stable.
+
+Status: complete. All built-in tile traits are Java. The client pair required narrowly extending `registerJavaTrait`
+for a registered Java trait extending another registered Java trait, explicit Java field accessors, and transient
+runtime-only fields that must not participate in generated `copyFrom`. The generated runtime interfaces and class
+cache remain reference-identical; pass-through-interface coverage remains green.
 
 ### Phase 6 — Convert multipart core and microblocks
 
@@ -714,3 +720,19 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   snapshots before publishing a replacement immutable `Seq`.
 - In the paired run, `getLightValue` fell from 183.9 B to 0.0 B per call with 11.42x throughput, and `getTile` fell
   from 24.0 B to 0.0 B per call with 2.89x throughput. All 147 plain-JVM and 46 Forge tests pass.
+
+### 2026-08-30
+
+- Characterized `TileMultipartClient` and `TRandomDisplayTickTile` together against untouched Scala. Six behavior
+  cases freeze render-cache partitioning and bounds, lazy initialization, dynamic short-circuiting, base no-op display
+  ticks, and ordered `IRandomDisplayTick` dispatch; a Forge smoke case freezes both exact runtime interfaces,
+  inheritance, generated fields, and generated-class caching.
+- Ported both traits to Java with package-private access shims. `registerJavaTrait` now linearizes an already registered
+  Java parent trait, recognizes explicit field accessors, and skips transient runtime caches when auto-generating
+  `copyFrom`. Trait registration now precedes `BlockMultipart` construction so Forge defines the runtime interfaces
+  before ordinary Java bytecode can preload the mixin inputs.
+- Added three no-op client dispatch hooks to `TileMultipart`, allowing in-repo Java callers to invoke generated
+  overrides through the stable superclass rather than emit class opcodes against types Forge rewrites to interfaces.
+  The runtime trait surfaces remain exact; the raw dev-jar source-build limitation remains documented.
+- All 153 plain-JVM tests and all 77 Java 8 Forge dedicated-server tests pass. Actual static/dynamic rendering and
+  particle appearance remain client-only manual checks.

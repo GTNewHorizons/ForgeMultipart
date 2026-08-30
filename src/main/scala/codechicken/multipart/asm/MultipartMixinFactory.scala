@@ -14,8 +14,9 @@ import scala.collection.JavaConversions._
 
 object MultipartMixinFactory extends ASMMixinFactory(classOf[TileMultipart]) {
   override protected def autoCompleteJavaTrait(cnode: ClassNode) {
+    val copyFields = cnode.fields.filter(f => (f.access & ACC_TRANSIENT) == 0)
     if (
-      !cnode.fields.isEmpty && findMethod(
+      !copyFields.isEmpty && findMethod(
         new ObfMapping(
           cnode.name,
           "copyFrom",
@@ -45,7 +46,7 @@ object MultipartMixinFactory extends ASMMixinFactory(classOf[TileMultipart]) {
       val end = new Label()
       mv.visitJumpInsn(IFEQ, end)
 
-      cnode.fields.foreach { f =>
+      copyFields.foreach { f =>
         mv.visitVarInsn(ALOAD, 0)
         mv.visitVarInsn(ALOAD, 1)
         mv.visitFieldInsn(GETFIELD, cnode.name, f.name, f.desc)

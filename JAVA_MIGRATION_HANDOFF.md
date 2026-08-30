@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 83 commits including separate characterization and port commits for
-`TIInventoryTile`/`JInventoryTile`.
+Branch: `algent/java`. Base: `master`. 85 commits including separate characterization and port commits for
+`TileMultipartClient`/`TRandomDisplayTickTile`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **153 plain-JVM tests, 70 Forge server tests, all passing at their last completed runs.**
+Current baseline: **153 plain-JVM tests, 77 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -197,6 +197,21 @@ trait-to-superclass cast is involved.
 `MatchError: 188` while registering the trait. `JInventoryTile` therefore converts its collected sided slots to
 `int[]` in package-private `JInventoryTileAccess`. Reference arrays use `ANEWARRAY` and remain safe inside traits.
 
+**Registered Java traits may now extend another registered Java trait.** Register the parent first. The transformer
+adds the parent runtime interface and linearization entry, while parent validation resolves through it to the concrete
+`TileMultipart` base. This path is characterized by `TRandomDisplayTickTile`; do not generalize it to arbitrary class
+inheritance without another fixture.
+
+**Mark runtime-only Java-trait fields transient when Scala did not copy them.** `autoCompleteJavaTrait` copies every
+ordinary field through generated `copyFrom`, but now excludes transient fields. `TileMultipartClient` uses this for
+render caches and its derived dynamic flag, preserving the Scala trait's absence of a `copyFrom` override.
+
+**Do not invoke a registered mixin type directly from Java source.** The untransformed input is a class, so javac emits
+class opcodes that become invalid when Forge rewrites it to an interface. In-repo client calls use additive no-op hooks
+on `TileMultipart` so generated overrides dispatch through the stable superclass. Dedicated-server tests use targeted
+method handles for trait-only methods; ordinary reflection enumerates the client-only `RenderBlocks` descriptor and
+triggers the side transformer.
+
 **Type the access shim's parameters `Object`.** `TTileChangeTileAccess` first typed them as the trait itself and cast
 to `TileMultipart` inside. Because the untransformed trait extends `TileMultipart`, javac elided the cast, and once
 Forge rewrote the trait to an interface the verifier rejected the `getfield`. `TRedstoneTileAccess` only escapes this
@@ -214,7 +229,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TFacePart`, the `TIconHitEffects` unit, `TItemMultiPart`/`JItemMultiPart`, `TEdgePart`, `Saw`, `MicroMaterialRegistry`,
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
-`TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, and `TIInventoryTile`/`JInventoryTile` Java-trait ports.
+`TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
+`TRandomDisplayTickTile` Java-trait ports.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -229,7 +245,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-89 Java files, 40 Scala files, ~5,453 Scala lines left (non-blank; that is the metric this figure has always used).
+91 Java files, 38 Scala files, ~5,328 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -305,18 +321,23 @@ behavior tests freeze inventory-list sharing, flattened routing, sided offsets a
 generated composite retains its two private prefixed fields and per-tile initialization. Primitive `int[]` creation is
 isolated in `JInventoryTileAccess` because the transformer cannot analyze `NEWARRAY`.
 
+`TileMultipartClient` and `TRandomDisplayTickTile` complete the built-in Java-trait queue. Six focused behavior tests
+freeze render-cache order, bounds, lazy initialization, dynamic short-circuiting, and display-tick dispatch. The Forge
+shape guard pins the exact 16-method base interface, one-method child interface, inheritance, generated private fields,
+and class caching. GuideNH only loads `TileMultipartClient` by name for `isInstanceOf`; no audited consumer references
+either removed `$class` helper. The true client rendering and particle paths remain on the manual checklist.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
 
-**Phase 5, needs the `registerJavaTrait` path.** `TileMultipartClient` and the remaining Scala files in
-`multipart/scalatraits/`. The no-field, stateful, measured hot-query, and inherited-member cases are all complete
-without a generator change.
+**Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
+narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
+transient runtime caches from generated copying.
 
-Take the client tile pair next: `TileMultipartClient` and `TRandomDisplayTickTile`. The latter is the only Scala file
-left in `multipart/scalatraits/`, is registered client-only, and reads inherited `partList`, so it needs both an access
-shim and client-side characterization rather than relying on the dedicated-server harness. Audit the base trait's
-consumer-visible shape before deciding whether to port them together.
+Take `multipart/handler/MultipartCompatiblity.scala` next as the smallest medium-risk Phase 6 handler unit. Preserve
+the misspelled public singleton name and its Scala `Function4` accessor, characterize the default allow path and the
+reflective MCPC hook failure path first, and keep the characterization/port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
@@ -330,7 +351,8 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   work and is required before release claims about real TPS.
 - The server side of flag-sensitive pass-through registration is automated; client-side exclusion still belongs to
   the packaged-client/manual compatibility run.
-- Shipping consumers compiled against the old `TSlottedTile`, `TRedstoneTile`, and `TIInventoryTile` interfaces remain binary-compatible
+- Shipping consumers compiled against the old `TSlottedTile`, `TRedstoneTile`, `TIInventoryTile`,
+  `TileMultipartClient`, and `TRandomDisplayTickTile` interfaces remain binary-compatible
   because Forge still exposes those exact interfaces at runtime. A consumer recompiled against the untransformed dev
   jar instead sees concrete Java mixin inputs and can emit class/field opcodes that are invalid after Forge rewrites
   them to interfaces. Provide a transformed compile stub or downstream source guidance before claiming

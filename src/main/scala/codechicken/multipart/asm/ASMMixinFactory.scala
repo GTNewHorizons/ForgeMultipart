@@ -67,10 +67,17 @@ class ASMMixinFactory[T](
     }
 
     val info = getClassInfo(cnode)
-    def concreteParent(info: ClassInfo): ClassInfo = info.superClass.map {
-      case i if i.isTrait => concreteParent(i)
-      case i              => i
-    }.get
+    def concreteParent(info: ClassInfo): ClassInfo = getMixinInfo(
+      info.name
+    ) match {
+      case Some(mixin) => getClassInfo(mixin.parent)
+      case None =>
+        info.superClass.map {
+          case i if i.isTrait || getMixinInfo(i.name).isDefined =>
+            concreteParent(i)
+          case i => i
+        }.get
+    }
 
     val parentName = concreteParent(info).name
     def checkParent(info: ClassInfo): Boolean =

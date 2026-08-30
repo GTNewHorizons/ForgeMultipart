@@ -50,7 +50,7 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
         state.pullLightmapInstance();
         state.useNormals = true;
 
-        client.renderDynamic(new Vector3(x, y, z), f, MinecraftForgeClient.getRenderPass());
+        tile.renderDynamic(new Vector3(x, y, z), f, MinecraftForgeClient.getRenderPass());
     }
 
     @Override
@@ -80,7 +80,7 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
         CCRenderState state = CCRenderState.instance();
         state.resetInstance();
         state.lightMatrix.locate(world, x, y, z);
-        boolean b = client.renderStatic(world, new Vector3(x, y, z), renderer);
+        boolean b = tile.renderStatic(world, new Vector3(x, y, z), renderer);
         state.lightMatrix.access = null;
         return b;
     }

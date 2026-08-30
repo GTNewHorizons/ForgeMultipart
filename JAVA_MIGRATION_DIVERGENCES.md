@@ -1693,3 +1693,58 @@ supported. The helper adds no public surface.
 - Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 70 tests, 0 failures, 0 errors.
 - Raw `javap` descriptors for both public types match the reference, including `scala.Tuple2[]` state accessors.
+
+## 2026-08-30 — TileMultipartClient/TRandomDisplayTickTile Java-trait port
+
+GuideNH is the only audited shipping consumer naming `TileMultipartClient`; it loads the class reflectively and uses
+it only for `isInstanceOf`. No frozen binary or audited source consumer references either trait's `$class` helper.
+
+### Observable behavior
+
+No known runtime divergence. `updateRenderCache` still partitions each part once in source order, using the same
+`doesTick || shouldRenderDynamic` short-circuit, then builds static and dynamic arrays in their respective order. Its
+bounding box remains the union of all render bounds translated by tile coordinates, or the full block for an empty or
+null part list. Static rendering still visits both caches, dynamic rendering still returns immediately when its flag
+is false, queries still initialize lazily, and `markRender` still calls super before rebuilding the cache.
+
+The base display-tick method remains a no-op. `TRandomDisplayTickTile` still visits only `IRandomDisplayTick` parts in
+part-list order and passes the same `Random` instance to every callback.
+
+### Generated ABI and raw input divergence
+
+At Forge runtime `TileMultipartClient` remains a public field-free interface with no parent interface and the exact
+same 16 methods, including six private-cache accessors and the `markRender` super bridge.
+`TRandomDisplayTickTile` remains a field-free child interface extending exactly `TileMultipartClient` and declaring
+only `randomDisplayTick(Random)`. Generated composites retain the three private prefixed cache fields plus the plain
+private `hasDynamicParts` field, and continue to use the same class cache.
+
+The raw dev artifact replaces the two Scala interfaces, two `$class` helpers, and three closure classes with concrete
+Java mixin inputs plus package-private `TileMultipartClientAccess` and `TRandomDisplayTickTileAccess`. As with earlier
+Java-trait ports, a consumer compiling directly against the untransformed dev jar must not emit direct class/field
+opcodes for these runtime interfaces; use a transformed compile stub for source-compatible downstream rebuilds.
+
+`TileMultipart` gains additive no-op `renderStatic`, `renderDynamic`, and `randomDisplayTick` hooks. In-repo Java code
+invokes generated overrides through that stable superclass because javac otherwise emits `invokevirtual` against the
+concrete mixin input that Forge later rewrites to an interface. Existing binary consumers are unaffected.
+
+### Transformer constraints
+
+This is the first registered Java mixin extending another registered Java mixin. `registerJavaTrait` now carries the
+parent runtime interface into the generated hierarchy and linearization, while parent validation resolves through the
+registered mixin to `TileMultipart`. It also recognizes explicit source field accessors so it does not emit duplicate
+runtime declarations.
+
+Render caches must not be copied by `TileMultipart.copyFrom`, matching the Scala trait. They are marked transient on
+the Java mixin input, and automatic Java-trait field copying now ignores transient fields. The generated runtime fields
+remain ordinary private fields. Trait registration moved before `BlockMultipart` construction so its
+`instanceof TileMultipartClient` bytecode cannot preload the raw class before Forge defines the runtime interface.
+
+### Validation
+
+- `TileMultipartClientFunctionalTest`: 6 Forge tests covering cache partition/order, short-circuiting, translated and
+  fallback bounds, lazy initialization, dynamic early return, base no-op behavior, and ordered display-tick dispatch.
+- `ForgeEnvironmentSmokeTest.generatesClientAndRandomDisplayTickTraitsWithTheirExactHierarchy`: exact interfaces,
+  inheritance, methods, generated fields, distinct combinations, and class-cache behavior.
+- All seven tests passed against the untouched Scala implementation before the port; all 77 Forge tests pass after it.
+- Complete plain-JVM suite: 153 tests, 0 failures, 0 errors.
+- Actual block/TESR rendering and particle appearance require a client and remain on the manual checklist.
