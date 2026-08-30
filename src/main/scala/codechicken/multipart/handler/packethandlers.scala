@@ -33,7 +33,7 @@ import net.minecraft.util.{ChatComponentText, ChatComponentTranslation}
 import net.minecraft.network.NetHandlerPlayServer
 
 class MultipartPH {
-  val channel = MultipartMod
+  val channel = MultipartMod$.MODULE$
   val registryChannel = "ForgeMultipart"
 }
 

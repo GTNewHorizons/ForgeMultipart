@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 87 commits including separate characterization and port commits for
-`MultipartCompatiblity`/`MCPCCompatModule`.
+Branch: `algent/java`. Base: `master`. 89 commits including separate characterization and port commits for
+`MultipartMod`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **156 plain-JVM tests, 79 Forge server tests, all passing at their last completed runs.**
+Current baseline: **158 plain-JVM tests, 81 Forge server tests, all passing at their last completed runs.**
 
 ### ABI diff against the reference
 
@@ -151,6 +151,11 @@ not the whole test — check the reflective string constants too. `MultipartHelp
 any consumer's constant pool as a type, but guidenh names it as a string, so it was kept. `IconHitEffects$` was in
 neither and was dropped. Check both lists before deleting a companion.
 
+**Do not call a side-only Scala object's static facade from common Java.** `MultipartProxy.postInit()` exists in the
+raw jar but inherits `@SideOnly(CLIENT)` from the client override, so Forge strips that forwarder on a dedicated server
+and a Java call fails with `NoSuchMethodError`. Call `MultipartProxy$.MODULE$.postInit()` as the Scala reference did;
+after side stripping, virtual resolution reaches the server superclass implementation.
+
 **Classes that cannot class-initialize headless make good probes.** `MultipartSaveLoad` reflects into `TileEntity`'s
 static maps through `ObfMapping` and always throws under a plain JVM. That turns "did this branch reach the loader?"
 into an assertion: returning normally proves the guard short-circuited, and `assertThrows(LinkageError.class, ...)`
@@ -230,7 +235,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultiPartRegistry`, `TileMultipart`, `TMultiPart`, `TickScheduler`, `BlockMultipart`, the complete
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
-`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`.
+`TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule` and `MultipartMod`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -245,7 +250,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-95 Java files, 37 Scala files, ~5,285 Scala lines left (non-blank; that is the metric this figure has always used).
+97 Java files, 36 Scala files, ~5,241 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -332,6 +337,11 @@ mutable Scala `Function4` callback retain their exact public descriptors. Three 
 default allow behavior and shared setter identity; two Forge tests freeze non-MCPC loading and the logged missing-hook
 fallback. The optional successful MCPC hook still needs a real patched `World` implementation to exercise end to end.
 
+`MultipartMod` is now Java while remaining a Scala-language FML mod. Both annotated class names, all ten lifecycle
+methods and `MultipartMod$.MODULE$` retain their exact public descriptors and annotations. FML still uses the companion
+as the mod instance, and `MultipartPH.channel()` still returns that same companion with its original descriptor. Two
+plain-JVM and two Forge tests freeze the shape, identity, completed lifecycle and server-stop cleanup.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -340,9 +350,10 @@ fallback. The optional successful MCPC hook still needs a real patched `World` i
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `multipart/handler/MultipartMod.scala` next as the next small, independent handler unit. Freeze both singleton
-types, the exact `@Mod` metadata and all five FML lifecycle annotations before changing it, then exercise pre/init/
-post-init and server cleanup through the Forge harness. Keep the characterization and port commits separate.
+Take `multipart/handler/MultipartEventHandler.scala` next. Preserve both singleton types and event-bus identity; freeze
+every `@SubscribeEvent` priority plus the client-only highlight annotation before changing it. Exercise load/unload,
+chunk watch/unwatch and end-of-server-tick dispatch where the Forge harness can observe them, and keep the
+characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

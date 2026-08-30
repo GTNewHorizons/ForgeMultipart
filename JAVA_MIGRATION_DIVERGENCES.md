@@ -1786,3 +1786,46 @@ closure implementation details with no consumer reference. The four public facad
 - Raw `javap` comparison confirms identical public names and descriptors for all four public types.
 - The successful reflective path requires an MCPC-patched `World` and remains an environment-specific integration
   check; the stock development server covers its failure fallback only.
+
+## 2026-08-30 — MultipartMod Java port
+
+The ForgeMultipart FML entry point is now an annotated Java facade/companion pair. It deliberately remains a
+`modLanguage = "scala"` mod: FML's Scala language adapter loads `MultipartMod$.MODULE$`, which is also the identity
+CodeChickenLib uses for the multipart packet channel.
+
+### Observable behavior
+
+No known runtime divergence. Pre-initialization still passes the event's configuration directory and logger to the
+proxy; initialization still delegates directly; post-initialization still finalizes the registry and proxy only when
+multipart registration is required; server startup still rebuilds the part ID map; and server shutdown still clears
+the loading-world reference and control-key map.
+
+The proxy calls use `MultipartProxy$.MODULE$`, matching the original Scala bytecode. This is required on a dedicated
+server: the raw `MultipartProxy.postInit()` static forwarder inherits `@SideOnly(CLIENT)` from the client override and
+Forge strips it. Calling that facade from common Java compiles but fails at runtime with `NoSuchMethodError`; companion
+dispatch survives stripping and resolves to the server superclass method.
+
+### ABI, annotations and source compatibility
+
+`MultipartMod` retains the exact five public static event methods. `MultipartMod$` retains `MODULE$` and the matching
+five public instance methods. Both classes still carry the same `@Mod` values, and every method still carries
+`@Mod.EventHandler`. Public names and descriptors are identical to the reference.
+
+The in-repo Scala expression `val channel = MultipartMod` becomes `MultipartMod$.MODULE$`. The compiled
+`MultipartPH.channel` field and accessor remain typed as `MultipartMod$`, so packet identity and binary compatibility
+are unchanged. No frozen external consumer names either mod class.
+
+Accepted divergence: the Scala signature/marker attributes disappear, and the static Java facade gains only a private
+constructor. These do not change the runtime annotation data or callable public surface. The emitted class list remains
+exactly `MultipartMod.class` and `MultipartMod$.class`.
+
+### Validation
+
+- `MultipartModCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartModFunctionalTest`: 2 Forge tests, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 158 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 81 tests, 0 failures, 0 errors.
+- The Forge run loads all nine mods, identifies `MultipartMod$.MODULE$` as the ForgeMultipart instance, completes every
+  startup phase, reaches server-started tests, and shuts down cleanly.
+- Raw `javap` comparison confirms identical public names/descriptors for `MultipartMod`, `MultipartMod$` and
+  `MultipartPH`; reflection confirms identical FML annotations.

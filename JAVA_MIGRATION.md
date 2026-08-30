@@ -744,3 +744,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   callback classes. No frozen binary or audited source consumer names those implementation classes.
 - All 156 plain-JVM tests and all 79 Java 8 Forge dedicated-server tests pass. This initialization-only hook is not a
   meaningful target for the focused allocation benchmark; successful MCPC integration remains environment-dependent.
+- Characterized `MultipartMod` against untouched Scala. Two plain-JVM cases freeze both annotated singleton types,
+  all ten lifecycle methods and annotations, plus the `MultipartPH.channel` companion descriptor and identity; two
+  Forge cases freeze FML's companion mod instance, completed initialization and server-stop cleanup.
+- Ported the singleton to an annotated Java facade/companion pair while retaining `modLanguage = "scala"`. The one
+  source use of the object as a value now names `MultipartMod$.MODULE$` explicitly, leaving the compiled packet-handler
+  field and accessor unchanged.
+- Found that the inherited `MultipartProxy.postInit` static forwarder carries `@SideOnly(CLIENT)` and is stripped on a
+  dedicated server. The Java companion therefore invokes `MultipartProxy$.MODULE$` directly, matching the reference
+  Scala bytecode and allowing virtual resolution to reach the server implementation.
+- All 158 plain-JVM tests and all 81 Java 8 Forge dedicated-server tests pass. Mod lifecycle dispatch is startup-only,
+  so it is not a meaningful focused throughput or allocation target.
