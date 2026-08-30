@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -20,6 +21,8 @@ import java.util.LinkedList;
 import java.util.Set;
 import java.util.TreeSet;
 
+import net.minecraft.inventory.IInventory;
+import net.minecraft.inventory.ISidedInventory;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.MinecraftServer;
 import net.minecraftforge.fluids.IFluidHandler;
@@ -41,7 +44,9 @@ import codechicken.multipart.TFacePart;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.asm.MultipartMixinFactory;
+import codechicken.multipart.scalatraits.JInventoryTile;
 import codechicken.multipart.scalatraits.TFluidHandlerTile;
+import codechicken.multipart.scalatraits.TIInventoryTile;
 import codechicken.multipart.scalatraits.TSlottedTile;
 import codechicken.multipart.scalatraits.TTileChangeTile;
 import cpw.mods.fml.common.FMLCommonHandler;
@@ -324,6 +329,140 @@ class ForgeEnvironmentSmokeTest {
         LinkedList<IFluidHandler> replacement = new LinkedList<>();
         trait.getMethod("tankList_$eq", LinkedList.class).invoke(first, replacement);
         assertSame(replacement, trait.getMethod("tankList").invoke(first));
+    }
+
+    @Test
+    void generatesAndCachesInventoryTileClassWithBothPublicTraitInterfaces() throws Exception {
+        int traitId = MultipartMixinFactory.getId(JInventoryTile.class.getName().replace('.', '/'));
+        assertFalse(traitId < 0);
+
+        BitSet traits = new BitSet();
+        traits.set(traitId);
+        Object first = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Object second = MultipartMixinFactory.construct(traits, Nil$.MODULE$);
+        Class<?> inventoryTrait = Class.forName("codechicken.multipart.scalatraits.TIInventoryTile");
+        Class<?> javaTrait = Class.forName("codechicken.multipart.scalatraits.JInventoryTile");
+
+        assertTrue(first instanceof TileMultipart);
+        assertTrue(first instanceof TIInventoryTile);
+        assertTrue(first instanceof ISidedInventory);
+        assertTrue(javaTrait.isInstance(first));
+        assertTrue(inventoryTrait.isInterface());
+        assertTrue(javaTrait.isInterface());
+        assertArrayEquals(new Class<?>[] { ISidedInventory.class }, inventoryTrait.getInterfaces());
+        assertArrayEquals(new Class<?>[] { TIInventoryTile.class }, javaTrait.getInterfaces());
+        assertNotSame(first, second);
+        assertSame(first.getClass(), second.getClass());
+        assertEquals(0, inventoryTrait.getDeclaredFields().length);
+        assertEquals(0, javaTrait.getDeclaredFields().length);
+
+        Set<String> inventorySignatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : inventoryTrait.getDeclaredMethods()) {
+            inventorySignatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        String inventoryPrefix = "codechicken$multipart$scalatraits$TIInventoryTile$$super$";
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                "canExtractItem(ILnet/minecraft/item/ItemStack;I)Z",
+                                "canInsertItem(ILnet/minecraft/item/ItemStack;I)Z",
+                                "clearParts()V",
+                                "closeInventory()V",
+                                "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                "decrStackSize(II)Lnet/minecraft/item/ItemStack;",
+                                "getAccessibleSlotsFromSide(I)[I",
+                                "getInventoryName()Ljava/lang/String;",
+                                "getInventoryStackLimit()I",
+                                "getSizeInventory()I",
+                                "getStackInSlot(I)Lnet/minecraft/item/ItemStack;",
+                                "getStackInSlotOnClosing(I)Lnet/minecraft/item/ItemStack;",
+                                "hasCustomInventoryName()Z",
+                                "invList()Ljava/util/LinkedList;",
+                                "invList_$eq(Ljava/util/LinkedList;)V",
+                                "isItemValidForSlot(ILnet/minecraft/item/ItemStack;)Z",
+                                "isUseableByPlayer(Lnet/minecraft/entity/player/EntityPlayer;)Z",
+                                "openInventory()V",
+                                "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                "rebuildSlotMap()V",
+                                "setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V",
+                                "slotMap()[Lscala/Tuple2;",
+                                "slotMap_$eq([Lscala/Tuple2;)V",
+                                inventoryPrefix + "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                inventoryPrefix + "clearParts()V",
+                                inventoryPrefix + "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                inventoryPrefix + "partRemoved(Lcodechicken/multipart/TMultiPart;I)V")),
+                inventorySignatures);
+
+        Set<String> javaSignatures = new TreeSet<>();
+        for (java.lang.reflect.Method method : javaTrait.getDeclaredMethods()) {
+            javaSignatures.add(method.getName() + org.objectweb.asm.Type.getMethodDescriptor(method));
+        }
+        String javaPrefix = "codechicken$multipart$scalatraits$JInventoryTile$$";
+        assertEquals(
+                new TreeSet<>(
+                        Arrays.asList(
+                                "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                "canExtractItem(ILnet/minecraft/item/ItemStack;I)Z",
+                                "canInsertItem(ILnet/minecraft/item/ItemStack;I)Z",
+                                "clearParts()V",
+                                "closeInventory()V",
+                                "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                "decrStackSize(II)Lnet/minecraft/item/ItemStack;",
+                                "getAccessibleSlotsFromSide(I)[I",
+                                "getInventoryName()Ljava/lang/String;",
+                                "getInventoryStackLimit()I",
+                                "getSizeInventory()I",
+                                "getStackInSlot(I)Lnet/minecraft/item/ItemStack;",
+                                "getStackInSlotOnClosing(I)Lnet/minecraft/item/ItemStack;",
+                                "hasCustomInventoryName()Z",
+                                "invList()Ljava/util/LinkedList;",
+                                "invList_$eq(Ljava/util/LinkedList;)V",
+                                "isItemValidForSlot(ILnet/minecraft/item/ItemStack;)Z",
+                                "isUseableByPlayer(Lnet/minecraft/entity/player/EntityPlayer;)Z",
+                                "openInventory()V",
+                                "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                "rebuildSlotMap()V",
+                                "setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V",
+                                "slotMap()[Lscala/Tuple2;",
+                                "slotMap_$eq([Lscala/Tuple2;)V",
+                                javaPrefix + "invList()Ljava/util/LinkedList;",
+                                javaPrefix + "invList_$eq(Ljava/util/LinkedList;)V",
+                                javaPrefix + "slotMap()[Lscala/Tuple2;",
+                                javaPrefix + "slotMap_$eq([Lscala/Tuple2;)V",
+                                inventoryPrefix + "bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                inventoryPrefix + "clearParts()V",
+                                inventoryPrefix + "copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                inventoryPrefix + "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
+                                javaPrefix + "super$bindPart(Lcodechicken/multipart/TMultiPart;)V",
+                                javaPrefix + "super$clearParts()V",
+                                javaPrefix + "super$copyFrom(Lcodechicken/multipart/TileMultipart;)V",
+                                javaPrefix + "super$partRemoved(Lcodechicken/multipart/TMultiPart;I)V")),
+                javaSignatures);
+
+        String fieldPrefix = "codechicken$multipart$scalatraits$JInventoryTile$$";
+        java.lang.reflect.Field listField = first.getClass().getDeclaredField(fieldPrefix + "invList");
+        java.lang.reflect.Field mapField = first.getClass().getDeclaredField(fieldPrefix + "slotMap");
+        assertEquals(LinkedList.class, listField.getType());
+        assertEquals(scala.Tuple2[].class, mapField.getType());
+        assertTrue(Modifier.isPrivate(listField.getModifiers()));
+        assertTrue(Modifier.isPrivate(mapField.getModifiers()));
+
+        LinkedList<?> firstList = (LinkedList<?>) javaTrait.getMethod("invList").invoke(first);
+        LinkedList<?> secondList = (LinkedList<?>) javaTrait.getMethod("invList").invoke(second);
+        Object[] firstMap = (Object[]) javaTrait.getMethod("slotMap").invoke(first);
+        Object[] secondMap = (Object[]) javaTrait.getMethod("slotMap").invoke(second);
+        assertTrue(firstList.isEmpty());
+        assertEquals(0, firstMap.length);
+        assertNotSame(firstList, secondList, "Each generated tile must initialize its inventory list");
+        assertNotSame(firstMap, secondMap, "Each generated tile must initialize its slot map");
+
+        LinkedList<IInventory> replacementList = new LinkedList<>();
+        scala.Tuple2<?, ?>[] replacementMap = new scala.Tuple2[0];
+        javaTrait.getMethod("invList_$eq", LinkedList.class).invoke(first, replacementList);
+        javaTrait.getMethod("slotMap_$eq", scala.Tuple2[].class).invoke(first, (Object) replacementMap);
+        assertSame(replacementList, javaTrait.getMethod("invList").invoke(first));
+        assertSame(replacementMap, javaTrait.getMethod("slotMap").invoke(first));
     }
 
     @Test
