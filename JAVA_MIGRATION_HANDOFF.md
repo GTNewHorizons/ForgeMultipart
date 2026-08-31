@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 96 commits including the incremental-version build fix and separate
-characterization and port commits for `MicroblockEventHandler`.
+Branch: `algent/java`. Base: `master`. 98 commits including the incremental-version build fix and separate
+characterization and port commits for the ForgeMicroblock packet handlers.
 
 ## The one rule that matters
 
@@ -67,7 +67,9 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **164 plain-JVM tests, 86 Forge server tests, all passing at their last completed runs.**
+Current baseline: **171 plain-JVM tests passing.** The last completed Forge server run has **86 passing tests**; the
+new handshake test compiles, but this checkout currently stops before mod loading because its Minecraft EULA has not
+been accepted.
 
 ### ABI diff against the reference
 
@@ -241,7 +243,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `IRedstonePart`/`RedstoneInteractions` unit, `MicroRecipe`, and the `TPartialOcclusionTile`, `TSlottedTile`, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
-`MultipartEventHandler`, `MicroblockMod`, and `MicroblockEventHandler`.
+`MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
+`MicroblockCPH`/`MicroblockSPH` packet-handler unit.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -256,7 +259,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-103 Java files, 33 Scala files, ~5,071 Scala lines left (non-blank; that is the metric this figure has always used).
+108 Java files, 32 Scala files, ~5,008 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -363,6 +366,12 @@ and both client-only boundaries retain their exact shape. The proxy registers `M
 explicitly. Two plain-JVM tests freeze the raw ABI; one Forge test proves the client methods are stripped on a
 dedicated server while the companion still reaches event-bus registration.
 
+The ForgeMicroblock packet-handler unit is now Java. `MicroblockPH` keeps its channel accessor; both static facades,
+both companion singletons and their three CodeChickenLib packet interfaces retain their exact public descriptors.
+Seven plain-JVM tests freeze the raw ABI, integrated-server skip, ordered disconnect, unknown-type failure and no-op
+server callback. The Forge handshake test freezes the exact channel, type and material-ID payload; it compiles but
+still needs the EULA-gated server run in this checkout.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
 `DefaultContent`.
@@ -371,10 +380,11 @@ dedicated server while the companion still reaches event-bus registration.
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/handler/packethandlers.scala` next; at 66 nonblank lines it is the smallest remaining handler unit.
-Freeze `MicroblockPH.registryChannel`, both packet-handler facade/companion surfaces and their exact interfaces before
-changing it. Cover the single-player client skip, missing-material disconnect, server handshake channel/type and ID-map
-payload, and the no-op server packet callback. Keep the characterization and port commits separate.
+Take `multipart/handler/MultipartSaveLoad.scala` next once the Forge harness can run; at 89 nonblank lines it is the
+smallest remaining handler unit. Its `MultipartSaveLoad$.MODULE$` and `loadingWorld()` accessor are load-bearing for
+ProjectRed, so freeze the facade/companion shape, mutable converter-list identity, `TileNBTContainer`, reflective map
+hooks and all replace/remove branches before changing it. Existing helper and event-handler Forge tests cover several
+paths but are not a substitute for a dedicated untouched-Scala characterization commit.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
@@ -394,8 +404,8 @@ all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-clas
   jar instead sees concrete Java mixin inputs and can emit class/field opcodes that are invalid after Forge rewrites
   them to interfaces. Provide a transformed compile stub or downstream source guidance before claiming
   source-compatible rebuilds.
-- Microblock-specific NBT and packet payloads still need characterization immediately before that subsystem changes;
-  the compact core tile/part fixture is complete.
+- Microblock-specific NBT still needs characterization immediately before that subsystem changes. The registry
+  handshake packet's channel, type, count and ordered material names are now frozen.
 - `TileMultipart` still republishes an immutable Scala `Seq` on every mutation. Its internal read paths now avoid Java
   list copies and wrappers; the remaining mutable snapshots at add/remove sites are intentional.
 - The focused synthetic redstone allocation is resolved (80.5 B to 0.0 B per three-query iteration). A representative

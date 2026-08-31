@@ -1957,3 +1957,47 @@ constructor. Neither changes runtime annotations or the callable public surface.
 - Raw `javap` comparison confirms identical callable public members, reflection confirms identical annotations, and
   the emitted class list is unchanged.
 - Texture stitching and placement-highlight rendering require a client and remain on the manual checklist.
+
+## 2026-08-31 — ForgeMicroblock packet-handler Java port
+
+The shared packet-handler base and both client/server facade-companion pairs are now Java. Scala proxy code registers
+`MicroblockCPH$.MODULE$` and `MicroblockSPH$.MODULE$` explicitly, preserving the singleton objects CodeChickenLib
+receives.
+
+### Observable behavior
+
+No known runtime divergence. The registry channel remains `ForgeMicroblock`. Client packet type 1 still skips the
+material-map read in an integrated single-player game, avoiding mutation of the registry shared with the server. A
+multiplayer client still reads the complete map and disconnects with translation key `microblock.missing` plus the
+ordered, comma-separated missing names. Unknown client packet types still throw `scala.MatchError`.
+
+The server packet callback remains a no-op. The handshake still sends packet type 1 on `ForgeMicroblock`, followed by
+the material count and every registered material name in ID order.
+
+### ABI and source compatibility
+
+`MicroblockPH` retains its public constructor and `registryChannel()` accessor. `MicroblockCPH` and `MicroblockSPH`
+retain their exact static forwarders. Their companion classes retain `MODULE$`, extend `MicroblockPH`, implement the
+same CodeChickenLib packet interfaces in the same order, and expose the same instance methods. No audited shipping
+consumer references these types.
+
+Both jars emit exactly `MicroblockPH.class`, `MicroblockCPH.class`, `MicroblockCPH$.class`, `MicroblockSPH.class` and
+`MicroblockSPH$.class`. Accepted classfile-only differences are the removed Scala signature/marker attributes, private
+constructors on the static facades, and companion class initializers without Scala's `ACC_PUBLIC` flag. A class
+initializer is invoked only by the JVM and cannot be named by caller bytecode.
+
+Recompiled in-repo Scala now passes `MicroblockCPH$.MODULE$` and `MicroblockSPH$.MODULE$` where the object values were
+previously implicit, and calls the Java no-arg channel accessors with parentheses. Compiled external callers still
+target the same classes, fields, method names and descriptors.
+
+### Validation
+
+- `MicroblockPacketHandlerCharacterizationTest` and `MicroblockPacketHandlerBehaviorTest`: 7 plain-JVM tests,
+  unchanged from the Scala baseline.
+- `MicroblockPacketHandlerFunctionalTest`: 1 Forge handshake test, unchanged from the Scala baseline and compiled into
+  the functional-test jar.
+- Complete plain-JVM suite: 171 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors and interface order for all five types;
+  the emitted class list is unchanged.
+- The Java 8 Forge run is pending: `runFunctionalTestServer` stopped before mod loading because this checkout has not
+  accepted the Minecraft EULA. The last completed server baseline remains 86 passing tests.

@@ -108,8 +108,8 @@ class MicroblockProxy_serverImpl {
   def postInit() {
     MicroMaterialRegistry.calcMaxCuttingStrength()
     PacketCustom.assignHandshakeHandler(
-      MicroblockSPH.registryChannel,
-      MicroblockSPH
+      MicroblockSPH.registryChannel(),
+      MicroblockSPH$.MODULE$
     )
     if (Loader.isModLoaded("postea")) {
       PosteaCompat.registerTransformers()
@@ -126,7 +126,10 @@ class MicroblockProxy_clientImpl extends MicroblockProxy_serverImpl {
     super.postInit()
     MicroMaterialRegistry.loadIcons()
     MinecraftForgeClient.registerItemRenderer(itemMicro, ItemMicroPartRenderer)
-    PacketCustom.assignHandler(MicroblockCPH.registryChannel, MicroblockCPH)
+    PacketCustom.assignHandler(
+      MicroblockCPH.registryChannel(),
+      MicroblockCPH$.MODULE$
+    )
 
     if (Loader.isModLoaded("angelica"))
       MicroblockMod.angelicaCompat_$eq(new AngelicaCompat)

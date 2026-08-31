@@ -30,7 +30,9 @@ and lifecycle rewriting, `TRedstoneTile` removed the measured redstone allocatio
 state plus inherited access, `TFluidHandlerTile` preserved ordered Forge fluid distribution, and
 `TIInventoryTile`/`JInventoryTile` preserved AE2's direct rebuild linkage plus flattened sided inventory routing.
 `TileMultipartClient` and `TRandomDisplayTickTile` complete the built-in trait queue with their render-cache and random
-display-tick behavior intact. All retain their exact runtime interfaces. See `JAVA_MIGRATION_PROFILE.md`.
+display-tick behavior intact. The first handler wave now also includes both mod entry points, both event handlers and
+the ForgeMicroblock registry packet handlers. All retain their exact runtime interfaces. See
+`JAVA_MIGRATION_PROFILE.md`.
 
 That audit found and this branch has now repaired one existing regression: Schematica 1.12.6 reflects the original private
 `MultiPartRegistry$` field `codechicken$multipart$MultiPartRegistry$$typeMap` and casts it to a Scala mutable map. The
@@ -784,3 +786,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   unchanged; their actual rendering remains on the client manual checklist.
 - All 164 plain-JVM and all 86 Java 8 Forge dedicated-server tests pass. This event-only adapter is not a meaningful
   focused performance target; `microblock/handler/packethandlers.scala` is next.
+- Characterized the ForgeMicroblock packet-handler unit against untouched Scala. Seven plain-JVM cases freeze the
+  shared channel base, both facade/companion surfaces and exact packet interfaces, the integrated-server registry
+  skip, ordered missing-material disconnect, unknown-type `MatchError` and no-op server callback. One Forge case
+  freezes the handshake channel, type and complete material-ID payload.
+- Ported all five emitted packet-handler classes to Java and changed the two Scala proxy registrations to pass the
+  companion singletons explicitly. Every callable public member and the emitted class list match the reference; the
+  registry channel and wire format are unchanged.
+- All 171 plain-JVM tests pass. The Java 8 Forge source set and new handshake case compile, but this checkout's server
+  run stopped before mod loading because the Minecraft EULA has not been accepted; the last completed Forge baseline
+  remains 86 tests until that user-controlled prerequisite is satisfied.
