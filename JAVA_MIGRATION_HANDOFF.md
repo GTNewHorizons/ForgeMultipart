@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 106 commits including the incremental-version build fix and separate
-characterization and port commits for `GrassMicroMaterial`/`TopMicroMaterial`.
+Branch: `algent/java`. Base: `master`. 109 commits including the API-cleanup plan and separate characterization and
+port commits for `MultipartProxy`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **183 plain-JVM tests and 95 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **187 plain-JVM tests and 96 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -251,6 +251,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
 `MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad`, `MissingMicroMaterial`,
 `DefaultContent`, and `GrassMicroMaterial`/`TopMicroMaterial`.
+The complete `MultipartProxy` server/client hierarchy and static facade are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -265,7 +266,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-117 Java files, 28 Scala files, ~4,760 Scala lines left (non-blank; that is the metric this figure has always used).
+121 Java files, 27 Scala files, ~4,647 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -400,6 +401,13 @@ descriptors. Five plain-JVM tests freeze horizontal/side UV routing, grass base/
 and raw ABI; one Forge test freezes registration and the methods that remain after dedicated-server stripping. Actual
 icons, tint and face output remain client-manual.
 
+`MultipartProxy` is now Java. The server/client inheritance, three mutable fields and Scala-style accessors, static
+facade, `MODULE$` companion and both index conversions retain their exact callable public shape. ProjectRed,
+BuildCraftCompat and Iguana Tweaks keep their load-bearing block/config access. Forge strips the two client overrides
+and matching static forwarders on a dedicated server; common generated-tile registration therefore calls the
+companion directly and resolves to the inherited server implementation. Client renderer, packet, key-binding and
+generated-tile renderer registration remain on the manual checklist.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`,
 and the remaining material/render units.
@@ -408,11 +416,11 @@ and the remaining material/render units.
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `multipart/handler/proxies.scala` next. At 112 nonblank lines it is the smaller remaining handler proxy unit and
-owns load-bearing `MultipartProxy.block`/`config` access used by ProjectRed, BuildCraftCompat and Iguana Tweaks. Freeze
-the server/client inheritance, mutable accessors, static facade plus `MODULE$`, both chunk-index conversions, common
-registration order and the client-only overrides/side stripping. Keep client renderer, packet and key-binding
-registration on the manual checklist, and keep the characterization and port commits separate.
+Take `microblock/handler/proxies.scala` next. At 127 nonblank lines it is the other remaining handler proxy unit and
+owns load-bearing `MicroblockProxy` item/saw access used by Iguana Tweaks and in-repo rendering/recipes. Freeze the
+server/client inheritance, all mutable accessors, protected saw collection, static facade plus `MODULE$`, item/recipe
+registration order and the lazy client renderer with its side stripping. Keep item renderers, packet registration and
+Angelica integration on the manual checklist, and keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

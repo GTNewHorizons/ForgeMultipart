@@ -3,7 +3,7 @@ package codechicken.multipart
 import net.minecraft.tileentity.TileEntity
 import net.minecraft.world.World
 import codechicken.lib.vec.BlockCoord
-import codechicken.multipart.handler.MultipartProxy
+import codechicken.multipart.handler.{MultipartProxy, MultipartProxy$}
 import codechicken.lib.packet.PacketCustom
 import net.minecraft.network.play.server.S23PacketBlockChange
 import java.util.BitSet
@@ -235,6 +235,6 @@ object MultipartGenerator extends ScratchBitSet {
       traits: BitSet
   ) {
     tileTraitMap.put(clazz, traits.copy)
-    MultipartProxy.onTileClassBuilt(clazz)
+    MultipartProxy$.MODULE$.onTileClassBuilt(clazz)
   }
 }

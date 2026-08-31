@@ -1022,3 +1022,15 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Extra Utilities is the sole exception and is constrained rather than fixed. The pattern is a three-step ratchet:
   FMP adds a supported equivalent (additive, safe now), the consumer is patched and released, then FMP drops the
   private shape in a release allowed to break that ABI.
+
+### 2026-09-01
+
+- Characterized `MultipartProxy` against untouched Scala. Four plain-JVM cases freeze the four-type hierarchy, exact
+  facade/companion surfaces, mutable singleton accessors, client-only boundaries and both chunk-index conversions. One
+  Forge case freezes dedicated-server stripping, virtual fallback to the server implementation and initialized proxy
+  state.
+- Ported the hierarchy and facade to four Java types without changing their emitted names or callable public
+  descriptors. Common generated-tile registration now names `MultipartProxy$.MODULE$` explicitly so it still reaches
+  the inherited server method after Forge strips the client override and its static forwarder.
+- All 187 plain-JVM and all 96 Java 8 Forge dedicated-server tests pass. Startup registration and two bit-packing
+  helpers are not a meaningful focused performance target; `microblock/handler/proxies.scala` is next.

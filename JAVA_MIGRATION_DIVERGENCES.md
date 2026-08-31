@@ -2156,3 +2156,52 @@ methods remain common-side and therefore survive dedicated-server stripping, mat
 - Java 8 Forge dedicated-server suite: 95 tests, 0 failures, 0 errors.
 - A clean build followed by raw `javap` comparison confirms identical callable public names/descriptors and emitted
   classes. The clean step is material: Zinc otherwise retained and packaged the deleted Scala class files.
+
+## 2026-09-01 — MultipartProxy Java port
+
+The multipart server/client proxy hierarchy is now Java, including the static facade and load-bearing companion
+singleton. ProjectRed's direct `MultipartProxy$.MODULE$` block access and BuildCraftCompat/Iguana Tweaks' static
+`MultipartProxy.block()`/`config()` calls therefore keep the same owners and descriptors.
+
+### Observable behavior
+
+No known runtime divergence. Pre-init still records the logger, opens `multipart.cfg`, registers the same eight
+generated-tile traits in the same order, registers and resolves the multipart block, then hooks saved-tile loading.
+Post-init still registers the same event-handler singleton on both buses, assigns both server packet handlers, starts
+the tick scheduler and chunk-load hook, and loads compatibility hooks in the same order.
+
+Client post-init still follows common post-init with the multipart block renderer, both client packet channels, and
+the control-key event/key-binding registrations. Generated tile classes are still registered for save/load before a
+client renderer is bound. The two chunk-index conversions retain their exact bit packing, including signed input.
+
+On a dedicated server Forge strips `postInit` and `onTileClassBuilt` from `MultipartProxy_clientImpl` and strips their
+static facade forwarders. `MultipartProxy$.MODULE$` then resolves both calls to `MultipartProxy_serverImpl`, exactly as
+the Scala hierarchy did. The common `MultipartGenerator` callback now spells that companion call explicitly; calling
+the stripped facade would fail after the Java port even though its raw dev-jar ABI is correct.
+
+### ABI, annotations and source compatibility
+
+All four emitted types remain: `MultipartProxy_serverImpl`, `MultipartProxy_clientImpl`, `MultipartProxy`, and
+`MultipartProxy$`. The inheritance and final flags are unchanged. The server implementation retains its exact ten
+public methods and three private fields; the client implementation declares only its two overrides; the facade keeps
+all twelve public static forwarders; and the companion declares only `MODULE$` plus both instance index conversions.
+Every callable public descriptor matches the reference.
+
+Only the two client overrides and their facade forwarders retain `@SideOnly(CLIENT)`; no class is side-only. The
+facade and companion still share mutable block/config/logger state while separately constructed server proxies remain
+independent.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, a private constructor on the
+static facade, and a companion class initializer without Scala's `ACC_PUBLIC` flag. Both jars emit exactly the same
+four proxy classes. An unused Scala wildcard import was removed from the packet-handler source.
+
+### Validation
+
+- `MultipartProxyCharacterizationTest`: 4 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartProxyFunctionalTest`: 1 Forge test, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 187 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 96 tests, 0 failures, 0 errors.
+- A clean build followed by raw `javap` comparison confirms identical emitted classes, hierarchy, fields, callable
+  public names/descriptors and client-only method annotations.
+- Client renderer, packet, key-binding and generated-tile renderer registration require a client and remain on the
+  manual checklist.

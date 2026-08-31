@@ -23,7 +23,6 @@ import codechicken.lib.data.MCDataOutputWrapper
 import java.io.DataOutputStream
 import java.io.ByteArrayOutputStream
 import net.minecraft.world.ChunkCoordIntPair
-import MultipartProxy._
 import codechicken.multipart.PacketScheduler
 import java.util.LinkedList
 import scala.collection.JavaConversions._
