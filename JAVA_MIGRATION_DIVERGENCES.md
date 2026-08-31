@@ -2205,3 +2205,55 @@ four proxy classes. An unused Scala wildcard import was removed from the packet-
   public names/descriptors and client-only method annotations.
 - Client renderer, packet, key-binding and generated-tile renderer registration require a client and remain on the
   manual checklist.
+
+## 2026-09-01 — MicroblockProxy Java port
+
+The ForgeMicroblock server/client proxy hierarchy is now Java, including its static facade and load-bearing companion
+singleton. Iguana Tweaks' direct `MicroblockProxy$.MODULE$` item/saw reads and static `MicroblockProxy.sawDiamond()` /
+`createSaw(...)` calls retain their original owners and descriptors.
+
+### Observable behavior
+
+No known runtime divergence. Pre-init still registers the microblock item, stone/iron/diamond saws and stone rod in
+the same sequence, preserves saw-list order, registers `rodStone` and the event-handler singleton, and reads the same
+`useSawIcons` configuration tag. Each saw still uses the named braced config tag, strength, unlocalized name and
+texture name.
+
+Init still adds `MicroRecipe$.MODULE$` and, outside Dreamcraft, the four-stone-rod recipe plus all three ore-dictionary
+saw recipes. Forge subsequently sorts the global recipe list, so only recipe identity/content and the proxy's own saw
+list have meaningful stable order. Post-init still calculates maximum cutting strength, assigns the registry handshake
+handler and conditionally registers Postea transformers.
+
+Client init still registers the same renderer for all three saws. Client post-init still loads material icons,
+registers the microblock-item renderer and packet handler, and conditionally installs `AngelicaCompat`. The
+`RenderBlocks` instance remains lazy, synchronized and published through the same volatile bitmap.
+
+### ABI, annotations and source compatibility
+
+The four callable types remain `MicroblockProxy_serverImpl`, `MicroblockProxy_clientImpl`, `MicroblockProxy`, and
+`MicroblockProxy$`, with unchanged inheritance and final flags. The server implementation retains its exact 21 public
+methods and eight private fields. Its source-protected `saws` property remains a Scala `MutableList<Item>` with public
+JVM accessors, preserving compiled callers. The facade retains its exact 20 static methods, deliberately excluding the
+protected saw-list accessors, and the companion still declares only `MODULE$`.
+
+The client implementation retains its private `renderBlocks` field, volatile `bitmap$0`, private
+`renderBlocks$lzycompute()` helper and three public methods. As in the Scala reference, only the renderer field is
+`@SideOnly(CLIENT)`; the getter and lazy helper are not. Only `init` and `postInit` are client-only on the client
+implementation and facade. Consequently dedicated-server reflection across all client methods still encounters the
+stripped `RenderBlocks` type, while direct companion lifecycle dispatch resolves to the inherited server methods.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, a private facade constructor, one
+private Java recipe-list helper, and removal of the unreferenced
+`MicroblockProxy_clientImpl$$anonfun$init$1` iteration closure. The downstream inventory contains no reference to that
+private implementation class.
+
+### Validation
+
+- `MicroblockProxyCharacterizationTest`: 4 plain-JVM tests, unchanged from the Scala baseline.
+- `MicroblockProxyFunctionalTest`: 2 Forge tests, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 191 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 98 tests, 0 failures, 0 errors.
+- A clean build and raw `javap` comparison confirm identical retained class hierarchy, fields, callable public
+  names/descriptors and side annotations. The sole class-list removal is the private closure above.
+- Item-renderer registration, material icon loading, client packet registration and Angelica integration require a
+  client and remain on the manual checklist.

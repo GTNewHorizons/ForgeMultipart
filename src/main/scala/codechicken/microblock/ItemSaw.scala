@@ -2,7 +2,6 @@ package codechicken.microblock
 
 import net.minecraft.item.Item
 import codechicken.lib.config.ConfigTag
-import codechicken.microblock.handler.MicroblockProxy._
 import net.minecraft.item.ItemStack
 import net.minecraftforge.client.IItemRenderer
 import codechicken.lib.render.{TextureUtils, CCModel, CCRenderState}

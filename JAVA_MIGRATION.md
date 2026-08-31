@@ -1034,3 +1034,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   the inherited server method after Forge strips the client override and its static forwarder.
 - All 187 plain-JVM and all 96 Java 8 Forge dedicated-server tests pass. Startup registration and two bit-packing
   helpers are not a meaningful focused performance target; `microblock/handler/proxies.scala` is next.
+- Characterized `MicroblockProxy` against untouched Scala. Four plain-JVM cases freeze its four-type hierarchy,
+  complete facade/companion ABI, eight mutable server fields, protected Scala saw list and exact lazy-renderer shape.
+  Two Forge cases freeze side stripping, inherited server lifecycle resolution, item/ore/recipe registration and saw
+  order.
+- Ported the hierarchy and facade to four Java types. The Scala `MutableList` remains for binary compatibility, the
+  client renderer retains its field-only side annotation and lazy bitmap, and the saw-renderer closure becomes a
+  direct iterator loop.
+- All 191 plain-JVM and all 98 Java 8 Forge dedicated-server tests pass. This startup-only proxy is not a meaningful
+  focused performance target; `multipart/handler/packethandlers.scala` is the last Scala handler unit and is next.

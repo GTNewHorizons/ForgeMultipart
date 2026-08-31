@@ -23,6 +23,7 @@ release that includes those ports.
 | Change a mixed multipart tile containing static and dynamically rendered parts | Static parts remain in the block render, dynamic parts remain in the TESR pass, and neither disappears after a part update | `TileMultipartClient` render caches |
 | Watch a multipart torch long enough to emit display particles | Only parts implementing `IRandomDisplayTick` emit particles, with no duplicate or missing callbacks | `TRandomDisplayTickTile.randomDisplayTick` |
 | Start a client, join a server, place/update a multipart and use the multipart control key | Block and generated-tile rendering work, client packets arrive, and control-key state changes are sent once without duplicate registrations | `MultipartProxy_clientImpl.postInit` / `onTileClassBuilt` |
+| Start a client with 3D saws enabled, inspect all three saw tiers and the microblock item, then repeat with Angelica installed | Each renderer is registered once, saw models use the correct tier, microblock icons load, client packets register, and the Angelica hook initializes without errors | `MicroblockProxy_clientImpl.init` / `postInit` |
 
 ## Placement and interaction
 
