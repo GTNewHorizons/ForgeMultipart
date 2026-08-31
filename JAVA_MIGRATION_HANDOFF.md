@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 104 commits including the incremental-version build fix and separate
-characterization and port commits for `DefaultContent`.
+Branch: `algent/java`. Base: `master`. 106 commits including the incremental-version build fix and separate
+characterization and port commits for `GrassMicroMaterial`/`TopMicroMaterial`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **178 plain-JVM tests and 94 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **183 plain-JVM tests and 95 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -162,6 +162,12 @@ the joint-compiled Java `@Mod` annotations. Gradle notices the generated classpa
 those Java consumers. `compileScala.scalaCompileOptions.force = true` keeps incremental jars current; do not remove the
 version assertions or this build guard without replacing both with an equivalent mechanism.
 
+**A Scala-to-Java source replacement needs one clean verification.** Zinc can retain the deleted Scala source's class
+files while compiling the new Java file with the same binary name. An incremental test and jar can then exercise and
+package the old implementation despite a green build. `GrassMicroMaterial` exposed this: only `clean` changed the
+class `SourceFile` from Scala to Java. Stop the Gradle daemon first if Windows holds `build/rfg/recompiled_minecraft`
+open, then run the focused test and ABI comparison from the clean output.
+
 **Classes that cannot class-initialize headless make good probes.** `MultipartSaveLoad` reflects into `TileEntity`'s
 static maps through `ObfMapping` and always throws under a plain JVM. That turns "did this branch reach the loader?"
 into an assertion: returning normally proves the guard short-circuited, and `assertThrows(LinkageError.class, ...)`
@@ -243,8 +249,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
-`MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad`, `MissingMicroMaterial`, and
-`DefaultContent`.
+`MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad`, `MissingMicroMaterial`,
+`DefaultContent`, and `GrassMicroMaterial`/`TopMicroMaterial`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -259,7 +265,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-114 Java files, 29 Scala files, ~4,816 Scala lines left (non-blank; that is the metric this figure has always used).
+117 Java files, 28 Scala files, ~4,760 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -388,6 +394,12 @@ shape. One plain-JVM test freezes that ABI; two Forge tests freeze all five micr
 sorted built-in materials and every legacy remap. The historical `log2`/`leaves2` meta-0-only overload behavior is
 explicitly preserved rather than repaired during the port.
 
+`GrassMicroMaterial` and `TopMicroMaterial` are now Java. The grass overlay getter used by UtilitiesInExcess, both
+constructors, the top-material default-argument facade and its otherwise synthetic companion retain their exact public
+descriptors. Five plain-JVM tests freeze horizontal/side UV routing, grass base/overlay colour routing, construction
+and raw ABI; one Forge test freezes registration and the methods that remain after dedicated-server stripping. Actual
+icons, tint and face output remain client-manual.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`,
 and the remaining material/render units.
@@ -396,10 +408,11 @@ and the remaining material/render units.
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/GrassMicroMaterial.scala` next. At 56 nonblank lines it is the smallest remaining material unit and
-contains both `GrassMicroMaterial` and `TopMicroMaterial`. Freeze constructors, public fields/accessors, inherited
-`BlockMicroMaterial` behavior, client-only boundaries and side-dependent UV/render routing. Keep actual face colour,
-overlay and texture rendering on the client manual checklist, and keep the characterization and port commits separate.
+Take `multipart/handler/proxies.scala` next. At 112 nonblank lines it is the smaller remaining handler proxy unit and
+owns load-bearing `MultipartProxy.block`/`config` access used by ProjectRed, BuildCraftCompat and Iguana Tweaks. Freeze
+the server/client inheritance, mutable accessors, static facade plus `MODULE$`, both chunk-index conversions, common
+registration order and the client-only overrides/side stripping. Keep client renderer, packet and key-binding
+registration on the manual checklist, and keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

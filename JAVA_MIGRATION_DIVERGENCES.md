@@ -2116,3 +2116,43 @@ callable member.
 - Complete plain-JVM suite: 178 tests, 0 failures, 0 errors.
 - Java 8 Forge dedicated-server suite: 94 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical callable public names/descriptors and the emitted class list is unchanged.
+
+## 2026-08-31 — Grass and top micro-material Java port
+
+The grass-specific material and the top-texture material are now separate Java classes. The Scala-generated
+default-argument companion for `TopMicroMaterial` is retained as a small Java singleton because compiled Scala callers
+can address it even though no source object existed.
+
+### Observable behavior
+
+No known runtime divergence. Grass still renders its ordinary texture without tint on the bottom and sides, tints the
+top, and adds the biome-coloured grass overlay only to side faces. The overlay UV still shifts by
+`bounds.max.y - 1`, and non-inventory passes still compute light coordinates before either layer. Top materials still
+use their ordinary icons on the two horizontal faces and the same height-adjusted UV on all four sides. Both coloured
+paths retain lighting and Angelica's block/meta shader override calls.
+
+The pipeline characterization observes the actual UV and colour operations with an empty vertex range, so it freezes
+branch routing without requiring a GL context. Actual grass/mycelium icons, biome tint and rendered pixels still need
+the client checklist.
+
+### ABI and source compatibility
+
+`GrassMicroMaterial` retains its public no-argument constructor, four public methods, private `sideIconT` field and
+non-final `BlockMicroMaterial` subclass shape. Its `sideIconT()` getter remains directly compatible with the audited
+UtilitiesInExcess renderer. `TopMicroMaterial` retains its `(Block, int)` constructor, static
+`$lessinit$greater$default$2()` method, render override and non-final superclass shape. `TopMicroMaterial$` retains its
+public final singleton class, `MODULE$` field and instance default getter.
+
+Both jars emit exactly `GrassMicroMaterial.class`, `TopMicroMaterial.class` and `TopMicroMaterial$.class`. Accepted
+classfile-only differences are removed Scala signature/marker attributes and the companion class initializer without
+Scala's `ACC_PUBLIC` flag. A class initializer is JVM-only and is not callable consumer API. The same fields and
+methods remain common-side and therefore survive dedicated-server stripping, matching the reference.
+
+### Validation
+
+- `GrassMicroMaterialCharacterizationTest`: 5 plain-JVM tests, unchanged from the Scala baseline.
+- `GrassMicroMaterialFunctionalTest`: 1 Forge test, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 183 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 95 tests, 0 failures, 0 errors.
+- A clean build followed by raw `javap` comparison confirms identical callable public names/descriptors and emitted
+  classes. The clean step is material: Zinc otherwise retained and packaged the deleted Scala class files.

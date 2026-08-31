@@ -18,6 +18,7 @@ release that includes those ports.
 | Reload client resources after placing several microblock materials | The texture atlas reloads every material icon without missing textures | `MicroblockEventHandler.postTextureStitch` |
 | Look at a saw in inventory and in hand | The saw item renders with its custom transform | `ItemSaw` `IItemRenderer` |
 | Place microblocks of several materials, including glass | Transparent materials render in the correct pass and are not opaque | `IMicroMaterial.canRenderInPass` |
+| Place grass and mycelium covers at several thicknesses and biomes | Grass has an untinted base plus a tinted, height-aligned side overlay and tinted top; mycelium uses its top texture on horizontal faces and height-aligned side texture elsewhere | `GrassMicroMaterial` / `TopMicroMaterial` |
 | Load a saved microblock whose material is no longer installed | The part remains present and renders the magenta/black missing texture instead of becoming material ID 0 | `MissingMicroMaterial` |
 | Change a mixed multipart tile containing static and dynamically rendered parts | Static parts remain in the block render, dynamic parts remain in the TESR pass, and neither disappears after a part update | `TileMultipartClient` render caches |
 | Watch a multipart torch long enough to emit display particles | Only parts implementing `IRandomDisplayTick` emit particles, with no duplicate or missing callbacks | `TRandomDisplayTickTile.randomDisplayTick` |

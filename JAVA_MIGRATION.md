@@ -820,3 +820,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   overload behavior are unchanged.
 - All 178 plain-JVM and all 94 Java 8 Forge dedicated-server tests pass. Pre-init-only registration is not a meaningful
   focused performance target; `GrassMicroMaterial.scala` is the next material unit.
+- Characterized `GrassMicroMaterial` and `TopMicroMaterial` against untouched Scala. Five plain-JVM cases freeze both
+  constructors, the grass overlay accessor used by UtilitiesInExcess, the top default-argument facade/companion,
+  common-side boundaries and horizontal/side UV plus colour-pipeline routing. One Forge case freezes their registered
+  blocks/meta and the exact surface left on a dedicated server.
+- Ported both classes and the default-argument companion directly to Java. Grass keeps its uncoloured base side pass,
+  coloured top and height-adjusted side overlay; `TopMicroMaterial` keeps coloured horizontal faces and translated
+  side UVs. All three emitted binary names and every callable public descriptor match the Scala reference.
+- A clean compile was required to evict the deleted Scala classes before the unchanged characterization could test the
+  Java implementation. All 183 plain-JVM and all 95 Java 8 Forge dedicated-server tests pass. The render path retains
+  the same per-side transformation work, so no separate performance claim is made; `multipart/handler/proxies.scala`
+  is the next medium-risk target.
