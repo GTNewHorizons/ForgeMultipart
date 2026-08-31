@@ -2257,3 +2257,61 @@ private implementation class.
   names/descriptors and side annotations. The sole class-list removal is the private closure above.
 - Item-renderer registration, material icon loading, client packet registration and Angelica integration require a
   client and remain on the manual checklist.
+
+## 2026-09-01 — ForgeMultipart packet-handler Java port
+
+The shared packet-handler base, both client/server facade-companion pairs and the nested byte stream are now Java.
+The multipart proxy continues to register `MultipartCPH$.MODULE$` and `MultipartSPH$.MODULE$`, preserving the exact
+singleton objects CodeChickenLib receives.
+
+### Observable behavior
+
+No known runtime divergence. The ordinary channel remains `MultipartMod$.MODULE$` and the registry channel remains
+`ForgeMultipart`. Registry packet type 1 still replaces the client ID map and disconnects with translation key
+`multipart.missing` plus every missing name in server order. Client desynchronization exceptions beginning `DC: `
+still become a plain-text disconnect with that marker removed; other runtime exceptions still escape unchanged.
+
+Chunk-description packet type 2 still reads chunk coordinates, an unsigned tile count, signed local x/z bytes and
+each tile description in sequence. Update packet type 3 still reads absolute coordinates until `Integer.MAX_VALUE`
+and part updates until unsigned byte 255. The server callback still maps packet type 1 to the sender's control-key
+state, and unknown packet types on either side still throw `scala.MatchError`.
+
+Server handshakes still send the complete part-ID map on packet type 1. Tile streams remain cached by world and
+position, begin with the absolute coordinate, and reject client worlds before publishing state. World unload still
+removes only server state. End-of-tick processing still flushes scheduled packets first, sends accumulated updates
+only to players watching each chunk, clears every per-world update map, sends descriptions for newly watched chunks,
+promotes those watches and finally clears the pending-watch map. Description packets retain their exact logical
+framing and deferred CodeChickenLib compression.
+
+The direct Java loops avoid the closure objects previously created by the Scala comprehensions. No focused profile
+claim is made because the current functional profiling fixture does not generate sustained watched-chunk multipart
+traffic; a representative full-pack capture remains the authority.
+
+### ABI and source compatibility
+
+`MultipartPH` retains its public constructor, `MultipartMod$`-typed `channel` field/accessor and registry-channel
+accessor. `MultipartCPH` and `MultipartSPH` retain every static forwarder. Their companions retain `MODULE$`, extend
+`MultipartPH`, implement the same CodeChickenLib interfaces in the same order, and expose the same instance methods.
+`MultipartSPH$` also retains the exact private prefixed `updateMap`, `chunkWatchers` and `newWatchers` fields and their
+public mangled accessors with Scala `Map`/`HashMap` descriptors.
+
+`MultipartSPH.MCByteStream` remains a public, non-final static member of the facade, so its binary name is still
+`MultipartSPH$MCByteStream`. It retains the `(ByteArrayOutputStream)` constructor, private final `bout` field,
+`MCDataOutputWrapper` superclass and `getBytes()[B`. No audited shipping consumer references any handler type.
+
+Both jars retain these six runtime classes. Accepted classfile-only differences are removed Scala signature/marker
+attributes, private constructors on the static facades, companion class initializers without Scala's `ACC_PUBLIC`
+flag, and removal of the anonymous `MultiMap` plus thirteen `$$anonfun$` classes. The fourteen removed classes are
+private compiler artifacts with no downstream reference.
+
+### Validation
+
+- `MultipartPacketHandlerCharacterizationTest` and `MultipartPacketHandlerBehaviorTest`: 11 plain-JVM tests,
+  unchanged from the Scala baseline.
+- Existing `MultipartEventHandlerFunctionalTest` and `MultipartHelperFunctionalTest` cases retain unload cleanup,
+  watcher/tick ordering and exact logical chunk-description framing.
+- Clean complete plain-JVM suite: 202 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 98 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors for all six retained classes. The exact
+  class-list diff contains only the fourteen compiler artifacts described above.
+- Real client chunk-description application, update dispatch and rendering remain on the manual checklist.

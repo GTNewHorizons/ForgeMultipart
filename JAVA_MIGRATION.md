@@ -1043,3 +1043,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   direct iterator loop.
 - All 191 plain-JVM and all 98 Java 8 Forge dedicated-server tests pass. This startup-only proxy is not a meaningful
   focused performance target; `multipart/handler/packethandlers.scala` is the last Scala handler unit and is next.
+- Characterized the ForgeMultipart packet-handler unit against untouched Scala. Eleven plain-JVM cases freeze all six
+  emitted retained types, exact facade/companion interfaces, channel identity, private prefixed state accessors,
+  ordered registry and desync disconnects, control-key packets, coordinate streams and both update terminators.
+- Ported the five top-level types and nested byte stream directly to Java. The three Scala mutable collection
+  descriptors remain where reflection already observes them, while direct loops replace the anonymous `MultiMap` and
+  thirteen closure classes without changing watcher, batching, framing or cleanup behavior.
+- A clean build passes all 202 plain-JVM tests and the Java 8 Forge server passes all 98 tests. All six retained public
+  surfaces match the reference by name and descriptor; only fourteen unreferenced compiler artifacts disappear.
+  `microblock/ItemMicroPart.scala` is next.

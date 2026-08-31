@@ -23,6 +23,7 @@ release that includes those ports.
 | Change a mixed multipart tile containing static and dynamically rendered parts | Static parts remain in the block render, dynamic parts remain in the TESR pass, and neither disappears after a part update | `TileMultipartClient` render caches |
 | Watch a multipart torch long enough to emit display particles | Only parts implementing `IRandomDisplayTick` emit particles, with no duplicate or missing callbacks | `TRandomDisplayTickTile.randomDisplayTick` |
 | Start a client, join a server, place/update a multipart and use the multipart control key | Block and generated-tile rendering work, client packets arrive, and control-key state changes are sent once without duplicate registrations | `MultipartProxy_clientImpl.postInit` / `onTileClassBuilt` |
+| Move into view of a chunk containing several multipart tiles, then add, update and remove parts | The initial chunk description reconstructs every tile and compressed updates apply without missing, duplicated or ghost parts | `MultipartCPH` / `MultipartSPH` |
 | Start a client with 3D saws enabled, inspect all three saw tiers and the microblock item, then repeat with Angelica installed | Each renderer is registered once, saw models use the correct tier, microblock icons load, client packets register, and the Angelica hook initializes without errors | `MicroblockProxy_clientImpl.init` / `postInit` |
 
 ## Placement and interaction
@@ -50,6 +51,7 @@ release that includes those ports.
 | Inspect a mixed multipart tile with Waila | Providers receive every saved part ID and show the expected part data | reflected block identity and tile NBT `parts`/`id` layout |
 | Load a world saved before the port | All microblocks and covers keep their material and shape | `MicroMaterialRegistry` id map |
 | Join a server whose material set differs from the client | The client is disconnected with the missing material list, not a crash | `readIDMap` |
+| Join a server whose multipart type set differs from the client | The client is disconnected with the ordered missing-part list, not a crash | `MultipartCPH.handlePartRegistration` |
 
 ## Not yet covered anywhere
 
