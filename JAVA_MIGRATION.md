@@ -389,6 +389,10 @@ Exit condition: normal runtime implementation is Java; any remaining Scala is is
 - [ ] Translate the existing compiler/generator into readable Java while preserving emitted class shapes and cache keys.
 - [ ] Evaluate GTNHLib ASM helpers where they reduce boilerplate without altering semantics.
 - [ ] Keep Scala-trait registration while deprecated bridges or supported external Scala traits require it.
+- [ ] Allow abstract Java mixins whose base type is abstract, skipping their abstract members instead of rejecting the
+  class. Required before any Java mixin over `Microblock` is possible. See Phase 10.
+- [ ] Implement `@SideOnly` member stripping on the Java mixin path, matching what `listSideOnly` does for Scala
+  signatures. Required before a client-only Java mixin method is safe on a dedicated server. See Phase 10.
 - [ ] Run ProjectRed's `LightMicroblock` external Scala-trait fixture and pass-through-interface fixtures against the
   ported generator.
 - [ ] Decide separately whether a future generator design can avoid custom bytecode generation. Do not couple that experiment to the source-language port.
@@ -402,12 +406,171 @@ companion singletons, and ProjRed registering its own Scala trait through `Micro
 removal is therefore not achievable for the first Java release, and Java-maintainable source is the milestone instead.
 Revisit only in a release allowed to break that ABI.
 
+Complete Scala removal is not the goal in its own right. `scala-library` stays in the pack regardless of what FMP
+does, because OpenComputers (843 Scala files) and ProjectRed (171) are Scala end to end and are not being ported.
+The value of removing Scala from FMP is FMP's own maintainability and hot-path allocation, not a pack-level
+dependency win. Phase 10 is what actually retires individual items on this list; each Scala shape removed here needs
+a corresponding released consumer version there.
+
 - [x] Measure actual downstream use of Scala descriptors, Scala traits, object singletons, and `$class` helpers.
 - [ ] Publish and complete a deprecation window if compatibility policy permits removal.
 - [ ] Remove Scala bridges, Scala signature decoding, and the Scala compiler/runtime dependency only in a release allowed to break that ABI.
 - [ ] Confirm no Scala types remain in published descriptors or runtime loading paths.
 
 Exit condition: Scala removal is either completed deliberately or explicitly deferred as the cost of binary compatibility.
+
+### Phase 9 — Deprecate the Scala-shaped API and mark the internal boundary
+
+Status: **planned.** This phase does not redesign the API. A surface audit against all 28 consumer checkouts found the
+published API is already largely Java-shaped: `TMultiPart` is an ordinary abstract Java class with conventional
+lifecycle, render, NBT, and packet methods, and `IPartFactory2`, `IPartConverter`, `IMicroMaterial`, `PartMap`,
+`RedstoneInteractions`, and the occlusion interfaces need no replacement. The remaining problems are a short list of
+signatures that still carry Scala types, and a boundary problem that is larger than it looks.
+
+The governing rule is: **deprecate only where a replacement already exists or is added in the same change.** A
+deprecation with nowhere to go is noise a consumer cannot act on, and these bridges are being retained deliberately for
+years. Adding the Java sibling and marking the Scala-shaped entry deprecated is one change, not two.
+
+Sequencing rule: do this work **in-file, during the remaining port**, not as a later sweep. The microblock package and
+the ASM package are still Scala and will each be opened exactly once. Adding a sibling, a `@Deprecated`, and an
+internal-marker javadoc while already editing the file is free; a separate pass later means re-reading every ported
+file.
+
+#### 9.1 — Scala-typed signatures
+
+Each row keeps its existing descriptor for binary compatibility and gains a Java-shaped sibling. Two rows already have
+their sibling and only need the annotation and javadoc.
+
+| Deprecate | Java-shaped replacement | Notes |
+| --- | --- | --- |
+| `TileMultipart.partList(): scala.collection.Seq` | `jPartList(): java.util.List` | Sibling already exists |
+| `MultiPartRegistry.registerParts(IPartFactory2, scala.collection.Seq)` | `registerParts(IPartFactory2, String...)` | Sibling already exists |
+| `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | `materialCount(): int` plus existing `materialName(int)` and `getMaterial(int)` | The array index **is** the material ID, so no pair or map type is needed |
+| `TileMultipart.operate(scala.Function1<TMultiPart, BoxedUnit>)` | `forEachPart(java.util.function.Consumer<TMultiPart>)` | Preserve the existing skip-unbound-part behavior |
+| `TileMultipart.occlusionTest(scala.collection.Seq, TMultiPart)` | `occlusionTest(Collection<TMultiPart>, TMultiPart)` | |
+| `TileMultipart.loadParts(scala.collection.Iterable)` | `loadParts(Collection<TMultiPart>)` | Schematica and GuideNH reflect the Scala descriptor; see Phase 10 |
+| `TileMultipart.partList_$eq(scala.collection.Seq)` | `setPartList(List<TMultiPart>)` | GuideNH reflects the `_$eq` name; see Phase 10 |
+| `TileMultipart.renderID()` / `renderID_$eq(int)` | `getRenderID()` / `setRenderID(int)` | |
+| `TileMultipart.getOrConvertTile2(): scala.Tuple2<TileMultipart, Object>` | Small immutable result type with named accessors | No consumer in the audited set calls this |
+
+Explicitly **not** renamed: `TMultiPart.world()`, `x()`, `y()`, `z()`, and `tile()`. These carry Scala accessor naming
+but no Scala type, so renaming is cosmetic churn across 27 consumers with no compatibility or performance payoff.
+`tile()` is additionally unsafe to rename toward `getTile()`, which already exists with a different return type; a
+same-name overload there invites a silent wrong-overload bind.
+
+- [ ] Add the six missing Java-shaped siblings and route each Scala-shaped entry through it in one direction only.
+- [ ] Mark all nine rows `@Deprecated` with javadoc naming the replacement.
+- [ ] Confirm every original descriptor still exists in the ABI fixture after the change.
+
+#### 9.2 — Mark the internal boundary
+
+Scala's `private[multipart]` compiles to public. As a result the published surface currently advertises implementation
+hooks as though they were API, and a consumer author cannot distinguish `addPart` from `addPart_do`. This is a more
+practical API defect than the Scala types above, and the fix is javadoc only: no rename, no descriptor change, no
+deprecation, and no new dependency for a marker annotation.
+
+Verified against all 28 consumer checkouts as having **zero external callers**:
+
+`TileMultipart.addPart_impl`, `addPart_do`, `remPart_impl`, `writeAddPart`, `partAdded`, `partRemoved`, `from`,
+`copyFrom`, `loadFrom`, `setValid`, `getOrConvertTile2`, `operate`; `MicroMaterialRegistry.setupIDMap`,
+`calcMaxCuttingStrength`, `loadIcons`, `writeIDMap`, `readIDMap`.
+
+Two similar-looking members **are** externally load-bearing and must not be marked internal:
+
+| Member | Consumer | Call site |
+| --- | --- | --- |
+| `TileMultipart.bindPart` | OpenComputers | `li/cil/oc/integration/fmp/PrintPart.scala:171` |
+| `TileMultipart.internalPartChange` | ProjectRed | `mrtjp/projectred/integration/gatepartrs.scala:74` |
+
+- [ ] Add an internal-marker javadoc line to each zero-caller member listed above.
+- [ ] Leave `bindPart` and `internalPartChange` documented as supported API and add them to the consumer audit's
+  cross-cutting map.
+- [ ] Do not add an annotations dependency for this; javadoc is sufficient and changes no descriptor.
+
+Exit condition: every Scala-typed public entry has a documented Java-shaped replacement and a deprecation pointing at
+it, the implementation-hook members are documented as internal, and the ABI fixture is unchanged.
+
+### Phase 10 — Upstream consumer cleanup
+
+Status: **planned, unsequenced.** This phase does not block any other phase, and parts of it can start immediately,
+including before the Java port merges. Its purpose is to stop consumer-side hacks from dictating FMP's internal
+design.
+
+Several consumers reach FMP through private fields, Scala-mangled names, name-only reflection, or third-party Scala
+traits. Today each one forces FMP to preserve an internal shape it would otherwise be free to change. Because all 27
+consumers are GTNewHorizons forks, every one of these is patchable upstream. Extra Utilities is the only exception; it
+is decompiled-only and is being replaced by UtilitiesInExcess, so it constrains FMP until it is retired from the pack
+rather than being fixed.
+
+The standard pattern is a three-step ratchet, and only the first step is on FMP's critical path:
+
+1. FMP adds a public, supported equivalent. Additive, no ABI break, safe to land at any time.
+2. The consumer is patched to use it and released.
+3. FMP drops the private shape in a release allowed to break that ABI. Feeds Phase 8.
+
+#### Cleanup targets
+
+| Consumer | What FMP is currently forced to preserve | Upstream fix | Can start |
+| --- | --- | --- | --- |
+| ProjectRed | `ScalaSignature.scala` (369 lines) and `ByteCodecs.scala` (211 lines) exist for exactly one external caller: `MicroblockGenerator.registerTrait(classOf[LightMicroblock])` | Rewrite the ~60-line `LightMicroblock` trait as a Java mixin registered through the `registerJavaTrait` path | **Blocked on FMP**; see the prerequisites below |
+| Schematica | Private Scala-mangled field `codechicken$multipart$MultiPartRegistry$$typeMap`, cast to `scala.collection.mutable.Map` | FMP exposes a supported registry lookup; Schematica uses it instead of the field | After step 1 |
+| GuideNH | Companion-only `MultipartGenerator$.MODULE$.generateCompositeTile` and `MicroblockGenerator$.create`; `partList_$eq(scala.collection.Seq)`; mixin into private `BlockMicroMaterial.block` and `.meta` | FMP exposes supported static entry points and `setPartList(List)`; GuideNH targets those and public material accessors | After step 1 and Phase 9.1 |
+| Et Futurum Requiem | Mutable static `int[] ButtonPart.metaSideMap` and `sideMetaMap` must stay public and mutable | FMP exposes a supported orientation-override API; Et Futurum uses it | After step 1 |
+| IguanaTweaksTConstruct | Private `ItemSaw.harvestLevel` field name and type | FMP exposes a supported harvest-level setter; Iguana uses it | After step 1 |
+| Galacticraft | Selects the first public method named `registerMaterial` without checking its signature, so FMP cannot add any overload of that name | Make the reflection check the parameter types | Immediately; independent of the port |
+| UtilitiesInExcess | `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | Both call sites read only the name, so `materialCount()` from Phase 9.1 plus the existing `materialName(int)` covers them; no material object is needed | After Phase 9.1, before it enters the pack |
+| UtilitiesInExcess | Not an FMP constraint, but a shipping hazard: the server factory reads NBT key `material` while `MaterialBasedPart.save` writes `mat` | Fix on the UtilitiesInExcess side; FMP must not special-case it | Immediately; no FMP change needed |
+
+Galacticraft's row is the only one that can be done upstream today with no FMP change at all. It is a small
+signature check that removes a standing constraint on FMP's ability to overload a public registry method, and the
+current failure mode is silent: the reflection sits inside an empty `catch (Exception)`, so a wrong overload bind
+registers nothing and reports nothing.
+
+ProjectRed's row remains the highest payoff-to-effort item in the migration, because one roughly 60-line file in one
+consumer is the sole reason FMP carries runtime Scala-pickle decoding, and removing it deletes about 580 lines plus
+the Scala branch of `ASMMixinCompiler`. It cannot be done first, however. The Java mixin path does not currently
+accept what `LightMicroblock` needs, so two FMP prerequisites belong to Phase 7:
+
+1. **Abstract Java mixins over an abstract base.** `registerJavaTrait` rejects `ACC_ABSTRACT` classes
+   (`ASMMixinCompiler.scala`), but `Microblock` is abstract (`Microblock.scala:39`) with abstract `microClass`,
+   `itemClassID`, and `render`. A Java mixin over it must therefore be abstract as well, so the check has to admit
+   abstract mixins and skip their abstract members rather than reject the class. The existing Java-mixin example,
+   `TPartialOcclusionTile`, avoids this only because its base `TileMultipart` is concrete.
+2. **`@SideOnly` stripping on the Java path.** Side stripping is implemented only for Scala traits, through
+   `listSideOnly(sig: ScalaSignature)` reading the Scala signature annotation table inside `registerScalaTrait`.
+   `LightMicroblock.renderDynamic` is `@SideOnly(Side.CLIENT)` and the trait is applied on both sides, because
+   ProjectRed's `addTraits` ignores its `client` argument. Without an equivalent annotation-driven strip in
+   `registerJavaTrait`, a Java rewrite would merge a client-only method into server-side generated microblocks.
+
+Both prerequisites are Phase 7 work and are worth doing regardless, since they are also what any future FMP-internal
+Java microblock mixin would need.
+
+UtilitiesInExcess is the cheapest case in the table because it is not yet in the pack. Anything fixed before it ships
+never becomes a compatibility obligation at all.
+
+Its NBT key mismatch is real but currently mild, and the detail matters for whoever fixes it. `loadPart` is always
+followed by `part.load(tag)` on every audited path, including BuildCraftCompat's schematic restore, so the factory's
+wrong material is corrected immediately afterwards. The visible symptom is therefore one logged
+`Missing mapping for part with ID:` per part per load, from `materialID("")` falling through to the missing-material
+placeholder, rather than lost material data. Extra Utilities writes `mat` as well, in `PartMicroBlock`,
+`PartConnecting`, and `PartPipeJacket`, so correcting the key also matches the legacy tags reached through
+UtilitiesInExcess's `extrautils:*` aliases; there is no legacy-conversion risk in the fix.
+
+- [ ] Land the two Phase 7 Java-mixin prerequisites, then the ProjectRed `LightMicroblock` Java rewrite, with a
+  fixture proving the Java-trait path produces equivalent generated microblocks on both sides.
+- [ ] Land the Galacticraft reflection signature check.
+- [ ] Fix the UtilitiesInExcess `mat`/`material` key mismatch and its `getIdMap()` use before it enters the pack.
+- [ ] Add the supported public equivalents needed by Schematica, GuideNH, Et Futurum, and Iguana as additive API.
+- [ ] Patch those four consumers and record the released versions that no longer need the private shapes.
+- [ ] Only after a consumer's released version is in the pack, move its retained private shape onto the Phase 8
+  removal list.
+
+Consumer migration remains opportunistic. Nothing here justifies a coordinated lockstep release of the pack's most
+load-bearing block system; the value is in removing FMP's design constraints, not in reaching zero deprecated call
+sites.
+
+Exit condition: no consumer-side hack constrains an FMP internal that the port would otherwise be free to change, or
+each remaining constraint is recorded with the released consumer version required to lift it.
 
 ## Risk order
 
@@ -497,7 +660,8 @@ Resolved from the consumer audits:
 
 Still open, and only to be decided when they become necessary:
 
-1. How long deprecated Scala bridges remain supported after the initial Java release.
+1. How long deprecated Scala bridges remain supported after the initial Java release. Phase 9 fixes the policy for
+   *adding* deprecations (only alongside a replacement); the removal window is still open and is gated by Phase 10.
 2. Which known bugs are intentionally fixed during the port rather than after compatibility is established.
 3. Which GTNHLib release is the minimum supported version once code actually needs it.
 4. Whether runtime tile composition merits redesign after the Java port is stable.
@@ -831,3 +995,30 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Java implementation. All 183 plain-JVM and all 95 Java 8 Forge dedicated-server tests pass. The render path retains
   the same per-side transformation work, so no separate performance claim is made; `multipart/handler/proxies.scala`
   is the next medium-risk target.
+
+### 2026-08-31
+
+- Audited the published API surface against all 28 consumer checkouts to decide whether a cleaner API is warranted. It
+  largely already is one: `TMultiPart` is an ordinary abstract Java class, and the factory, converter, material,
+  `PartMap`, redstone and occlusion interfaces need no replacement. Added Phase 9 for the parts that are not.
+- Found nine remaining public entries carrying Scala types. Two already have a Java sibling (`jPartList`, the
+  `String...` `registerParts` overload), so their deprecation is free. `getIdMap()` needs no pair or map replacement
+  because the array index is the material ID; `materialCount()` plus the existing `materialName(int)` and
+  `getMaterial(int)` covers every audited use.
+- Found a second and larger cleanliness problem: Scala's `private[multipart]` compiles to public, so seventeen
+  implementation hooks are advertised as API. Verified all seventeen have zero external callers, and that the two
+  similar-looking members that *are* load-bearing are `bindPart` (OpenComputers) and `internalPartChange`
+  (ProjectRed). Fix is javadoc only, no descriptor change.
+- Confirmed that removing Scala from FMP has no pack-level dependency payoff: OpenComputers (843 Scala files) and
+  ProjectRed (171) keep `scala-library` in the pack regardless. Recorded this under Phase 8 so the motivation is not
+  restated later as a dependency argument.
+- Traced `ScalaSignature.scala` and `ByteCodecs.scala` to a single external caller, ProjectRed's ~60-line
+  `LightMicroblock` trait. Rewriting it in Java deletes roughly 580 lines from FMP plus the Scala branch of
+  `ASMMixinCompiler`, but it is not currently possible: `registerJavaTrait` rejects abstract classes while
+  `Microblock` is abstract, and `@SideOnly` stripping exists only on the Scala signature path while
+  `LightMicroblock.renderDynamic` is client-only and applied on both sides. Both gaps are recorded as Phase 7
+  prerequisites.
+- Added Phase 10 for upstream consumer cleanup. All 27 consumers are GTNewHorizons forks and therefore patchable;
+  Extra Utilities is the sole exception and is constrained rather than fixed. The pattern is a three-step ratchet:
+  FMP adds a supported equivalent (additive, safe now), the consumer is patched and released, then FMP drops the
+  private shape in a release allowed to break that ABI.
