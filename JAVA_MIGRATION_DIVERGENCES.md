@@ -2041,3 +2041,42 @@ other Java-authored Scala-style setters in this migration, newly recompiled Scal
 - Java 8 Forge dedicated-server suite: 91 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical callable public names/descriptors for all three retained types. The sole
   class-list removal is the unreferenced compiler closure above.
+
+## 2026-08-31 — MissingMicroMaterial Java port
+
+The unresolved-material placeholder is now a Java static facade plus a Java companion singleton implementing
+`IMicroMaterial`. `DefaultContent` and `ItemMicroPart` name `MissingMicroMaterial$.MODULE$` explicitly where Scala
+previously supplied the object value implicitly.
+
+### Observable behavior
+
+No known runtime divergence. The registered key remains `forgemicroblock:missing`; the material remains opaque,
+non-luminous, strength 1, cutter strength 0, stone-sounding, explosion resistance 6, and supplies a one-item stone
+stack. It still inherits render-pass-zero and solid behavior from the Java `IMicroMaterial` defaults.
+
+On the client, icon loading still asks the proxy renderer for its safe null icon. Breaking returns that icon and face
+rendering still applies its `IconTransformation`, lighting and render pipeline in the same order. On a dedicated
+server Forge strips the three client methods from both singleton types and the client-only icon field from the
+companion before `DefaultContent` registers it.
+
+### ABI and source compatibility
+
+`MissingMicroMaterial` retains its exact 12 public static methods. `MissingMicroMaterial$` retains `MODULE$`,
+implements `IMicroMaterial`, and retains the matching 12 public instance methods. Both types keep `@SideOnly(CLIENT)`
+on `loadIcons`, `getBreakingIcon` and `renderMicroFace`; neither class is itself side-only. Both jars emit exactly
+`MissingMicroMaterial.class` and `MissingMicroMaterial$.class`, and no audited shipping consumer references either
+type.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, a private constructor on the
+facade, removal of the companion's private Scala `icon` getter/setter, and a class initializer without Scala's
+`ACC_PUBLIC` flag. None is a callable public member. Recompiled Scala source that passes the singleton as a value must
+use `MissingMicroMaterial$.MODULE$`; static calls retain their original names and descriptors.
+
+### Validation
+
+- `MissingMicroMaterialCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- `MissingMicroMaterialFunctionalTest`: 1 Forge test, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 177 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 92 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors and the emitted class list is unchanged.
+- Missing-texture icon loading and face rendering require a client and remain on the manual checklist.

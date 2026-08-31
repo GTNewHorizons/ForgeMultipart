@@ -136,7 +136,7 @@ object ItemMicroPart {
     MicroMaterialRegistry.getMaterial(
       stack.getTagCompound.getString("mat")
     ) match {
-      case null => MissingMicroMaterial
+      case null => MissingMicroMaterial$.MODULE$
       case mat  => mat
     }
   }

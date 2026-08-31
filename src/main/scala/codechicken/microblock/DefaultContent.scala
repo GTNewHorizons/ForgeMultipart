@@ -55,6 +55,6 @@ object DefaultContent {
     MicroMaterialRegistry.remapName(oldKey(mycelium), materialKey(mycelium))
     registerMaterial(new TopMicroMaterial(mycelium), materialKey(mycelium))
 
-    registerMaterial(MissingMicroMaterial, MissingMicroMaterial.key)
+    registerMaterial(MissingMicroMaterial$.MODULE$, MissingMicroMaterial.key())
   }
 }

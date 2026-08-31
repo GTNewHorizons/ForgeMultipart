@@ -804,3 +804,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   reference. Only the unreferenced compiler-generated `$$anonfun$1` closure disappeared.
 - All 174 plain-JVM tests and all 91 Java 8 Forge dedicated-server tests pass. The next medium-risk target is
   `MissingMicroMaterial.scala`; its real icon/render paths remain client-manual work.
+- Characterized `MissingMicroMaterial` against untouched Scala. Three plain-JVM cases freeze the exact facade and
+  companion surfaces, `MODULE$`, inert material values, interface defaults and all client-only boundaries. One Forge
+  case freezes side stripping and the exact singleton registered under the missing-material name and ID.
+- Ported the singleton to a Java facade/companion pair and changed both Scala object-value uses to name `MODULE$`
+  explicitly. The placeholder key, stone item, sound, strength, resistance and missing-texture render pipeline are
+  unchanged; only the actual client rendering remains manual.
+- All 177 plain-JVM and all 92 Java 8 Forge dedicated-server tests pass. This inert singleton is not a meaningful
+  focused performance target; `DefaultContent.scala` is the next medium-risk target.
