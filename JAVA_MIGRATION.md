@@ -793,6 +793,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Ported all five emitted packet-handler classes to Java and changed the two Scala proxy registrations to pass the
   companion singletons explicitly. Every callable public member and the emitted class list match the reference; the
   registry channel and wire format are unchanged.
-- All 171 plain-JVM tests pass. The Java 8 Forge source set and new handshake case compile, but this checkout's server
-  run stopped before mod loading because the Minecraft EULA has not been accepted; the last completed Forge baseline
-  remains 86 tests until that user-controlled prerequisite is satisfied.
+- All 171 plain-JVM tests pass. After the local EULA was accepted, all 87 Java 8 Forge dedicated-server tests pass,
+  including the new registry handshake.
+- Characterized `MultipartSaveLoad` against untouched Scala. Three plain-JVM cases freeze the static facade,
+  load-bearing companion, private fields and exact dummy class shape. Four Forge cases freeze ProjectRed-style binary
+  linkage, both reflected vanilla maps, converter precedence/deletion and saved multipart reconstruction.
+- Ported the singleton to a Java facade/companion pair and kept the dummy as the static facade member
+  `MultipartSaveLoad.TileNBTContainer`, which emits the literal `MultipartSaveLoad$TileNBTContainer` binary name.
+  Nesting it under the companion would emit the wrong double dollar. Every callable public member matches the
+  reference. Only the unreferenced compiler-generated `$$anonfun$1` closure disappeared.
+- All 174 plain-JVM tests and all 91 Java 8 Forge dedicated-server tests pass. The next medium-risk target is
+  `MissingMicroMaterial.scala`; its real icon/render paths remain client-manual work.

@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 98 commits including the incremental-version build fix and separate
-characterization and port commits for the ForgeMicroblock packet handlers.
+Branch: `algent/java`. Base: `master`. 100 commits including the incremental-version build fix and separate
+characterization and port commits for `MultipartSaveLoad`.
 
 ## The one rule that matters
 
@@ -67,9 +67,8 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **171 plain-JVM tests passing.** The last completed Forge server run has **86 passing tests**; the
-new handshake test compiles, but this checkout currently stops before mod loading because its Minecraft EULA has not
-been accepted.
+Current baseline: **174 plain-JVM tests and 91 Java 8 Forge dedicated-server tests passing.** The ignored local server
+EULA is accepted in this checkout.
 
 ### ABI diff against the reference
 
@@ -244,7 +243,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
-`MicroblockCPH`/`MicroblockSPH` packet-handler unit.
+`MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -259,7 +258,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-108 Java files, 32 Scala files, ~5,008 Scala lines left (non-blank; that is the metric this figure has always used).
+110 Java files, 31 Scala files, ~4,919 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -369,8 +368,14 @@ dedicated server while the companion still reaches event-bus registration.
 The ForgeMicroblock packet-handler unit is now Java. `MicroblockPH` keeps its channel accessor; both static facades,
 both companion singletons and their three CodeChickenLib packet interfaces retain their exact public descriptors.
 Seven plain-JVM tests freeze the raw ABI, integrated-server skip, ordered disconnect, unknown-type failure and no-op
-server callback. The Forge handshake test freezes the exact channel, type and material-ID payload; it compiles but
-still needs the EULA-gated server run in this checkout.
+server callback. The Forge handshake test freezes the exact channel, type and material-ID payload and passes on the
+Java 8 dedicated server.
+
+`MultipartSaveLoad` is now Java. Its static facade, load-bearing companion singleton, private state fields and literal
+`MultipartSaveLoad$TileNBTContainer` binary name retain their exact public shape. A frozen Scala consumer exercises
+ProjectRed's `MODULE$`/`loadingWorld` linkage, and dedicated Forge tests cover reflective vanilla map registration,
+converter precedence/deletion and saved multipart reconstruction. Only the compiler-generated `$$anonfun$1`
+class disappeared; the downstream inventory contains no reference to it.
 
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `MissingMicroMaterial`, `ConfigContent`,
@@ -380,11 +385,10 @@ still needs the EULA-gated server run in this checkout.
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `multipart/handler/MultipartSaveLoad.scala` next once the Forge harness can run; at 89 nonblank lines it is the
-smallest remaining handler unit. Its `MultipartSaveLoad$.MODULE$` and `loadingWorld()` accessor are load-bearing for
-ProjectRed, so freeze the facade/companion shape, mutable converter-list identity, `TileNBTContainer`, reflective map
-hooks and all replace/remove branches before changing it. Existing helper and event-handler Forge tests cover several
-paths but are not a substitute for a dedicated untouched-Scala characterization commit.
+Take `microblock/MissingMicroMaterial.scala` next. At 48 nonblank lines it is the smallest remaining non-ASM unit in
+the medium-risk queue, and existing registry tests already cover much of its inherited behavior. Before changing it,
+freeze the exact facade/companion surface, `IMicroMaterial` method descriptors, client-only method stripping and the
+singleton registered by `DefaultContent`; keep actual icon/render behavior on the client manual checklist.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

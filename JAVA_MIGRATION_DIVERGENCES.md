@@ -1999,5 +1999,45 @@ target the same classes, fields, method names and descriptors.
 - Complete plain-JVM suite: 171 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical callable public names/descriptors and interface order for all five types;
   the emitted class list is unchanged.
-- The Java 8 Forge run is pending: `runFunctionalTestServer` stopped before mod loading because this checkout has not
-  accepted the Minecraft EULA. The last completed server baseline remains 86 passing tests.
+- The deferred Java 8 Forge run now passes all 87 tests after the local EULA was accepted.
+
+## 2026-08-31 — MultipartSaveLoad Java port
+
+The chunk-load save/restore singleton is now a Java static facade plus a Java companion singleton. ProjectRed reads
+`MultipartSaveLoad$.MODULE$` and calls `loadingWorld()`, so both forms remain rather than collapsing the object into a
+single utility class.
+
+### Observable behavior
+
+No known runtime divergence. `hookLoader` still reflects Forge's runtime TileEntity name map and registers
+`savedMultipart`; `registerTileClass` still updates the reverse map cached during singleton construction. Chunk loading
+still records the world, reconstructs saved multipart dummies, uses the first matching converter, removes empty
+conversions and leaves unclaimed tiles untouched. Replacements retain the old world, validate and replace the map
+entry.
+
+### ABI and source compatibility
+
+`MultipartSaveLoad` retains its seven public static methods. `MultipartSaveLoad$` retains `MODULE$`, the seven matching
+instance methods, and the exact private `converters`, `loadingWorld` and `classToNameMap` fields. The dummy remains the
+public, non-final static member `MultipartSaveLoad.TileNBTContainer`, emitting the literal binary name
+`MultipartSaveLoad$TileNBTContainer`. Placing it inside the companion would have incorrectly emitted a double dollar
+and was rejected by the characterization test.
+
+All callable public names and descriptors match the Scala reference. The reference-only
+`MultipartSaveLoad$$anonfun$1` closure class disappeared; it was implementation machinery and has no entry in
+the downstream ABI inventory. Accepted classfile-only differences are removed Scala attributes, a private constructor
+on the facade, extra private Java helpers, and the companion class initializer without Scala's `ACC_PUBLIC` flag.
+
+The frozen Scala consumer compiled against the reference continues to link and mutate the companion state. As with
+other Java-authored Scala-style setters in this migration, newly recompiled Scala source should call
+`loadingWorld_$eq` explicitly if property-assignment rewriting does not recognize the Java method.
+
+### Validation
+
+- `MultipartSaveLoadCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartSaveLoadFunctionalTest`: 4 Forge tests, unchanged from the Scala baseline, including the frozen Scala
+  consumer.
+- Complete plain-JVM suite: 174 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 91 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors for all three retained types. The sole
+  class-list removal is the unreferenced compiler closure above.
