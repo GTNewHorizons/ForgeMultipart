@@ -124,3 +124,13 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `122d89cf0a070cfd2325bbbcf4bb4550d6130bb7da1ffba1a3b2e2efea6ec7e5`). Class-file SHA-256 is
 `e66be14e6422277cc9567acf8e96a26e419abf5ec6582085c8c6e32cc60aa599`, stored as
 `src/test/resources/compat/ReferenceScalaMicroMaterialConsumer.class.b64`.
+
+### `ReferenceScalaMultipartSaveLoadConsumer`
+
+`scala/codechicken/multipart/compat/ReferenceScalaMultipartSaveLoadConsumer.scala` reads
+`MultipartSaveLoad$.MODULE$` and calls the `loadingWorld` getter and setter that ProjRed links against.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `471c767`
+(SHA-256 `1f571035283b5ca9120bf817f00ce961ebcbae258d901fb8ee9147636f71a481`). Class-file SHA-256 is
+`27543f97e0973f042c3867c1aa0ae5598324c60c895c8d9a7ea5a6cea2f5ee70`, stored as
+`src/functionalTest/resources/compat/ReferenceScalaMultipartSaveLoadConsumer.class.b64`.
