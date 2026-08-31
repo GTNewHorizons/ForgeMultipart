@@ -812,3 +812,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   unchanged; only the actual client rendering remains manual.
 - All 177 plain-JVM and all 92 Java 8 Forge dedicated-server tests pass. This inert singleton is not a meaningful
   focused performance target; `DefaultContent.scala` is the next medium-risk target.
+- Characterized `DefaultContent` against untouched Scala. One plain-JVM case freezes its one-method static and
+  companion surfaces. Two Forge cases freeze the five microblock factories and IDs, all 103 sorted built-in
+  materials, their exact implementation types and the complete legacy-name remap table.
+- Ported the singleton to a Java facade/companion pair while continuing to use the existing `BlockMicroMaterial$`
+  overloads and Scala ranges. Registration contents, ordering and the historical meta-0-only `log2`/`leaves2`
+  overload behavior are unchanged.
+- All 178 plain-JVM and all 94 Java 8 Forge dedicated-server tests pass. Pre-init-only registration is not a meaningful
+  focused performance target; `GrassMicroMaterial.scala` is the next material unit.

@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 102 commits including the incremental-version build fix and separate
-characterization and port commits for `MissingMicroMaterial`.
+Branch: `algent/java`. Base: `master`. 104 commits including the incremental-version build fix and separate
+characterization and port commits for `DefaultContent`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **177 plain-JVM tests and 92 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **178 plain-JVM tests and 94 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -243,7 +243,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TRedstoneTile`, `TTileChangeTile`, `TFluidHandlerTile`, `TIInventoryTile`/`JInventoryTile`, `TileMultipartClient`, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
-`MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad` and `MissingMicroMaterial`.
+`MicroblockCPH`/`MicroblockSPH` packet-handler unit, plus `MultipartSaveLoad`, `MissingMicroMaterial`, and
+`DefaultContent`.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
 `ISidedHollowConnect`, `IMicroMaterialRender`, plus `MultipartHelper`, `TileCache`, `PacketScheduler` and the `ControlKeyModifer` pair.
@@ -258,7 +259,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-112 Java files, 30 Scala files, ~4,871 Scala lines left (non-blank; that is the metric this figure has always used).
+114 Java files, 29 Scala files, ~4,816 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -382,18 +383,23 @@ descriptors, `MODULE$`, `IMicroMaterial`, and the three client-only boundaries. 
 shape and inert values; one Forge test proves that `DefaultContent` registers the same singleton after client methods
 and state are stripped on a dedicated server. The missing-texture render path remains client-manual.
 
+`DefaultContent` is now Java. Its sole static/companion method and both emitted singleton types retain their exact
+shape. One plain-JVM test freezes that ABI; two Forge tests freeze all five microblock factories, common IDs, the 103
+sorted built-in materials and every legacy remap. The historical `log2`/`leaves2` meta-0-only overload behavior is
+explicitly preserved rather than repaired during the port.
+
 **Medium.** The `handler` packages on both sides, `ItemMicroPart`,
 `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`,
-`DefaultContent`.
+and the remaining material/render units.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/DefaultContent.scala` next. At 55 nonblank lines it is the smallest remaining unit named in the
-medium-risk queue. Freeze the exact facade/companion surface and the complete ordered built-in class/material
-registration result before changing it; retain the existing remaps and exact `MissingMicroMaterial$.MODULE$`
-registration. Keep the characterization and port commits separate.
+Take `microblock/GrassMicroMaterial.scala` next. At 56 nonblank lines it is the smallest remaining material unit and
+contains both `GrassMicroMaterial` and `TopMicroMaterial`. Freeze constructors, public fields/accessors, inherited
+`BlockMicroMaterial` behavior, client-only boundaries and side-dependent UV/render routing. Keep actual face colour,
+overlay and texture rendering on the client manual checklist, and keep the characterization and port commits separate.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

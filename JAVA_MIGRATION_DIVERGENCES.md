@@ -2080,3 +2080,39 @@ use `MissingMicroMaterial$.MODULE$`; static calls retain their original names an
 - Java 8 Forge dedicated-server suite: 92 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical callable public names/descriptors and the emitted class list is unchanged.
 - Missing-texture icon loading and face rendering require a client and remain on the manual checklist.
+
+## 2026-08-31 — DefaultContent Java port
+
+The built-in microblock registration singleton is now a Java static facade plus Java companion. `MicroblockMod$`
+continues to call `DefaultContent$.MODULE$.load()` during pre-init.
+
+### Observable behavior
+
+No known runtime divergence. The same face, hollow, corner and edge classes retain IDs 0 through 3, and the post
+class remains registered without a common-class ID. Their five multipart type names and exact singleton factories are
+unchanged.
+
+The material registry still receives the same 103 entries, sorts them by name during post-init, and maps every legacy
+unlocalized key to the same registry key. Grass still uses `GrassMicroMaterial`, mycelium still uses
+`TopMicroMaterial`, and the missing key still maps to `MissingMicroMaterial$.MODULE$`. The Java implementation calls
+the existing `BlockMicroMaterial$` overloads with Scala inclusive ranges, preserving the reference's meta coverage.
+In particular, the three-argument overload used for `log2` and `leaves2` still registers only metadata zero despite
+receiving ranges through one; this port deliberately does not combine a behavior fix with the language conversion.
+
+### ABI and source compatibility
+
+`DefaultContent` retains its sole public static `load()V`; `DefaultContent$` retains `MODULE$` and the matching public
+instance method. Both jars emit exactly `DefaultContent.class` and `DefaultContent$.class`. No audited shipping
+consumer references either type.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, a private constructor on the
+facade, and a class initializer without Scala's `ACC_PUBLIC` flag. A class initializer is JVM-only and is not a
+callable member.
+
+### Validation
+
+- `DefaultContentCharacterizationTest`: 1 plain-JVM test, unchanged from the Scala baseline.
+- `DefaultContentFunctionalTest`: 2 Forge tests, unchanged from the Scala baseline.
+- Complete plain-JVM suite: 178 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 94 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors and the emitted class list is unchanged.
