@@ -125,6 +125,17 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 `e66be14e6422277cc9567acf8e96a26e419abf5ec6582085c8c6e32cc60aa599`, stored as
 `src/test/resources/compat/ReferenceScalaMicroMaterialConsumer.class.b64`.
 
+### `ReferenceScalaItemMicroPartConsumer`
+
+`scala/codechicken/multipart/compat/ReferenceScalaItemMicroPartConsumer.scala` reads `ItemMicroPart$.MODULE$` and
+calls the four companion methods ProjRed links against: both two-argument `create` overloads, `getMaterial`, and
+`getMaterialID`.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the reference dev jar built at `fdfd776`
+(SHA-256 `c3bb8a18ab961a24989d895ade59dc358581c82eec8ecf925256e164eae0ab03`). Class-file SHA-256 is
+`967c6c2041c43896f624b60ce74c424575a303eed79c29c8fe60a6344f97dc71`, stored as
+`src/test/resources/compat/ReferenceScalaItemMicroPartConsumer.class.b64`.
+
 ### `ReferenceScalaMultipartSaveLoadConsumer`
 
 `scala/codechicken/multipart/compat/ReferenceScalaMultipartSaveLoadConsumer.scala` reads
