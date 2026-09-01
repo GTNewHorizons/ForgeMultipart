@@ -399,6 +399,21 @@ Exit condition: normal runtime implementation is Java; any remaining Scala is is
 
 Exit condition: the composition subsystem is maintainable Java with behavior and generated ABI verified against the reference.
 
+### Pre-merge cleanup
+
+- [ ] Relocate Java sources from `src/main/scala` to `src/main/java` once their remaining Scala dependencies no longer
+  require joint compilation; document any compatibility/ASM Java sources that must stay in the joint source set.
+- [ ] Revisit `compileScala.scalaCompileOptions.force = true` after relocation and keep it only if generated-version or
+  remaining joint-compilation inputs still require it.
+- [ ] Refresh `README.md` for the Java-first codebase while retaining Scala IDE guidance for any sources that remain.
+- [ ] Move the durable migration documents under `docs/migration/` and decide whether the historical running plan is
+  archived or removed before merge.
+- [ ] Complete and record the relevant checks in `JAVA_MIGRATION_MANUAL_CHECKS.md` against a representative client and
+  GTNH pack before release.
+
+Exit condition: source layout, contributor guidance and durable migration documentation match the codebase being
+merged, and all release-required manual checks have recorded results.
+
 ### Phase 8 — Decide on Scala runtime removal
 
 Status: **decided and deferred.** The inventory showed four shipping mods linking against trait `$class` helpers and
@@ -1095,3 +1110,6 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   original `IOException` instances without adding checked exceptions to their descriptors or source declarations.
 - A clean build passes all 228 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
   `microblock/AngelicaCompat.scala` is next.
+- Added a dependent GitHub Actions job that accepts the EULA in its ephemeral runner and invokes the existing
+  self-validating `runFunctionalTestServer` task after the shared GTNH build. The Forge suite now gates pull requests
+  and pushes instead of being local-only.

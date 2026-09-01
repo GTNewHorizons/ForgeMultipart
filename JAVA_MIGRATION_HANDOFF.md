@@ -68,7 +68,8 @@ grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/
 ```
 
 Current baseline: **228 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
-EULA is accepted in this checkout.
+EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
+the shared GTNH build; keep both jobs required.
 
 ### ABI diff against the reference
 
@@ -469,6 +470,11 @@ After `AngelicaCompat`, take the remaining material/render units deliberately be
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
+
+**Pre-merge cleanup is explicit in `JAVA_MIGRATION.md`.** It covers relocating eligible Java files out of
+`src/main/scala`, reconsidering forced Scala compilation, refreshing the README, organizing the durable migration
+documents and completing the manual checklist. Do not let those tasks disappear merely because the source port is
+complete.
 
 ## Known gaps
 
