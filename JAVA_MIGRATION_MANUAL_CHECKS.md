@@ -17,7 +17,7 @@ below its table.
 | [ ] | Hit a part repeatedly without breaking it | Hit particles spawn on the struck face, using that face's icon | `IconHitEffects.addHitEffects` |
 | [ ] | Break a part fully | Destroy particles use all six side icons and are scaled to the part's bounds | `IconHitEffects.addDestroyEffects` |
 | [ ] | Break a hollow cover | Destroy particles use the full block bounds, not the part bounds | `addDestroyEffects` scaleDensity false |
-| [ ] | Hover face, hollow, edge and corner microblock placement targets | The highlight and guide lines match each placement region, and a mod supplying its own highlight renderer overrides them | `PlacementGrid` / `MicroblockEventHandler.drawBlockHighlight` / `MicroMaterialRegistry.renderHighlight` |
+| [ ] | Hover face, hollow, edge and corner microblock placement targets | The highlight and guide lines match each placement region, and a mod supplying its own highlight renderer overrides them | `PlacementGrid` / `MicroblockRender.renderHighlight` / `MicroblockEventHandler.drawBlockHighlight` / `MicroMaterialRegistry.renderHighlight` |
 | [ ] | Reload client resources after placing several microblock materials | The texture atlas reloads every material icon without missing textures | `MicroblockEventHandler.postTextureStitch` / `BlockMicroMaterial.loadIcons` |
 | [ ] | Look at a saw in inventory and in hand | The saw item renders with its custom transform | `ItemSaw` `IItemRenderer` |
 | [ ] | Place microblocks of several materials, including glass | Transparent materials render in the correct pass and are not opaque | `BlockMicroMaterial` / `IMicroMaterial.canRenderInPass` |
@@ -29,7 +29,7 @@ below its table.
 | [ ] | Move into view of a chunk containing several multipart tiles, then add, update and remove parts | The initial chunk description reconstructs every tile and compressed updates apply without missing, duplicated or ghost parts | `MultipartCPH` / `MultipartSPH` |
 | [ ] | Start a client with 3D saws enabled, inspect all three saw tiers and the microblock item, then repeat with Angelica installed | Each renderer is registered once, saw models use the correct tier, microblock icons load, client packets register, and the Angelica hook initializes without errors | `MicroblockProxy_clientImpl.init` / `postInit` |
 | [ ] | Render several block micro-materials with Angelica shaders enabled, then render an unrelated block | Each face receives the matching block/meta shader material and the override is reset after the microblock draw | `MaterialRenderHelper.blockAndMeta` / `render` |
-| [ ] | Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` |
+| [ ] | Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` / `MicroblockRender.renderItem` |
 
 ## Placement and interaction
 

@@ -1127,3 +1127,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   descriptors, singleton/model fields and three runtime classes match the reference.
 - A clean build passes all 234 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
   `microblock/MicroblockRender.scala` is next.
+- Characterized `MicroblockRender` against untouched Scala. Four plain-JVM cases freeze its facade/companion surface,
+  thread-local face state, cuboid face-mask traversal, no-placement highlight exit and exact transformed-client call
+  opcodes.
+- Ported both retained types directly to Java. A clean compile preserves `invokevirtual Microblock.setShape` and
+  `invokeinterface MicroblockClient.getBounds/render`; direct face iteration removes three unreferenced Scala
+  anonymous/closure classes.
+- A clean build passes all 238 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
+  `microblock/MicroblockClass.scala` is next.

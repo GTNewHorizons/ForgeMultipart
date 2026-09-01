@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 124 commits including the API-cleanup plan and separate characterization and
-port commits through `ConfigContent`.
+Branch: `algent/java`. Base: `master`. 132 commits including the API-cleanup plan and separate characterization and
+port commits through `MicroblockRender`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **234 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **238 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -270,7 +270,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-160 Java files, 18 Scala files, ~3,362 Scala lines left (non-blank; that is the metric this figure has always used).
+162 Java files, 17 Scala files, ~3,285 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -430,8 +430,9 @@ classes. Real client description/update application remains on the manual checkl
 renderer facade and registered renderer companion retain every callable public descriptor. A frozen Scala 2.11.5
 consumer executes the four companion calls used by ProjectRed. Item creation, NBT/material lookup, invalid placement
 and render short circuits are frozen headless; the existing Forge recipe and proxy tests cover initialized material
-IDs and item registration. The Java renderer routes only its transformed `MicroblockClient` operation through
-`MicroblockRender.renderItem`, keeping the call opcode Scala-safe. Creative listing, localized names, actual placement,
+IDs and item registration. The Java renderer routes its transformed `MicroblockClient` operation through
+`MicroblockRender.renderItem`, centralizing that load-bearing boundary. The later renderer port's clean-build bytecode
+gate proves both calls remain `invokeinterface`. Creative listing, localized names, actual placement,
 sound/consumption and client rendering remain on the manual checklist.
 
 `MicroblockPlacement` is now six Java types with the exact retained hierarchy, fields, constructors, companion and
@@ -470,15 +471,21 @@ reflective private-final `harvestLevel`, default/explicit durability, container 
 supported render types. Every callable descriptor and runtime class is retained. Actual model and OpenGL output remain
 on the manual checklist.
 
-**Medium.** `MicroblockRender.scala` is next. Freeze its facade/companion surface, thread-local `BlockFace`, cuboid
-face-mask traversal and no-placement highlight exit before translating it. Its transformed `MicroblockClient` call
-boundary is load-bearing, so preserve the working call opcode rather than forcing an all-Java helper prematurely.
+`MicroblockRender` is now a Java facade/companion pair. Four plain-JVM cases freeze the exact callable surface,
+thread-local `BlockFace`, live cuboid face-mask traversal, no-placement highlight exit and the generated-trait call
+boundary. A clean compile proves Java retains `invokevirtual Microblock.setShape` plus `invokeinterface`
+`MicroblockClient.getBounds/render`; the direct port therefore needs no Scala bridge. The two supported runtime types
+remain, while three private Scala anonymous/closure artifacts disappear. Actual OpenGL item/highlight output remains
+on the manual checklist.
+
+**Medium.** `MicroblockClass.scala` is next. Freeze `MicroblockClass`, `CommonMicroClass`, the `CommonMicroClass$`
+singleton/array surface, factory creation paths and exact `MicroblockGenerator` calls before translating it. GuideNH
+matches `MicroblockGenerator$.create(MicroblockClass, int, boolean)` by exact parameter type, so the class identity and
+descriptor are load-bearing.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
-
-After `MicroblockRender`, take the remaining material/render units deliberately before entering the shape hierarchy.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

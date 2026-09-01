@@ -2331,10 +2331,9 @@ class/size/material ordering, block retrace, placement validation, survival cons
 unchanged.
 
 The renderer still accepts every render type/helper, applies the same entity/inventory transforms, builds the same
-client part and draws it with normals and the lightmap. Java must not invoke `MicroblockClient` directly because Forge
-rewrites that Scala trait from a class-shaped compile input to an interface. A narrow `MicroblockRender.renderItem`
-helper performs only the trait cast, shape assignment, centering and render call in Scala; all surrounding renderer
-logic remains in Java.
+client part and draws it with normals and the lightmap. `MicroblockRender.renderItem` centralizes the transformed
+`MicroblockClient` cast, shape assignment, centering and render call. Its later Java port added a clean-build bytecode
+gate proving those client calls remain `invokeinterface` after compilation.
 
 ### ABI and source compatibility
 
@@ -2616,3 +2615,45 @@ No runtime class is added or removed; both clean jars contain the same three Ite
 - Clean reference/port jars retain the same three types, and raw `javap` comparison confirms identical callable
   public names/descriptors and retained field shapes.
 - Client model loading, transformations, texture/UV output and GL culling remain on the manual checklist.
+
+## 2026-09-01 — MicroblockRender Java port
+
+The static renderer facade and its companion singleton are now Java.
+
+### Observable behavior
+
+No known runtime divergence. Item rendering still applies the requested shape before centering the generated client
+part on its bounds and rendering pass `-1`. Highlight rendering still draws the placement grid first, asks the
+placement engine with the inverse creative flag, returns before touching OpenGL when no placement exists, and uses the
+same matrix, blend, depth-mask, atlas, alpha, normals and draw order for a valid placement.
+
+Cuboid rendering still reuses one `BlockFace` per thread, installs it as the current render-state model, visits sides
+0 through 5, and skips every side whose mask bit is set. The Java loop removes the Scala `Range`, filter and two
+per-call closure objects from this render-hot path without adding a new cache or abstraction.
+
+### ABI and reflection compatibility
+
+The retained runtime types are exactly `MicroblockRender` and `MicroblockRender$`. Both keep the same four callable
+public names and descriptors; the facade methods remain static, the companion keeps `MODULE$`, and its `face` field
+remains private final with the `ThreadLocal` descriptor.
+
+The generated `MicroblockClient` boundary is explicitly frozen. A clean compile emits `invokevirtual` for
+`Microblock.setShape` and `invokeinterface` for `MicroblockClient.getBounds` and both client `render` calls, matching
+the Scala reference. Accepted classfile-only differences are removed Scala signature/marker attributes, a private
+constructor on the static facade and the companion class initializer without Scala's `ACC_PUBLIC` flag.
+
+### Compiler artifacts
+
+Accepted divergence: `MicroblockRender$$anon$1`, `MicroblockRender$$anonfun$renderCuboid$1`, and
+`MicroblockRender$$anonfun$renderCuboid$2` disappear. Java's constructor reference initializes the thread-local face,
+and the direct loop needs none of the private Scala implementation classes. The downstream inventory contains no
+references to them.
+
+### Validation
+
+- `MicroblockRenderCharacterizationTest`: 4 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 238 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors, including runtime-generated microblock classes.
+- Clean reference/port jars retain the same two supported types, and raw `javap` comparison confirms identical
+  callable public names/descriptors and retained field shape.
+- Actual item, material-face, placement-grid and highlight OpenGL output remains on the manual checklist.
