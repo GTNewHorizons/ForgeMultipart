@@ -23,7 +23,13 @@ import org.junit.jupiter.api.Test;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.microblock.BlockMicroMaterial;
 import codechicken.microblock.CommonMicroClass;
+import codechicken.microblock.CommonMicroblockClient;
+import codechicken.microblock.CornerMicroClass;
 import codechicken.microblock.CornerMicroClass$;
+import codechicken.microblock.CornerMicroblock;
+import codechicken.microblock.CornerPlacement;
+import codechicken.microblock.CornerPlacement$;
+import codechicken.microblock.CornerPlacementGrid$;
 import codechicken.microblock.EdgeMicroClass$;
 import codechicken.microblock.FaceMicroClass;
 import codechicken.microblock.FaceMicroClass$;
@@ -120,6 +126,48 @@ class DefaultContentFunctionalTest {
     }
 
     @Test
+    void keepsCornerFactoryPlacementAndAllFiftySixBounds() {
+        CornerMicroClass$ factory = CornerMicroClass$.MODULE$;
+        assertSame(factory, CornerPlacement$.MODULE$.microClass());
+        assertSame(factory, CornerPlacement.microClass());
+        assertSame(CornerPlacementGrid$.MODULE$, CornerPlacement$.MODULE$.placementGrid());
+        assertSame(factory.aBounds(), CornerMicroClass.aBounds());
+        assertEquals("mcr_cnr", factory.getName());
+        assertEquals(CornerMicroblock.class, factory.baseTrait());
+        assertEquals(CommonMicroblockClient.class, factory.clientTrait());
+        assertEquals(7, factory.itemSlot());
+        assertEquals(1f, factory.getResistanceFactor());
+
+        Cuboid6[] bounds = factory.aBounds();
+        assertEquals(256, bounds.length);
+        int populated = 0;
+        for (int corner = 0; corner < 8; corner++) {
+            for (int size = 1; size < 8; size++) {
+                Cuboid6 expected = expectedCornerBounds(corner, size / 8d);
+                Cuboid6 actual = bounds[size << 4 | corner];
+                assertCuboid(expected, actual);
+                populated++;
+            }
+        }
+        for (Cuboid6 bound : bounds) {
+            if (bound != null) {
+                populated--;
+            }
+        }
+        assertEquals(0, populated, "Only the 8 corners by 7 sizes may be populated");
+
+        Microblock generated = factory.create(false, 0);
+        assertTrue(generated instanceof CornerMicroblock);
+        for (int slot = 7; slot < 15; slot++) {
+            generated.setShape(3, slot);
+            CornerMicroblock corner = (CornerMicroblock) generated;
+            assertSame(bounds[3 << 4 | slot - 7], corner.getBounds());
+            assertEquals(slot - 7, generated.getShape());
+            assertEquals(slot, corner.getSlot());
+        }
+    }
+
+    @Test
     void registersTheExactOrderedBuiltInMaterialsAndRemaps() throws Exception {
         List<String> expectedNames = new ArrayList<>();
         Map<String, String> expectedRemaps = new HashMap<>();
@@ -207,6 +255,13 @@ class DefaultContentFunctionalTest {
             default:
                 throw new AssertionError(side);
         }
+    }
+
+    private static Cuboid6 expectedCornerBounds(int corner, double size) {
+        double minX = (corner & 4) == 0 ? 0 : 1 - size;
+        double minY = (corner & 1) == 0 ? 0 : 1 - size;
+        double minZ = (corner & 2) == 0 ? 0 : 1 - size;
+        return new Cuboid6(minX, minY, minZ, minX + size, minY + size, minZ + size);
     }
 
     private static void assertCuboid(Cuboid6 expected, Cuboid6 actual) {
