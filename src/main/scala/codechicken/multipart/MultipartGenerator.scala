@@ -122,9 +122,14 @@ object MultipartGenerator extends ScratchBitSet {
     * adding it to the tick list
     */
   def silentAddTile(world: World, pos: BlockCoord, tile: TileEntity) {
+    tile.xCoord = pos.x;
+    tile.yCoord = pos.y;
+    tile.zCoord = pos.z;
+
     val chunk = world.getChunkFromBlockCoords(pos.x, pos.z)
-    if (chunk != null)
-      chunk.func_150812_a(pos.x & 15, pos.y, pos.z & 15, tile)
+    if (chunk != null) {
+      chunk.addTileEntity(tile)
+    }
   }
 
   /** Check if tile satisfies all the interfaces required by parts. If not,

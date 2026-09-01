@@ -1,10 +1,12 @@
 // Add your dependencies here
 
 dependencies {
-    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.12:dev")
-    compileOnly("com.github.GTNewHorizons:Angelica:2.1.19:dev")
+    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.16:dev")
+    compileOnly("com.cardinalstar.cubicchunks:CubicChunks1710:v0.1.8-alpha:dev")
+    compileOnly("com.github.GTNewHorizons:Angelica:2.1.54:dev")
+    runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.174:dev")
     compileOnly("com.github.GTNewHorizons:Postea:1.2.5:dev") {transitive = false}
-    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.93-GTNH:dev") {
+    devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.114-GTNH:dev") {
         exclude group: 'com.github.GTNewHorizons', module: 'CodeChickenCore'
     }
 }
