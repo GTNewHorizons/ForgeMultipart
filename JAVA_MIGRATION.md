@@ -1087,3 +1087,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 222 plain-JVM tests and the Java 8 Forge server passes all 103 tests. Every callable public
   descriptor matches the reference; only three unreferenced Scala closure/anonymous classes disappear.
   `microblock/ConfigContent.scala` is next.
+- Characterized `ConfigContent` against untouched Scala. Six plain-JVM cases freeze its facade, companion and exact
+  mutable-map field, config-file generation and parsing, alias/range semantics, malformed-line recovery, block
+  registration and IMC filtering/validation.
+- Ported the facade and companion directly to Java. Both retained runtime classes and every callable public descriptor
+  match the reference; the seven Scala iteration/parser closure classes disappear. Public file helpers still throw the
+  original `IOException` instances without adding checked exceptions to their descriptors or source declarations.
+- A clean build passes all 228 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
+  `microblock/AngelicaCompat.scala` is next.

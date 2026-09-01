@@ -2492,3 +2492,49 @@ contains no reference to them.
 - Clean reference/port jars retain the same five supported types; the three compiler artifacts above disappear, and
   raw `javap` comparison confirms identical callable public names/descriptors.
 - Client icon reload, material face rendering and Angelica shader overrides remain on the manual checklist.
+
+## 2026-09-01 — ConfigContent Java port
+
+The custom micro-material configuration loader is now a Java static facade and `MODULE$` companion.
+
+### Observable behavior
+
+No known runtime divergence. A missing `microblocks.cfg` still produces the same five-line default file. Existing
+files still accept quoted unlocalized or registry names, add the `minecraft:` namespace only when neither `.` nor `:`
+is present, default metadata to zero, expand comma lists and inclusive ascending ranges, leave descending ranges
+empty, and replace earlier declarations for the same name. Invalid lines still log twice and do not stop later lines.
+
+Loading still consumes both the unlocalized-name and registry-name aliases before registration, registers their
+metadata in that order, catches registration failures per metadata, and retains unmatched entries so each load can
+warn about them. IMC still ignores other keys, requires the exact final `ItemStack` runtime type, checks block
+registration before the `[0, 16)` metadata bound, and catches only duplicate-registration failures.
+
+The public `generateDefault` and `loadLines` methods retain the Scala source surface with no declared checked
+exceptions while rethrowing the original `IOException` instance. `parse` alone catches those IO failures and logs
+them, matching the reference rather than wrapping them.
+
+### ABI and reflection compatibility
+
+The retained runtime types are exactly `ConfigContent` and `ConfigContent$`. Both keep the same six callable public
+methods and descriptors, and the companion keeps `MODULE$` plus the private final
+`codechicken$microblock$ConfigContent$$nameMap: scala.collection.mutable.Map` field and its public mangled accessor.
+The downstream inventory contains no ConfigContent member or reflective references, so no frozen consumer fixture is
+needed. Accepted classfile-only differences are removed Scala signature/marker attributes, private Java constructors,
+and the companion class initializer without Scala's `ACC_PUBLIC` flag.
+
+### Compiler artifacts
+
+Accepted divergence: `ConfigContent$$anonfun$handleIMC$1`, `ConfigContent$$anonfun$handleIMC$2`,
+`ConfigContent$$anonfun$load$1`, `ConfigContent$$anonfun$load$1$$anonfun$1`,
+`ConfigContent$$anonfun$load$1$$anonfun$apply$1`, `ConfigContent$$anonfun$load$2`, and
+`ConfigContent$$anonfun$loadLine$1` disappear. Direct Java loops need none of these private implementation classes,
+and the downstream inventory contains no references to them.
+
+### Validation
+
+- `ConfigContentCharacterizationTest`: 6 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 228 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors.
+- Clean reference/port jars retain the same two supported types; the seven compiler artifacts above disappear, and
+  raw `javap` comparison confirms identical callable public names/descriptors.
+- File parsing, registration and IMC behavior are automated; this port adds no new client-only manual check.

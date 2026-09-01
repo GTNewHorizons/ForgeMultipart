@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 122 commits including the API-cleanup plan and separate characterization and
-port commits through `BlockMicroMaterial`.
+Branch: `algent/java`. Base: `master`. 124 commits including the API-cleanup plan and separate characterization and
+port commits through `ConfigContent`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **222 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **228 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -252,7 +252,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MicroblockCPH`/`MicroblockSPH` and `MultipartPH`/`MultipartCPH`/`MultipartSPH` packet-handler units, plus
 `MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, `GrassMicroMaterial`/`TopMicroMaterial`,
 `ItemMicroPart` plus its renderer, `MicroblockPlacement` plus its executable-placement and property types, and
-`PlacementGrids`, plus `BlockMicroMaterial` and `MaterialRenderHelper`.
+`PlacementGrids`, plus `BlockMicroMaterial`, `MaterialRenderHelper`, and `ConfigContent`.
 The complete `MultipartProxy` and `MicroblockProxy` server/client hierarchies and static facades are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
@@ -268,7 +268,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-154 Java files, 21 Scala files, ~3,658 Scala lines left (non-blank; that is the metric this figure has always used).
+156 Java files, 20 Scala files, ~3,496 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -453,15 +453,19 @@ Forge case freezes registered-block behavior and the dedicated-server side bound
 closure/anonymous classes disappear. Actual icons, face output and Angelica shader material overrides remain on the
 manual checklist.
 
-**Medium.** `ConfigContent` and the remaining material/render units.
+`ConfigContent` is now a Java facade/companion pair. Six plain-JVM cases freeze its exact public and mutable-map
+shape, config-file generation and parsing, aliases and metadata ranges, malformed-line recovery, block registration
+and IMC validation. The two retained classes keep every callable descriptor; seven unreferenced Scala closure classes
+disappear. The existing Forge lifecycle test still covers the real pre-init/init material-registration sequence.
+
+**Low.** `AngelicaCompat.scala` is the next isolated target. It is a 23-line client hook with two methods and no
+downstream inventory references; freeze its exact surface and the CapturingTessellator guard before translating it.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/ConfigContent.scala` next. It parses material declarations and IMC input, then feeds the newly ported
-`BlockMicroMaterial` registration surface. Freeze file/IMC parsing, default metadata, malformed-entry handling and
-registration/remap effects before translating it.
+After `AngelicaCompat`, take the remaining material/render units deliberately before entering the shape hierarchy.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
