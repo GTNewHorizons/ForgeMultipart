@@ -2315,3 +2315,47 @@ private compiler artifacts with no downstream reference.
 - Raw `javap` comparison confirms identical callable public names/descriptors for all six retained classes. The exact
   class-list diff contains only the fourteen compiler artifacts described above.
 - Real client chunk-description application, update dispatch and rendering remain on the manual checklist.
+
+## 2026-09-01 — ItemMicroPart Java port
+
+The microblock item, its static facade/companion pair and its renderer facade/companion pair are now Java.
+ProjectRed's direct `ItemMicroPart$.MODULE$` calls and Extra Utilities' static material-ID lookup retain their original
+owners and descriptors.
+
+### Observable behavior
+
+No known runtime divergence. The item still packs the microblock class above the low size byte, stores the material
+name under NBT key `mat`, maps absent tags to null/missing ID and unknown names to `MissingMicroMaterial$.MODULE$`.
+Both creation overloads still use the registered proxy item. Display names, the `Unnamed` invalid fallback, creative
+class/size/material ordering, block retrace, placement validation, survival consumption and material sound are
+unchanged.
+
+The renderer still accepts every render type/helper, applies the same entity/inventory transforms, builds the same
+client part and draws it with normals and the lightmap. Java must not invoke `MicroblockClient` directly because Forge
+rewrites that Scala trait from a class-shaped compile input to an interface. A narrow `MicroblockRender.renderItem`
+helper performs only the trait cast, shape assignment, centering and render call in Scala; all surrounding renderer
+logic remains in Java.
+
+### ABI and source compatibility
+
+The retained runtime types are exactly `ItemMicroPart`, `ItemMicroPart$`, `ItemMicroPartRenderer`, and
+`ItemMicroPartRenderer$`. Every callable public name and descriptor matches the reference, including both creation
+overloads, `MODULE$`, the renderer's Scala `Seq<Object>` overload and its `Object[]` interface method. The Java
+renderer's array method is ordinary rather than Scala-synthetic, which does not affect linkage or dispatch.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, private constructors on static
+facades, a private Java renderer helper, and removal of the three unreferenced `getSubItems` closure classes. The
+downstream inventory contains no reference to those compiler artifacts.
+
+### Validation
+
+- `ItemMicroPartCharacterizationTest`: 5 plain-JVM tests, unchanged from the Scala baseline.
+- `ItemMicroPartBinaryCompatibilityTest`: 1 frozen Scala-consumer test, unchanged from the Scala baseline.
+- Existing `MicroRecipeFunctionalTest` and `MicroblockProxyFunctionalTest` retain initialized item/material creation,
+  registration and recipe integration.
+- Clean complete plain-JVM suite: 208 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 98 tests, 0 failures, 0 errors.
+- A clean jar contains only the four retained types, and raw `javap` comparison confirms identical callable public
+  names/descriptors.
+- Creative listing, localized names, successful placement/consumption/sound and real client rendering remain on the
+  manual checklist.

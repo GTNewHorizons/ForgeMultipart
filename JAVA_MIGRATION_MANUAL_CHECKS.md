@@ -25,6 +25,7 @@ release that includes those ports.
 | Start a client, join a server, place/update a multipart and use the multipart control key | Block and generated-tile rendering work, client packets arrive, and control-key state changes are sent once without duplicate registrations | `MultipartProxy_clientImpl.postInit` / `onTileClassBuilt` |
 | Move into view of a chunk containing several multipart tiles, then add, update and remove parts | The initial chunk description reconstructs every tile and compressed updates apply without missing, duplicated or ghost parts | `MultipartCPH` / `MultipartSPH` |
 | Start a client with 3D saws enabled, inspect all three saw tiers and the microblock item, then repeat with Angelica installed | Each renderer is registered once, saw models use the correct tier, microblock icons load, client packets register, and the Angelica hook initializes without errors | `MicroblockProxy_clientImpl.init` / `postInit` |
+| Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` |
 
 ## Placement and interaction
 
@@ -36,6 +37,7 @@ release that includes those ports.
 | Place a cover on a face that already has a hollow cover | Redstone still passes through the hollow centre | `TFacePart.redstoneConductionMap` |
 | Run redstone across an edge microblock | Conduction matches the pre-port behavior | `TEdgePart.conductsRedstone` |
 | Cut materials with saws of different harvest levels | Only materials at or below the saw's strength can be cut | `Saw.getMaxCuttingStrength` |
+| Place the same microblock in survival and creative, including onto an existing multipart tile | Valid placements play the material sound; survival consumes the expected amount while creative does not | `ItemMicroPart.onItemUse` |
 
 ## Downstream integration
 

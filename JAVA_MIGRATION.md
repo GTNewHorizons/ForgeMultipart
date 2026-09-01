@@ -1052,3 +1052,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 202 plain-JVM tests and the Java 8 Forge server passes all 98 tests. All six retained public
   surfaces match the reference by name and descriptor; only fourteen unreferenced compiler artifacts disappear.
   `microblock/ItemMicroPart.scala` is next.
+- Characterized `ItemMicroPart` against untouched Scala. Six plain-JVM cases freeze its item, static facade and both
+  companion surfaces, NBT/material semantics, creation overloads, invalid-class short circuits and a Scala 2.11.5
+  binary consumer that calls all four `ItemMicroPart$.MODULE$` methods used by ProjectRed.
+- Ported the item and renderer to four Java types with every callable public name and descriptor retained. Creative
+  enumeration is a direct loop, and the renderer crosses the transformed `MicroblockClient` boundary through one
+  narrow Scala helper rather than emitting an invalid class-method call from Java.
+- A clean build passes all 208 plain-JVM tests and the Java 8 Forge server passes all 98 tests. The jar retains exactly
+  the four public ItemMicroPart types; three unreferenced Scala iteration closures disappear.
+  `microblock/MicroblockPlacement.scala` is next.

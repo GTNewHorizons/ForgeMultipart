@@ -10,6 +10,15 @@ import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial
 import java.util.function.Supplier
 
 object MicroblockRender {
+  def renderItem(part: Microblock, size: Int, slot: Int) {
+    val client = part.asInstanceOf[MicroblockClient]
+    client.setShape(size, slot)
+    client.render(
+      new Vector3(0.5, 0.5, 0.5).subtract(client.getBounds.center),
+      -1
+    )
+  }
+
   def renderHighlight(
       player: EntityPlayer,
       hit: MovingObjectPosition,

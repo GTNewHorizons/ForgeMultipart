@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 113 commits including the API-cleanup plan and separate characterization and
-port commits for both proxy hierarchies and the multipart packet-handler unit.
+Branch: `algent/java`. Base: `master`. 115 commits including the API-cleanup plan and separate characterization and
+port commits through `ItemMicroPart`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **202 plain-JVM tests and 98 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **208 plain-JVM tests and 98 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -250,7 +250,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `TRandomDisplayTickTile` Java-trait ports, plus `MultipartCompatiblity`/`MCPCCompatModule`, `MultipartMod`,
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
 `MicroblockCPH`/`MicroblockSPH` and `MultipartPH`/`MultipartCPH`/`MultipartSPH` packet-handler units, plus
-`MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, and `GrassMicroMaterial`/`TopMicroMaterial`.
+`MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, `GrassMicroMaterial`/`TopMicroMaterial`, and
+`ItemMicroPart` plus its renderer.
 The complete `MultipartProxy` and `MicroblockProxy` server/client hierarchies and static facades are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
@@ -266,7 +267,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-130 Java files, 25 Scala files, ~4,295 Scala lines left (non-blank; that is the metric this figure has always used).
+134 Java files, 24 Scala files, ~4,120 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -422,16 +423,24 @@ packet, coordinate stream and both update terminators; existing Forge tests reta
 promotion and exact chunk-description framing. Direct loops replace fourteen unreferenced Scala closure/anonymous
 classes. Real client description/update application remains on the manual checklist.
 
-**Medium.** `ItemMicroPart`, `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`, and the
+`ItemMicroPart` and `ItemMicroPartRenderer` are now Java. The item facade, load-bearing `ItemMicroPart$.MODULE$`,
+renderer facade and registered renderer companion retain every callable public descriptor. A frozen Scala 2.11.5
+consumer executes the four companion calls used by ProjectRed. Item creation, NBT/material lookup, invalid placement
+and render short circuits are frozen headless; the existing Forge recipe and proxy tests cover initialized material
+IDs and item registration. The Java renderer routes only its transformed `MicroblockClient` operation through
+`MicroblockRender.renderItem`, keeping the call opcode Scala-safe. Creative listing, localized names, actual placement,
+sound/consumption and client rendering remain on the manual checklist.
+
+**Medium.** `MicroblockPlacement`, `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`, and the
 remaining material/render units.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/ItemMicroPart.scala` next. It is the smallest remaining self-contained medium-risk gameplay unit and
-owns item placement, creative subitems, names/icons and microblock recipe lookup. Freeze its class hierarchy, public
-surface, placement dispatch, shape/material damage packing and client-only icon/subitem behavior before porting it.
+Take `microblock/MicroblockPlacement.scala` next. It is the placement engine immediately downstream of the completed
+item port. Freeze internal-versus-external selection, expansion, opposite-slot modifiers, material consumption and
+world mutation before translating it; use the Forge server for the paths that need generated microblock classes.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
