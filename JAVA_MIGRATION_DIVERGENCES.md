@@ -2441,3 +2441,54 @@ class initializers without Scala's `ACC_PUBLIC` flag. No runtime class was added
 - Clean reference/port jars contain the same nine runtime classes, and raw `javap` comparison confirms identical
   callable public names/descriptors.
 - Face/corner/edge/hollow guide-line rendering remains on the manual checklist.
+
+## 2026-09-01 — BlockMicroMaterial Java port
+
+The block-backed material, its registry companion, the render-helper facade/companion and per-thread state are now
+five Java types.
+
+### Observable behavior
+
+No known runtime divergence. Material keys and legacy names, metadata suffixes, all six registration overloads,
+registry remaps, block/item/name/strength/light/harvest/sound/resistance delegation, colour selection and face-render
+pipeline order are unchanged. The historical `createAndRegister(Block, Seq, oldName)` behavior still ignores the
+sequence and registers only metadata 0; this port does not repair it.
+
+Icon loading still reacquires the block from its registry name in case another mod replaced the instance, resolves all
+six icons through `RenderBlocks.getIconSafe`, and falls back to its null icon after any exception. The render helper
+still stores pass and pipeline builder per thread, applies light only outside inventory rendering, sets the Angelica
+block/meta shader override before drawing and resets it afterwards.
+
+### ABI and reflection compatibility
+
+The retained runtime types are exactly `ThreadState`, `MaterialRenderHelper`, `MaterialRenderHelper$`,
+`BlockMicroMaterial`, and `BlockMicroMaterial$`. Every callable public name and descriptor matches the Scala
+reference, including both static facades, both `MODULE$` fields, the Scala `Seq` overloads, default-argument methods,
+the public `(Block, int)` constructor and the mangled icon helper.
+
+`BlockMicroMaterial` remains non-final and keeps exactly four instance fields. In particular, GuideNH's late mixin
+targets remain private final fields named `block: Block` and `meta: int`; the private final `blockKey: String` and
+private mutable `icont: MultiIconTransformation` retain their names and types too. `@SideOnly(CLIENT)` remains only on
+the icon field, `loadIcons` and `getBreakingIcon`, matching the dedicated-server stripped surface.
+
+A frozen Scala 2.11.5 consumer calls `BlockMicroMaterial$.MODULE$` key/default methods and
+`MaterialRenderHelper$.MODULE$` pass accessors, proving both load-bearing companion links after the port. Accepted
+classfile-only differences are removed Scala signature/marker attributes, private Java constructors on the static
+facade/companions, and companion class initializers without Scala's `ACC_PUBLIC` flag.
+
+### Compiler artifacts
+
+Accepted divergence: `BlockMicroMaterial$$anonfun$createAndRegister$1`,
+`BlockMicroMaterial$$anonfun$loadIcons$1`, and `MaterialRenderHelper$$anon$1` disappear. Direct Java iteration and
+`ThreadLocal.withInitial` need none of these compiler-generated implementation classes, and the downstream inventory
+contains no reference to them.
+
+### Validation
+
+- `BlockMicroMaterialCharacterizationTest`: 5 plain-JVM tests, unchanged from the Scala baseline.
+- `BlockMicroMaterialBinaryCompatibilityTest`: 1 frozen Scala-consumer test, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 222 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors.
+- Clean reference/port jars retain the same five supported types; the three compiler artifacts above disappear, and
+  raw `javap` comparison confirms identical callable public names/descriptors.
+- Client icon reload, material face rendering and Angelica shader overrides remain on the manual checklist.

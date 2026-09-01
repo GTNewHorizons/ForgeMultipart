@@ -1077,3 +1077,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   companions explicitly.
 - A clean build passes all 216 plain-JVM tests and the Java 8 Forge server passes all 102 tests. The jar class list is
   unchanged and all callable public descriptors match the reference. `microblock/BlockMicroMaterial.scala` is next.
+- Characterized `BlockMicroMaterial` against untouched Scala. Five plain-JVM cases freeze all five retained public
+  types, exact methods/fields/client annotations, material delegation, thread-local render-helper state and inventory
+  pipeline. A frozen Scala 2.11.5 consumer calls both load-bearing companions; one Forge case freezes registered block
+  semantics and dedicated-server side stripping.
+- Ported the material base, both facade/companion pairs and `ThreadState` to Java. The GuideNH-targeted private final
+  `block`/`meta` fields, public `(Block, int)` constructor, Scala `Seq` registration overloads, historical meta-0-only
+  overload behavior, render pipeline and Angelica override lifecycle are unchanged.
+- A clean build passes all 222 plain-JVM tests and the Java 8 Forge server passes all 103 tests. Every callable public
+  descriptor matches the reference; only three unreferenced Scala closure/anonymous classes disappear.
+  `microblock/ConfigContent.scala` is next.

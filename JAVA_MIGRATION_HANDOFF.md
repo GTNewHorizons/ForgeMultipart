@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 120 commits including the API-cleanup plan and separate characterization and
-port commits through `PlacementGrids`.
+Branch: `algent/java`. Base: `master`. 122 commits including the API-cleanup plan and separate characterization and
+port commits through `BlockMicroMaterial`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **216 plain-JVM tests and 102 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **222 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -116,7 +116,7 @@ Scala 2.11.5 must run under **Java 8** — it cannot find `java.lang.Object` on 
 4. `base64 -w 76` the class into `src/test/resources/compat/`, and record both SHA-256s in
    `src/test/fixtures/README.md`.
 
-Eight fixtures exist already; copy the pattern from any `*BinaryCompatibilityTest`. They decode and `defineClass` the
+Nine fixtures exist already; copy the pattern from any `*BinaryCompatibilityTest`. They decode and `defineClass` the
 frozen bytes, so recompiling against the port would defeat the point.
 
 ## Gotchas, all discovered the hard way
@@ -252,7 +252,7 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MicroblockCPH`/`MicroblockSPH` and `MultipartPH`/`MultipartCPH`/`MultipartSPH` packet-handler units, plus
 `MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, `GrassMicroMaterial`/`TopMicroMaterial`,
 `ItemMicroPart` plus its renderer, `MicroblockPlacement` plus its executable-placement and property types, and
-`PlacementGrids`.
+`PlacementGrids`, plus `BlockMicroMaterial` and `MaterialRenderHelper`.
 The complete `MultipartProxy` and `MicroblockProxy` server/client hierarchies and static facades are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
@@ -268,7 +268,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-149 Java files, 22 Scala files, ~3,828 Scala lines left (non-blank; that is the metric this figure has always used).
+154 Java files, 21 Scala files, ~3,658 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -445,16 +445,23 @@ corner and edge selection boundary for all six hit sides. ProjectBlue's load-bea
 remain unchanged. The reusable trait behavior is now three Java defaults; the concrete grids still declare the same
 methods, and old Scala forwarders can still call the bridge. OpenGL guide rendering remains on the manual checklist.
 
-**Medium.** `BlockMicroMaterial`, `ConfigContent`, and the
-remaining material/render units.
+`BlockMicroMaterial` and its render helper are now five Java types. The load-bearing `BlockMicroMaterial$.MODULE$`,
+the static facades used by Java consumers, the `(Block, int)` constructor, and the exact private `block`/`meta` fields
+targeted by GuideNH all remain. Five plain-JVM cases freeze the complete public/field/annotation shape, material
+delegation, thread-local render state and inventory pipeline; a frozen Scala consumer executes both companions. One
+Forge case freezes registered-block behavior and the dedicated-server side boundary. Three unreferenced Scala
+closure/anonymous classes disappear. Actual icons, face output and Angelica shader material overrides remain on the
+manual checklist.
+
+**Medium.** `ConfigContent` and the remaining material/render units.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/BlockMicroMaterial.scala` next. It is the material/render base consumed by `ConfigContent` and carries
-the GuideNH mixin-facing fields already identified by the consumer audit. Freeze its reflected field shape, material
-semantics and common-side surface before translating it; actual block-face rendering remains client-manual.
+Take `microblock/ConfigContent.scala` next. It parses material declarations and IMC input, then feeds the newly ported
+`BlockMicroMaterial` registration surface. Freeze file/IMC parsing, default metadata, malformed-entry handling and
+registration/remap effects before translating it.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
