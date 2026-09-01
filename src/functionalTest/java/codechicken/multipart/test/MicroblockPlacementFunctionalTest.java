@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +25,7 @@ import codechicken.lib.raytracer.ExtendedMOP;
 import codechicken.lib.vec.BlockCoord;
 import codechicken.microblock.AdditionPlacement;
 import codechicken.microblock.CommonMicroblock;
+import codechicken.microblock.EdgePlacement$;
 import codechicken.microblock.EdgePlacementGrid$;
 import codechicken.microblock.ExecutablePlacement;
 import codechicken.microblock.ExpandingPlacement;
@@ -36,6 +38,8 @@ import codechicken.microblock.MicroblockPlacement;
 import codechicken.microblock.MicroblockPlacement$;
 import codechicken.microblock.PlacementGrid;
 import codechicken.microblock.PlacementProperties;
+import codechicken.microblock.PostMicroClass$;
+import codechicken.microblock.PostMicroblock;
 import codechicken.multipart.ControlKeyModifer;
 import codechicken.multipart.TileMultipart;
 import scala.Tuple2;
@@ -46,6 +50,8 @@ class MicroblockPlacementFunctionalTest {
     private static final BlockCoord INTERNAL_POS = new BlockCoord(164, 200, 160);
     private static final BlockCoord EXPAND_POS = new BlockCoord(168, 200, 160);
     private static final BlockCoord CUSTOM_POS = new BlockCoord(172, 200, 160);
+    private static final BlockCoord POST_POS = new BlockCoord(176, 200, 160);
+    private static final BlockCoord POST_EXPAND_POS = new BlockCoord(180, 200, 160);
 
     private WorldServer world;
     private EntityPlayer player;
@@ -197,6 +203,55 @@ class MicroblockPlacementFunctionalTest {
         assertSame(marker, result);
     }
 
+    @Test
+    void edgeCustomPlacementCreatesOnlyEvenPostsAtTheGridCentre() {
+        world.setBlock(POST_POS.x, POST_POS.y, POST_POS.z, Blocks.stone);
+        MovingObjectPosition centreHit = hit(POST_POS, 1.0);
+
+        MicroblockPlacement odd = new MicroblockPlacement(player, centreHit, 1, material, true, EdgePlacement$.MODULE$);
+        assertEquals(-1, odd.slot());
+        assertNull(odd.apply());
+
+        MicroblockPlacement even = new MicroblockPlacement(
+                player,
+                centreHit,
+                2,
+                material,
+                true,
+                EdgePlacement$.MODULE$);
+        AdditionPlacement placement = assertInstanceOf(AdditionPlacement.class, even.apply());
+        assertEquals(POST_POS.copy().offset(1), placement.pos());
+        assertInstanceOf(PostMicroblock.class, placement.part());
+        assertSame(PostMicroClass$.MODULE$, placement.part().microClass());
+        assertEquals(2, placement.part().getSize());
+        assertEquals(0, placement.part().getShape());
+    }
+
+    @Test
+    void edgeCustomPlacementExpandsAMatchingPostInPlace() {
+        Microblock original = PostMicroClass$.MODULE$.create(false, material);
+        original.setShape(2, 0);
+        TileMultipart tile = TileMultipart.addPart(world, POST_EXPAND_POS, original);
+
+        MicroblockPlacement decision = new MicroblockPlacement(
+                player,
+                indexedHit(POST_EXPAND_POS, 0.25, 0),
+                2,
+                material,
+                true,
+                EdgePlacement$.MODULE$);
+        ExpandingPlacement placement = assertInstanceOf(ExpandingPlacement.class, decision.apply());
+        assertTrue(decision.internal());
+        assertTrue(decision.doExpand());
+        assertEquals(4, placement.part().getSize());
+        assertEquals(0, placement.part().getShape());
+
+        placement.place(world, player, new ItemStack(net.minecraft.init.Items.stick));
+        assertSame(original, tile.jPartList().get(0));
+        assertEquals(4, original.getSize());
+        assertEquals(0, original.getShape());
+    }
+
     private Microblock face(int size, int slot) {
         Microblock part = FaceMicroClass$.MODULE$.create(false, material);
         part.setShape(size, slot);
@@ -232,6 +287,9 @@ class MicroblockPlacementFunctionalTest {
         clear(INTERNAL_POS);
         clear(EXPAND_POS);
         clear(CUSTOM_POS);
+        clear(POST_POS);
+        clear(POST_POS.copy().offset(1));
+        clear(POST_EXPAND_POS);
     }
 
     private void clear(BlockCoord pos) {

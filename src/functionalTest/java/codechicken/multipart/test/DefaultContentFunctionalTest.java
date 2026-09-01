@@ -30,7 +30,12 @@ import codechicken.microblock.CornerMicroblock;
 import codechicken.microblock.CornerPlacement;
 import codechicken.microblock.CornerPlacement$;
 import codechicken.microblock.CornerPlacementGrid$;
+import codechicken.microblock.EdgeMicroClass;
 import codechicken.microblock.EdgeMicroClass$;
+import codechicken.microblock.EdgeMicroblock;
+import codechicken.microblock.EdgePlacement;
+import codechicken.microblock.EdgePlacement$;
+import codechicken.microblock.EdgePlacementGrid$;
 import codechicken.microblock.FaceMicroClass;
 import codechicken.microblock.FaceMicroClass$;
 import codechicken.microblock.FaceMicroblock;
@@ -43,11 +48,17 @@ import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial;
 import codechicken.microblock.Microblock;
 import codechicken.microblock.MissingMicroMaterial;
 import codechicken.microblock.MissingMicroMaterial$;
+import codechicken.microblock.PostMicroClass;
 import codechicken.microblock.PostMicroClass$;
+import codechicken.microblock.PostMicroblock;
+import codechicken.microblock.PostMicroblockClient;
 import codechicken.microblock.TopMicroMaterial;
+import codechicken.multipart.JPartialOcclusion;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultiPartRegistry.IPartFactory2;
+import codechicken.multipart.TEdgePart;
 import codechicken.multipart.TFacePart;
+import codechicken.multipart.TNormalOcclusion;
 import scala.Tuple2;
 
 class DefaultContentFunctionalTest {
@@ -168,6 +179,76 @@ class DefaultContentFunctionalTest {
     }
 
     @Test
+    void keepsEdgeAndPostFactoriesBoundsAndGeneratedParts() {
+        EdgeMicroClass$ edgeFactory = EdgeMicroClass$.MODULE$;
+        assertSame(edgeFactory, EdgePlacement$.MODULE$.microClass());
+        assertSame(edgeFactory, EdgePlacement.microClass());
+        assertSame(EdgePlacementGrid$.MODULE$, EdgePlacement$.MODULE$.placementGrid());
+        assertSame(edgeFactory.aBounds(), EdgeMicroClass.aBounds());
+        assertEquals("mcr_edge", edgeFactory.getName());
+        assertEquals(EdgeMicroblock.class, edgeFactory.baseTrait());
+        assertEquals(CommonMicroblockClient.class, edgeFactory.clientTrait());
+        assertEquals(15, edgeFactory.itemSlot());
+        assertEquals(0.5f, edgeFactory.getResistanceFactor());
+
+        Cuboid6[] edgeBounds = edgeFactory.aBounds();
+        assertEquals(256, edgeBounds.length);
+        int populated = 0;
+        for (int edge = 0; edge < 12; edge++) {
+            for (int size = 1; size < 8; size++) {
+                assertCuboid(expectedEdgeBounds(edge, size / 8d), edgeBounds[size << 4 | edge]);
+                populated++;
+            }
+        }
+        assertEquals(populated, countPopulated(edgeBounds));
+
+        Microblock generatedEdge = edgeFactory.create(false, 0);
+        assertTrue(generatedEdge instanceof EdgeMicroblock);
+        assertTrue(generatedEdge instanceof TEdgePart);
+        for (int slot = 15; slot < 27; slot++) {
+            generatedEdge.setShape(3, slot);
+            EdgeMicroblock edge = (EdgeMicroblock) generatedEdge;
+            assertSame(edgeBounds[3 << 4 | slot - 15], edge.getBounds());
+            assertEquals(slot - 15, generatedEdge.getShape());
+            assertEquals(slot, edge.getSlot());
+        }
+
+        PostMicroClass$ postFactory = PostMicroClass$.MODULE$;
+        assertSame(postFactory.aBounds(), PostMicroClass.aBounds());
+        assertEquals("mcr_post", postFactory.getName());
+        assertEquals(PostMicroblock.class, postFactory.baseTrait());
+        assertEquals(PostMicroblockClient.class, postFactory.clientTrait());
+        assertEquals(0.5f, postFactory.getResistanceFactor());
+
+        Cuboid6[] postBounds = postFactory.aBounds();
+        assertEquals(256, postBounds.length);
+        populated = 0;
+        for (int axis = 0; axis < 3; axis++) {
+            for (int size = 2; size < 8; size += 2) {
+                assertCuboid(expectedPostBounds(axis, size), postBounds[size << 4 | axis]);
+                populated++;
+            }
+        }
+        assertEquals(populated, countPopulated(postBounds));
+
+        Microblock generatedPost = postFactory.create(false, 0);
+        assertTrue(generatedPost instanceof PostMicroblock);
+        assertTrue(generatedPost instanceof JPartialOcclusion);
+        assertTrue(generatedPost instanceof TNormalOcclusion);
+        PostMicroblock post = (PostMicroblock) generatedPost;
+        for (int axis = 0; axis < 3; axis++) {
+            generatedPost.setShape(4, axis);
+            assertSame(postBounds[4 << 4 | axis], post.getBounds());
+            assertEquals(edgeFactory.getClassId(), post.itemClassID());
+            assertEquals(0.5f, post.getResistanceFactor());
+            assertEquals(axis == 0, post.canPlaceTorchOnTop());
+            assertEquals(1, post.getOcclusionBoxes().size());
+            assertSame(post.getBounds(), post.getOcclusionBoxes().get(0));
+            assertEquals(post.getOcclusionBoxes(), post.getPartialOcclusionBoxes());
+        }
+    }
+
+    @Test
     void registersTheExactOrderedBuiltInMaterialsAndRemaps() throws Exception {
         List<String> expectedNames = new ArrayList<>();
         Map<String, String> expectedRemaps = new HashMap<>();
@@ -262,6 +343,48 @@ class DefaultContentFunctionalTest {
         double minY = (corner & 1) == 0 ? 0 : 1 - size;
         double minZ = (corner & 2) == 0 ? 0 : 1 - size;
         return new Cuboid6(minX, minY, minZ, minX + size, minY + size, minZ + size);
+    }
+
+    private static Cuboid6 expectedEdgeBounds(int edge, double size) {
+        switch (edge >> 2) {
+            case 0:
+                return axisBounds((edge & 2) == 0 ? 0 : 1 - size, 0, (edge & 1) == 0 ? 0 : 1 - size, size, 1, size);
+            case 1:
+                return axisBounds((edge & 1) == 0 ? 0 : 1 - size, (edge & 2) == 0 ? 0 : 1 - size, 0, size, size, 1);
+            case 2:
+                return axisBounds(0, (edge & 1) == 0 ? 0 : 1 - size, (edge & 2) == 0 ? 0 : 1 - size, 1, size, size);
+            default:
+                throw new AssertionError(edge);
+        }
+    }
+
+    private static Cuboid6 expectedPostBounds(int axis, int size) {
+        double min = 0.5 - size / 16d;
+        double width = size / 8d;
+        switch (axis) {
+            case 0:
+                return axisBounds(min, 0, min, width, 1, width);
+            case 1:
+                return axisBounds(min, min, 0, width, width, 1);
+            case 2:
+                return axisBounds(0, min, min, 1, width, width);
+            default:
+                throw new AssertionError(axis);
+        }
+    }
+
+    private static Cuboid6 axisBounds(double minX, double minY, double minZ, double sizeX, double sizeY, double sizeZ) {
+        return new Cuboid6(minX, minY, minZ, minX + sizeX, minY + sizeY, minZ + sizeZ);
+    }
+
+    private static int countPopulated(Cuboid6[] bounds) {
+        int populated = 0;
+        for (Cuboid6 bound : bounds) {
+            if (bound != null) {
+                populated++;
+            }
+        }
+        return populated;
     }
 
     private static void assertCuboid(Cuboid6 expected, Cuboid6 actual) {
