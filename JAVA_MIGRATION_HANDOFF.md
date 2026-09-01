@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 138 commits including the API-cleanup plan and separate characterization and
-port commits through the face-microblock factory.
+Branch: `algent/java`. Base: `master`. 140 commits including the API-cleanup plan and separate characterization and
+port commits through the corner-microblock factory.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **246 plain-JVM tests and 104 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **248 plain-JVM tests and 105 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -147,8 +147,9 @@ it as a non-synthetic `default` returning the identity for the chain, as
 Java class loses `apply` sugar and must be referenced as `X$.MODULE$` when passed as a value; `Tuple2` members typed
 `Boolean` in Scala arrive as `Object` and need casting; and Scala 2.11 will not adapt a lambda to
 `Function1[_, BoxedUnit]`, so `operate { p => ... }` needs an explicit `AbstractFunction1`. A Java static array getter
-also loses Scala property/indexing composition: `FaceMicroClass.aBounds(index)` becomes
-`FaceMicroClass.aBounds()(index)` when recompiling, while existing bytecode remains compatible.
+also loses Scala property/indexing composition: `FaceMicroClass.aBounds(index)` and
+`CornerMicroClass.aBounds(index)` need an extra empty argument list before the index when recompiling, while existing
+bytecode remains compatible.
 
 **A companion object can be load-bearing without a single bytecode reference.** The inventory's 17 `MODULE$` list is
 not the whole test — check the reflective string constants too. `MultipartHelper$` is in neither the `MODULE$` list nor
@@ -272,7 +273,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-171 Java files, 16 Scala files, ~3,111 Scala lines left (non-blank; that is the metric this figure has always used).
+175 Java files, 16 Scala files, ~3,083 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -499,9 +500,16 @@ bounds, factory identity and generated `FaceMicroblock`/`TFacePart` behavior. `F
 trait and `$class` surfaces. Existing binaries retain the same `aBounds(): Cuboid6[]` call; recompiled Scala source
 must use `FaceMicroClass.aBounds()(index)`. Only the two private bounds-initializer closures disappear.
 
-**Medium.** `CornerMicroblock.scala` is next. Apply the same narrow split: characterize its factory/facade, placement
-singleton, 56 populated bounds and generated trait, then port the concrete/singleton code while retaining the trait
-unless an exact Java representation is proven first. Do not combine it with another shape family.
+The corner factory and placement singleton are now four Java facade/companion types. Two plain-JVM cases freeze all
+six retained surfaces and all placement mappings; one Forge case freezes the 256-entry table's exact 56 populated
+bounds, factory identity and generated shape/slot behavior. `CornerMicroblock` deliberately remains Scala in
+`CornerMicroblockTraits.scala`, preserving its exact generated trait and `$class` surfaces. ProjectRed's load-bearing
+`CornerMicroClass$.MODULE$.getClassId()` call remains exact. Existing binaries retain the same bounds getter; only the
+two private bounds-initializer closures disappear.
+
+**Medium/high.** `EdgeMicroblock.scala` is next. Treat its Edge and Post families as one source unit: characterize both
+factories, placement/custom-post behavior, both bounds tables and all three generated traits before splitting concrete
+facade/companion code from retained Scala traits. Do not combine it with `TMicroOcclusion` or generator work.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of

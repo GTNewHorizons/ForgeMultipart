@@ -2797,3 +2797,51 @@ The eight supported runtime types remain.
 - Raw `javap` comparison confirms identical callable public names/descriptors for both facades, both companions, both
   traits and both `$class` helpers.
 - Actual face rendering and highlight geometry remain covered by the existing manual checklist entries.
+
+## 2026-09-02 — CornerMicroblock factory Java port
+
+The corner placement and factory facades/companions are now Java. The generated `CornerMicroblock` trait remains
+Scala in `CornerMicroblockTraits.scala`, avoiding any generator expansion for a port that only needs concrete state.
+
+### Observable behavior
+
+No known runtime divergence. Placement still toggles the corner bit for the clicked axis with
+`1 << (side >> 1)`, uses the same corner grid, and inherits the same always-true expand/sneak defaults. Factory name,
+item slot, resistance and trait classes remain unchanged.
+
+The bounds table remains a mutable 256-entry array. The same 56 entries (`size` 1 through 7, `corner` 0 through 7)
+are populated with the same centre-relative axis mirrors; all other entries remain null. Generated parts still encode
+`slot - 7` in the shape nibble, recover the slot with `getShape + 7`, and return the table entry by identity.
+
+### ABI and reflection compatibility
+
+All six retained facade, companion, trait and `$class` types keep their hierarchy and callable public
+names/descriptors. ProjectRed's load-bearing `CornerMicroClass$.MODULE$.getClassId()` call is unchanged, as are the
+static facade and both singleton fields. The stable `"mcr_cnr"` ID used by BuildCraft and MatterManipulator is also
+unchanged.
+
+Recompiled Scala source must write `CornerMicroClass.aBounds()(index)` rather than
+`CornerMicroClass.aBounds(index)`, because the Java facade does not carry Scala property metadata. This is source-only;
+existing bytecode still performs the unchanged zero-argument getter followed by an array load. The companion's
+`baseTrait` generic signature is necessarily `Class<? extends Microblock>` in Java rather than Scala's
+`Class<CornerMicroblock>`; its raw JVM descriptor remains `()Ljava/lang/Class;`, and the static facade retains the
+consumer-facing `Class<CornerMicroblock>` signature.
+
+Accepted classfile-only differences also include the ordinary Java companion class-initializer flag and removed
+Scala signature/marker attributes.
+
+### Compiler artifacts
+
+`CornerMicroClass$$anonfun$1` and `CornerMicroClass$$anonfun$1$$anonfun$apply$mcVI$sp$1` disappear. Direct nested Java
+loops need neither private bounds-initializer closure, and the downstream inventory contains no reference to them.
+The six supported runtime types remain.
+
+### Validation
+
+- `CornerMicroblockCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 248 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 105 tests, 0 failures, 0 errors, including all 56 bounds and a runtime-generated
+  corner part.
+- Raw `javap` comparison confirms identical callable public names/descriptors for both facades, both companions, the
+  trait and its `$class` helper.
+- Actual corner rendering and highlight geometry remain covered by the existing manual checklist entries.

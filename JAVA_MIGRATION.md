@@ -1164,3 +1164,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 246 plain-JVM tests and the Java 8 Forge server passes all 104 tests. Recompiled Scala must
   spell the Java array getter as `FaceMicroClass.aBounds()(index)`; existing binaries still link to the unchanged
   `aBounds(): Cuboid6[]` descriptor. `microblock/CornerMicroblock.scala` is next.
+- Characterized the corner factory, placement singleton and generated trait against untouched Scala. Two plain-JVM
+  cases freeze all six retained public surfaces and all 48 slot/side placement mappings; one Forge case freezes
+  factory metadata, all 56 populated bounds and generated shape/slot behavior.
+- Ported the four concrete facade/companion types directly to Java while retaining `CornerMicroblock` in
+  `CornerMicroblockTraits.scala`. ProjectRed's load-bearing `CornerMicroClass$.MODULE$.getClassId()` linkage and every
+  callable public descriptor remain exact; the two private Scala bounds-initializer closures disappear.
+- A clean build passes all 248 plain-JVM tests and the Java 8 Forge server passes all 105 tests. Recompiled Scala must
+  spell the Java array getter as `CornerMicroClass.aBounds()(index)`; existing binaries still link unchanged.
+  `microblock/EdgeMicroblock.scala` is next as one Edge/Post source unit.
