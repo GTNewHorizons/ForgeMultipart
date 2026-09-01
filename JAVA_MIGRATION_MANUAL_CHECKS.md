@@ -30,6 +30,7 @@ below its table.
 | [ ] | Start a client with 3D saws enabled, inspect all three saw tiers and the microblock item, then repeat with Angelica installed | Each renderer is registered once, saw models use the correct tier, microblock icons load, client packets register, and the Angelica hook initializes without errors | `MicroblockProxy_clientImpl.init` / `postInit` |
 | [ ] | Render several block micro-materials with Angelica shaders enabled, then render an unrelated block | Each face receives the matching block/meta shader material and the override is reset after the microblock draw | `MaterialRenderHelper.blockAndMeta` / `render` |
 | [ ] | Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` / `MicroblockRender.renderItem` |
+| [ ] | Place crossing posts of different sizes/transparency beside face covers, then add and remove neighbours | Post segments shrink and split at intersections without missing sections or stale render bounds | `PostMicroblockClient.recalcBounds` / `shrinkFace` / `shrinkPost` |
 
 ## Placement and interaction
 
@@ -47,7 +48,7 @@ below its table.
 
 | Done | Check | Expected | From |
 | --- | --- | --- | --- |
-| [ ] | Load the pack with ProjRed installed and place face and corner illumar lamp microblocks | The lamps generate, use the correct bounds, render and light correctly | `MicroblockGenerator.registerTrait` Scala trait path / `FaceMicroClass` and `CornerMicroClass` facades |
+| [ ] | Load the pack with ProjRed installed and place face, corner, edge and post illumar lamp microblocks | The lamps generate, use the correct bounds, render and light correctly | `MicroblockGenerator.registerTrait` Scala trait path / shape factory facades |
 | [ ] | Place and break OpenComputers, ProjectBlue and AE2 parts | No `NoSuchMethodError` or `AbstractMethodError` in the log | retained `$class` bridges |
 | [ ] | Load and render a schematic containing an ordered mixed multipart tile | Every part appears in the preview in the saved order; the integration does not silently disable itself | Schematica private registry-map reflection, `MicroblockClass.create`, and tile NBT reconstruction |
 | [ ] | Open a GuideNH scene containing a multipart tile and export its part/material data | The preview, material data and part statistics are complete | companion reflection, `MicroblockGenerator$.create`, `Microblock.microClass/material/shape`, `partList_$eq`, and `BlockMicroMaterial` mixin fields |

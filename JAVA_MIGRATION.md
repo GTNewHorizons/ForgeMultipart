@@ -1173,3 +1173,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 248 plain-JVM tests and the Java 8 Forge server passes all 105 tests. Recompiled Scala must
   spell the Java array getter as `CornerMicroClass.aBounds()(index)`; existing binaries still link unchanged.
   `microblock/EdgeMicroblock.scala` is next as one Edge/Post source unit.
+- Characterized the combined Edge/Post unit against untouched Scala. Two plain-JVM cases freeze all twelve retained
+  public surfaces, state/super accessors and edge-opposite mappings. Three Forge cases freeze both factories, all 84
+  edge and 12 post bounds, generated behavior, even-size post placement and matching-post expansion.
+- Ported the six concrete facade/companion types directly to Java while retaining `EdgeMicroblock`,
+  `PostMicroblock`, and stateful `PostMicroblockClient` in `EdgeMicroblockTraits.scala`. ProjectRed and
+  UtilitiesInExcess class-ID linkage remains exact; the Post client traversal closure and all trait helpers remain.
+- A clean build passes all 250 plain-JVM tests and the Java 8 Forge server passes all 108 tests. All callable public
+  descriptors match the reference; only four private bounds-initializer closures disappear.
+  `microblock/HollowMicroblock.scala` is next.

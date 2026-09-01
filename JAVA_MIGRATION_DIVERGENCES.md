@@ -2845,3 +2845,55 @@ The six supported runtime types remain.
 - Raw `javap` comparison confirms identical callable public names/descriptors for both facades, both companions, the
   trait and its `$class` helper.
 - Actual corner rendering and highlight geometry remain covered by the existing manual checklist entries.
+
+## 2026-09-02 — Edge/Post microblock factory Java port
+
+The Edge placement/factory and Post factory facades/companions are now Java. `EdgeMicroblock`, `PostMicroblock`, and
+the stateful `PostMicroblockClient` remain Scala in `EdgeMicroblockTraits.scala`; their multiple-inheritance and
+generated state/super-accessor surfaces need no generator changes for this concrete port.
+
+### Observable behavior
+
+No known runtime divergence. Edge opposite selection still preserves negative custom slots and toggles the packed
+edge bit for the clicked axis. Custom placement still creates posts only for even sizes, yields to normal edge
+placement outside the grid centre, expands only a matching-material post whose combined size is below eight, and
+retains the same internal/opposite/external precedence.
+
+The Edge bounds table remains a mutable 256-entry array with exactly 84 populated entries (`size` 1 through 7 over 12
+edges). The Post table likewise retains exactly 12 entries (even sizes 2, 4, 6 over three axes). Generated edges keep
+their `slot - 15` shape encoding. Generated posts keep the Edge item class ID, one-element occlusion list, partial and
+normal occlusion behavior, resistance and axis-zero torch support.
+
+The Post client trait's two mutable render bounds, lifecycle recalculation, face/post shrinking order and transparency/
+size/axis tie-break remain the original Scala implementation. Actual client rendering remains a manual check.
+
+### ABI and reflection compatibility
+
+All twelve retained facade, companion, trait and `$class` types keep their hierarchy and callable public
+names/descriptors. ProjectRed's load-bearing `EdgeMicroClass$.MODULE$.getClassId()` and UtilitiesInExcess's static
+`EdgeMicroClass.getClassId()` calls are unchanged. The stable `"mcr_edge"` ID used by both BuildCraft and
+MatterManipulator, and BuildCraft's `"mcr_post"` ID, are unchanged.
+
+Recompiled Scala source must use `EdgeMicroClass.aBounds()(index)` and `PostMicroClass.aBounds()(index)` because Java
+facades do not carry Scala property metadata. Existing bytecode still performs the same zero-argument getter followed
+by an array load. Both companion `baseTrait` generic signatures widen to `Class<? extends Microblock>` in Java; their
+raw JVM descriptors remain `()Ljava/lang/Class;`, and both static facades retain their consumer-facing trait type.
+
+Accepted classfile-only differences also include ordinary Java companion class-initializer flags and removed Scala
+signature/marker attributes from the six Java types.
+
+### Compiler artifacts
+
+The two `EdgeMicroClass$$anonfun$1...` and two `PostMicroClass$$anonfun$2...` bounds-initializer classes disappear.
+Direct nested Java loops need none of them, and the downstream inventory contains no references. The stateful
+`PostMicroblockClient$$anonfun$recalcBounds$1` class remains and its complete private surface matches the reference.
+
+### Validation
+
+- `EdgeMicroblockCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 250 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 108 tests, 0 failures, 0 errors, including both generated families, all 96
+  populated bounds, even/odd custom placement and in-place Post expansion.
+- Raw `javap` comparison confirms identical callable public names/descriptors for all twelve supported types and an
+  exact private-surface match for the retained Post client traversal closure.
+- Actual Edge/Post rendering and neighbour-driven Post shrink geometry remain on the manual checklist.
