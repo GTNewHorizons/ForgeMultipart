@@ -1,6 +1,7 @@
 package codechicken.multipart.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -10,6 +11,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,6 +23,8 @@ import net.minecraft.init.Blocks;
 import org.junit.jupiter.api.Test;
 
 import codechicken.lib.vec.Cuboid6;
+import codechicken.lib.vec.Rotation;
+import codechicken.lib.vec.Vector3;
 import codechicken.microblock.BlockMicroMaterial;
 import codechicken.microblock.CommonMicroClass;
 import codechicken.microblock.CommonMicroblockClient;
@@ -42,7 +46,13 @@ import codechicken.microblock.FaceMicroblock;
 import codechicken.microblock.FacePlacement$;
 import codechicken.microblock.FacePlacementGrid$;
 import codechicken.microblock.GrassMicroMaterial;
+import codechicken.microblock.HollowMicroClass;
 import codechicken.microblock.HollowMicroClass$;
+import codechicken.microblock.HollowMicroblock;
+import codechicken.microblock.HollowMicroblockClient;
+import codechicken.microblock.HollowPlacement;
+import codechicken.microblock.HollowPlacement$;
+import codechicken.microblock.ISidedHollowConnect;
 import codechicken.microblock.MicroMaterialRegistry;
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial;
 import codechicken.microblock.Microblock;
@@ -58,8 +68,12 @@ import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultiPartRegistry.IPartFactory2;
 import codechicken.multipart.TEdgePart;
 import codechicken.multipart.TFacePart;
+import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TNormalOcclusion;
+import codechicken.multipart.TSlottedPart;
+import codechicken.multipart.TileMultipart;
 import scala.Tuple2;
+import scala.collection.JavaConversions;
 
 class DefaultContentFunctionalTest {
 
@@ -249,6 +263,95 @@ class DefaultContentFunctionalTest {
     }
 
     @Test
+    void keepsHollowFactoryBoundsAndGeneratedServerGeometry() {
+        HollowMicroClass$ factory = HollowMicroClass$.MODULE$;
+        assertSame(factory, HollowPlacement$.MODULE$.microClass());
+        assertSame(factory, HollowPlacement.microClass());
+        assertSame(HollowPlacement.HollowPlacementGrid$.MODULE$, HollowPlacement$.MODULE$.placementGrid());
+        assertSame(factory.pBoxes(), HollowMicroClass.pBoxes());
+        assertSame(factory.occBounds(), HollowMicroClass.occBounds());
+        assertEquals("mcr_hllw", factory.getName());
+        assertEquals(HollowMicroblock.class, factory.baseTrait());
+        assertEquals(HollowMicroblockClient.class, factory.clientTrait());
+        assertEquals(3, factory.itemSlot());
+        assertEquals(1f, factory.getResistanceFactor());
+
+        scala.collection.Seq<Cuboid6>[] partialBounds = factory.pBoxes();
+        Cuboid6[] occlusionBounds = factory.occBounds();
+        assertEquals(256, partialBounds.length);
+        assertEquals(256, occlusionBounds.length);
+        for (int side = 0; side < 6; side++) {
+            for (int size = 1; size < 8; size++) {
+                int shape = size << 4 | side;
+                List<Cuboid6> partial = JavaConversions.seqAsJavaList(partialBounds[shape]);
+                assertCuboids(expectedPartialBounds(side, size), partial);
+                assertCuboid(expectedHollowOcclusionBound(side, size), occlusionBounds[shape]);
+            }
+        }
+        assertEquals(42, countPopulated(partialBounds));
+        assertEquals(42, countPopulated(occlusionBounds));
+
+        Microblock generated = factory.create(false, 0);
+        assertTrue(generated instanceof HollowMicroblock);
+        assertTrue(generated instanceof TFacePart);
+        assertTrue(generated instanceof TNormalOcclusion);
+        HollowMicroblock hollow = (HollowMicroblock) generated;
+        assertEquals(factory.getClassId(), hollow.itemClassID());
+        assertEquals(8, hollow.getHollowSize());
+        assertTrue(hollow.allowCompleteOcclusion());
+        assertFalse(hollow.solid(0));
+        assertEquals(0x10, hollow.redstoneConductionMap());
+
+        for (int side = 0; side < 6; side++) {
+            generated.setShape(3, side);
+            int shape = 3 << 4 | side;
+            assertSame(FaceMicroClass$.MODULE$.aBounds()[shape], hollow.getBounds());
+            assertCuboids(JavaConversions.seqAsJavaList(partialBounds[shape]), hollow.getPartialOcclusionBoxes());
+            assertCuboids(expectedCollisionBounds(side, 3, 8), hollow.getCollisionBoxes());
+            assertCuboids(expectedOcclusionBoxes(side, 3, 8), hollow.getOcclusionBoxes());
+            assertEquals(4, hollow.getSubParts().size());
+            for (int i = 0; i < 4; i++) {
+                assertEquals(0, hollow.getSubParts().get(i).data);
+                assertCuboid(hollow.getCollisionBoxes().get(i), hollow.getSubParts().get(i));
+            }
+        }
+    }
+
+    @Test
+    void keepsConnectedHollowSizesAndAllDynamicGeometry() {
+        ConnectorPart connector = new ConnectorPart();
+        TileMultipart tile = new TileMultipart() {
+
+            @Override
+            public TMultiPart partMap(int slot) {
+                return slot == 6 ? connector : null;
+            }
+        };
+        connector.bind(tile);
+        int material = MicroMaterialRegistry.materialID("minecraft:stone");
+        assertTrue(material >= 0);
+        Microblock generated = HollowMicroClass$.MODULE$.create(false, material);
+        generated.setShape(3, 0);
+        generated.bind(tile);
+        HollowMicroblock hollow = (HollowMicroblock) generated;
+
+        for (int size = 1; size < 12; size++) {
+            connector.size = size;
+            for (int side = 0; side < 6; side++) {
+                generated.setShape(3, side);
+                assertEquals(size, hollow.getHollowSize());
+                assertCuboids(expectedCollisionBounds(side, 3, size), hollow.getCollisionBoxes());
+                assertCuboids(expectedOcclusionBoxes(side, 3, size), hollow.getOcclusionBoxes());
+                assertEquals(4, hollow.getSubParts().size());
+                for (int i = 0; i < 4; i++) {
+                    assertEquals(0, hollow.getSubParts().get(i).data);
+                    assertCuboid(hollow.getCollisionBoxes().get(i), hollow.getSubParts().get(i));
+                }
+            }
+        }
+    }
+
+    @Test
     void registersTheExactOrderedBuiltInMaterialsAndRemaps() throws Exception {
         List<String> expectedNames = new ArrayList<>();
         Map<String, String> expectedRemaps = new HashMap<>();
@@ -319,6 +422,82 @@ class DefaultContentFunctionalTest {
         add(names, remaps, block, registeredName, maxMeta, block.getUnlocalizedName());
     }
 
+    private static List<Cuboid6> expectedPartialBounds(int side, int size) {
+        double thickness = size / 8d;
+        double width = 1 / 8d;
+        return transform(
+                side,
+                Arrays.asList(
+                        new Cuboid6(0, 0, 0, width, thickness, 1),
+                        new Cuboid6(1 - width, 0, 0, 1, thickness, 1),
+                        new Cuboid6(width, 0, 0, 1 - width, thickness, width),
+                        new Cuboid6(width, 0, 1 - width, 1 - width, thickness, 1)));
+    }
+
+    private static Cuboid6 expectedHollowOcclusionBound(int side, int size) {
+        return new Cuboid6(1 / 8d, 0, 1 / 8d, 7 / 8d, size / 8d, 7 / 8d)
+                .apply(Rotation.sideRotations[side].at(Vector3.center));
+    }
+
+    private static List<Cuboid6> expectedCollisionBounds(int side, int partSize, int hollowSize) {
+        double d1 = 0.5 - hollowSize / 32d;
+        double d2 = 0.5 + hollowSize / 32d;
+        double thickness = partSize / 8d;
+        return transform(
+                side,
+                Arrays.asList(
+                        new Cuboid6(0, 0, 0, 1, thickness, d1),
+                        new Cuboid6(0, 0, d2, 1, thickness, 1),
+                        new Cuboid6(0, 0, d1, d1, thickness, d2),
+                        new Cuboid6(d2, 0, d1, 1, thickness, d2)));
+    }
+
+    private static List<Cuboid6> expectedOcclusionBoxes(int side, int partSize, int hollowSize) {
+        Cuboid6 c = expectedHollowOcclusionBound(side, partSize);
+        double d1 = 0.5 - hollowSize / 32d;
+        double d2 = 0.5 + hollowSize / 32d;
+        double x1 = c.min.x;
+        double x2 = c.max.x;
+        double y1 = c.min.y;
+        double y2 = c.max.y;
+        double z1 = c.min.z;
+        double z2 = c.max.z;
+
+        switch (side) {
+            case 0:
+            case 1:
+                return Arrays.asList(
+                        new Cuboid6(d2, y1, d1, x2, y2, d2),
+                        new Cuboid6(x1, y1, d1, d1, y2, d2),
+                        new Cuboid6(x1, y1, d2, x2, y2, z2),
+                        new Cuboid6(x1, y1, z1, x2, y2, d1));
+            case 2:
+            case 3:
+                return Arrays.asList(
+                        new Cuboid6(d1, d2, z1, d2, y2, z2),
+                        new Cuboid6(d1, y1, z1, d2, d1, z2),
+                        new Cuboid6(d2, y1, z1, x2, y2, z2),
+                        new Cuboid6(x1, y1, z1, d1, y2, z2));
+            case 4:
+            case 5:
+                return Arrays.asList(
+                        new Cuboid6(x1, d1, d2, x2, d2, z2),
+                        new Cuboid6(x1, d1, z1, x2, d2, d1),
+                        new Cuboid6(x1, d2, z1, x2, y2, z2),
+                        new Cuboid6(x1, y1, z1, x2, d1, z2));
+            default:
+                throw new AssertionError(side);
+        }
+    }
+
+    private static List<Cuboid6> transform(int side, List<Cuboid6> bounds) {
+        List<Cuboid6> transformed = new ArrayList<>(bounds.size());
+        for (Cuboid6 bound : bounds) {
+            transformed.add(bound.apply(Rotation.sideRotations[side].at(Vector3.center)));
+        }
+        return transformed;
+    }
+
     private static Cuboid6 expectedFaceBounds(int side, double thickness) {
         switch (side) {
             case 0:
@@ -387,6 +566,26 @@ class DefaultContentFunctionalTest {
         return populated;
     }
 
+    private static int countPopulated(scala.collection.Seq<Cuboid6>[] bounds) {
+        int populated = 0;
+        for (scala.collection.Seq<Cuboid6> bound : bounds) {
+            if (bound != null) {
+                populated++;
+            }
+        }
+        return populated;
+    }
+
+    private static void assertCuboids(Iterable<Cuboid6> expected, Iterable<Cuboid6> actual) {
+        Iterator<Cuboid6> expectedIterator = expected.iterator();
+        Iterator<Cuboid6> actualIterator = actual.iterator();
+        while (expectedIterator.hasNext()) {
+            assertTrue(actualIterator.hasNext());
+            assertCuboid(expectedIterator.next(), actualIterator.next());
+        }
+        assertFalse(actualIterator.hasNext());
+    }
+
     private static void assertCuboid(Cuboid6 expected, Cuboid6 actual) {
         assertEquals(expected.min.x, actual.min.x, 1e-12);
         assertEquals(expected.min.y, actual.min.y, 1e-12);
@@ -417,5 +616,25 @@ class DefaultContentFunctionalTest {
         Field field = MicroMaterialRegistry.class.getDeclaredField("remap");
         field.setAccessible(true);
         return (Map<String, String>) field.get(null);
+    }
+
+    private static final class ConnectorPart extends TMultiPart implements TSlottedPart, ISidedHollowConnect {
+
+        private int size;
+
+        @Override
+        public String getType() {
+            return "multipart_test:hollow_connector";
+        }
+
+        @Override
+        public int getSlotMask() {
+            return 1 << 6;
+        }
+
+        @Override
+        public int getHollowSize(int side) {
+            return size;
+        }
     }
 }
