@@ -79,7 +79,18 @@ object MultipartRenderer
             Int
           ] && hitInfo._1 >= 0 && hitInfo._1 < tmpart.partList.size
         )
-          tmpart.partList(hitInfo._1).drawBreaking(renderer)
+          {
+            val part = tmpart.partList(hitInfo._1)
+
+            part match {
+              case isbrhPart: ISBRHPart =>
+                isbrhPart.renderWorldBlock(world, x, y, z, renderer)
+
+              case _ =>
+                part.drawBreaking(renderer)
+            }
+          }
+
       }
       return false
     }
