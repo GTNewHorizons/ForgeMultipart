@@ -1155,3 +1155,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 244 plain-JVM tests and the Java 8 Forge server passes all 103 tests, including generated
   face/hollow parts and the external Scala microblock trait fixture. All eight retained public surfaces match the
   reference; only two private Scala iteration closures disappear. `microblock/FaceMicroblock.scala` is next.
+- Characterized the face factory, placement singleton and both generated traits against untouched Scala. Two
+  plain-JVM cases freeze all eight retained public surfaces and every placement rule; one Forge case freezes factory
+  identity, all 42 populated bounds and generated face-part behavior.
+- Ported the four concrete facade/companion types directly to Java while retaining `FaceMicroblock` and
+  `FaceMicroblockClient` unchanged in `FaceMicroblockTraits.scala`. All callable public descriptors match the
+  reference; the two private Scala bounds-initializer closures disappear.
+- A clean build passes all 246 plain-JVM tests and the Java 8 Forge server passes all 104 tests. Recompiled Scala must
+  spell the Java array getter as `FaceMicroClass.aBounds()(index)`; existing binaries still link to the unchanged
+  `aBounds(): Cuboid6[]` descriptor. `microblock/CornerMicroblock.scala` is next.

@@ -341,7 +341,7 @@ trait HollowMicroblock
     with TNormalOcclusion {
   def microClass = HollowMicroClass
 
-  def getBounds: Cuboid6 = FaceMicroClass.aBounds(shape)
+  def getBounds: Cuboid6 = FaceMicroClass.aBounds()(shape)
 
   // TNormalOcclusion is a Java interface, so its box test must be applied here rather than by the super chain.
   override def occlusionTest(npart: TMultiPart): Boolean =

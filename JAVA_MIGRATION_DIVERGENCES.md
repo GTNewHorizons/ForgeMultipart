@@ -2749,3 +2749,51 @@ types are unchanged.
   separately compiled external Scala microblock trait.
 - Raw `javap` comparison confirms identical callable public names/descriptors for `Microblock`, `Microblock$`, all
   three traits and all three `$class` helpers; the retained class inventory is otherwise exact.
+
+## 2026-09-01 — FaceMicroblock factory Java port
+
+The face placement and factory facades/companions are now Java. The generated `FaceMicroblock` and
+`FaceMicroblockClient` traits remain Scala in `FaceMicroblockTraits.scala`; translating them would widen the generator
+work without helping this concrete-state port.
+
+### Observable behavior
+
+No known runtime divergence. Placement still selects the opposite face with `slot ^ 1`, expands only when the clicked
+side is that opposite face, and uses the same face placement grid. Factory name, item slot, resistance, trait classes
+and eager common-trait registration are unchanged.
+
+The bounds table remains a mutable 256-entry array. The same 42 entries (`size` 1 through 7, `side` 0 through 5) are
+populated with the same rotations and cuboids; all other entries remain null. Generated parts still use the table
+entry by identity, expose the same face slot and delegate solidity to their material.
+
+### ABI and reflection compatibility
+
+All eight retained facade, companion, trait and `$class` types keep their hierarchy and callable public
+names/descriptors. The static `FaceMicroClass.aBounds(): Cuboid6[]` method used by WirelessRedstone and existing
+ProjectRed binaries is unchanged, as are `FaceMicroClass.getClassId()` and both `MODULE$` singleton fields.
+
+Recompiled Scala source must write `FaceMicroClass.aBounds()(index)` rather than
+`FaceMicroClass.aBounds(index)`, because the Java facade does not carry Scala property metadata. This is source-only;
+existing bytecode already performs the unchanged zero-argument getter followed by an array load. The companion's
+`baseTrait` generic signature is necessarily `Class<? extends Microblock>` in Java rather than Scala's
+`Class<FaceMicroblock>`; its raw JVM descriptor remains `()Ljava/lang/Class;`, and the static facade retains the
+consumer-facing `Class<FaceMicroblock>` signature.
+
+Accepted classfile-only differences also include the ordinary Java companion class-initializer flag and removed
+Scala signature/marker attributes.
+
+### Compiler artifacts
+
+`FaceMicroClass$$anonfun$1` and `FaceMicroClass$$anonfun$1$$anonfun$apply$mcVI$sp$1` disappear. Direct nested Java
+loops need neither private bounds-initializer closure, and the downstream inventory contains no reference to them.
+The eight supported runtime types remain.
+
+### Validation
+
+- `FaceMicroblockCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 246 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 104 tests, 0 failures, 0 errors, including all 42 bounds and a runtime-generated
+  face part.
+- Raw `javap` comparison confirms identical callable public names/descriptors for both facades, both companions, both
+  traits and both `$class` helpers.
+- Actual face rendering and highlight geometry remain covered by the existing manual checklist entries.
