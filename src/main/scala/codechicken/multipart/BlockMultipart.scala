@@ -257,10 +257,7 @@ class BlockMultipart extends Block(new Material(MapColor.stoneColor)) {
 
   override def getRenderBlockPass = 1
 
-  override def canRenderInPass(pass: Int): Boolean = {
-    MultipartRenderer.pass = pass
-    return true
-  }
+  override def canRenderInPass(pass: Int): Boolean = true
 
   override def getPickBlock(
       hit: MovingObjectPosition,
