@@ -145,3 +145,14 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the referenc
 (SHA-256 `1f571035283b5ca9120bf817f00ce961ebcbae258d901fb8ee9147636f71a481`). Class-file SHA-256 is
 `27543f97e0973f042c3867c1aa0ae5598324c60c895c8d9a7ea5a6cea2f5ee70`, stored as
 `src/functionalTest/resources/compat/ReferenceScalaMultipartSaveLoadConsumer.class.b64`.
+
+### `ReferenceScalaBlockMicroMaterialConsumer`
+
+`scala/codechicken/multipart/compat/ReferenceScalaBlockMicroMaterialConsumer.scala` calls the
+`BlockMicroMaterial$.MODULE$` key/default methods and the `MaterialRenderHelper$.MODULE$` pass accessors used by
+downstream Scala code.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouched classes at `1939159`
+(reference dev-jar SHA-256 `3dfb365ee96603dec74e22787ba17e324792410265b85afd103b07aa57ddf8f6`). Class-file
+SHA-256 is `710f925a5b4bd44e337672b6c4a3c7a0dddf0c5e31287989c4774c34cf628fa8`, stored as
+`src/test/resources/compat/ReferenceScalaBlockMicroMaterialConsumer.class.b64`.
