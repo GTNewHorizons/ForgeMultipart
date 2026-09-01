@@ -2897,3 +2897,60 @@ Direct nested Java loops need none of them, and the downstream inventory contain
 - Raw `javap` comparison confirms identical callable public names/descriptors for all twelve supported types and an
   exact private-surface match for the retained Post client traversal closure.
 - Actual Edge/Post rendering and neighbour-driven Post shrink geometry remain on the manual checklist.
+
+## 2026-09-02 — Hollow microblock factory Java port
+
+The Hollow placement and factory facades/companions are now Java. `HollowMicroblock` and the stateful
+`HollowMicroblockClient` remain Scala in `HollowMicroblockTraits.scala`; their generated multiple-inheritance,
+mutable render state and super-accessor surfaces require no generator change for this concrete port.
+
+### Observable behavior
+
+No known runtime divergence. Placement still uses the nested `FaceEdgeGrid` at exactly `3 / 8D`, flips face slots
+with `slot ^ 1`, and expands only when the selected slot is opposite the clicked side. Factory name, item slot,
+resistance and both trait classes remain unchanged.
+
+The partial-occlusion and central-occlusion tables remain mutable 256-entry arrays with the same 42 populated shapes
+(`size` 1 through 7 over six faces). Every partial entry remains a Scala immutable sequence of the same four
+transformed rim boxes. Generated Hollow parts retain Face bounds, normal and partial occlusion, complete-occlusion
+permission, false face solidity and the `0x10` redstone conduction map.
+
+With no tile or no compatible centre part, the opening remains eight pixels. An `ISidedHollowConnect` centre part
+still supplies the face-specific opening size. All collision, occlusion and raytrace subpart boxes retain their exact
+orientation and dimensions for all six faces and supported connector sizes 1 through 11. The client render,
+breaking-overlay and highlight implementations remain the original Scala bytecode; actual OpenGL output stays on the
+manual checklist.
+
+### ABI and reflection compatibility
+
+All nine supported facade, companion, nested-grid, trait and `$class` types keep their hierarchy and callable public
+names/descriptors. `HollowPlacement.HollowPlacementGrid$` remains a real public static nested class in the
+`InnerClasses` attribute as well as retaining the binary name
+`codechicken.microblock.HollowPlacement$HollowPlacementGrid$`. This preserves both Java source and existing binary
+linkage.
+
+ProjectRed's static `HollowMicroClass.getClassId()` call and `HollowMicroblock` type checks remain exact. Extra
+Utilities' `HollowMicroblockClient` type checks remain exact. The stable `"mcr_hllw"` ID used by BuildCraft and
+MatterManipulator is unchanged.
+
+The companion's `baseTrait` generic signature necessarily widens to `Class<? extends Microblock>` in Java rather
+than Scala's `Class<HollowMicroblock>`; its raw descriptor remains `()Ljava/lang/Class;`, while the static facade
+retains the consumer-facing trait type. Accepted classfile-only differences also include ordinary Java companion
+class-initializer flags and removed Scala signature/marker attributes from the concrete Java types.
+
+### Compiler artifacts
+
+`HollowMicroClass$$anonfun$1` and its two nested bounds-table initializer closures disappear. Direct Java loops need
+none of them, and the downstream inventory contains no references. Both retained trait helpers and all seven private
+trait closures (`getCollisionBoxes`, `getSubParts`, `drawBreaking`, and the four render callbacks) have bytecode-
+identical `javap -c -p -s` output after the port.
+
+### Validation
+
+- `HollowMicroblockCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 252 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 110 tests, 0 failures, 0 errors, including both 42-entry tables, a generated
+  Hollow part and every side across connected opening sizes 1 through 11.
+- Raw `javap` comparison confirms identical callable public names/descriptors for all nine supported types, the exact
+  nested-grid relationship, and bytecode-identical retained trait helpers and closures.
+- Actual client rendering, breaking overlay and hollow highlight geometry remain on the manual checklist.

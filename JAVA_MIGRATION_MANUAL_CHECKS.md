@@ -31,6 +31,7 @@ below its table.
 | [ ] | Render several block micro-materials with Angelica shaders enabled, then render an unrelated block | Each face receives the matching block/meta shader material and the override is reset after the microblock draw | `MaterialRenderHelper.blockAndMeta` / `render` |
 | [ ] | Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` / `MicroblockRender.renderItem` |
 | [ ] | Place crossing posts of different sizes/transparency beside face covers, then add and remove neighbours | Post segments shrink and split at intersections without missing sections or stale render bounds | `PostMicroblockClient.recalcBounds` / `shrinkFace` / `shrinkPost` |
+| [ ] | Run centre pipes/cables with several connection widths through hollow covers on all six faces, including glass | Each opening follows the connector size; opaque and transparent rims, breaking overlay and highlight have no missing, doubled or stale sections after neighbour changes | `HollowMicroblockClient.recalcBounds` / `renderHollow` / `drawBreaking` / `drawHighlight` |
 
 ## Placement and interaction
 

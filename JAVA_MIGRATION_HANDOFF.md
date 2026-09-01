@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 142 commits including the API-cleanup plan and separate characterization and
-port commits through the Edge/Post microblock factories.
+Branch: `algent/java`. Base: `master`. 144 commits including the API-cleanup plan and separate characterization and
+port commits through the Hollow microblock factory.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **250 plain-JVM tests and 108 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **252 plain-JVM tests and 110 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -272,7 +272,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-181 Java files, 16 Scala files, ~3,001 Scala lines left (non-blank; that is the metric this figure has always used).
+185 Java files, 16 Scala files, ~2,967 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -513,9 +513,16 @@ edge bounds, 12 post bounds, generated behavior, even-size centre placement and 
 The stateful `PostMicroblockClient` traversal closure remains an exact private-surface match; only four private bounds
 initializer closures disappear.
 
-**High.** `HollowMicroblock.scala` is next. Characterize its placement/factory surfaces, bounds and all hollow-size/
-side geometry plus the large stateful client-render trait before splitting only the concrete facade/companion code.
-Keep both generated traits Scala and do not combine this with `TMicroOcclusion` or generator work.
+The Hollow source unit is now four Java facade/companion sources plus two retained Scala traits. Two plain-JVM cases
+freeze all nine supported surfaces, including the public static nested placement-grid relationship. Two Forge cases
+freeze both 42-entry tables, generated server behavior and every face across connected hollow sizes 1 through 11.
+Both trait helpers and all seven retained geometry/render closures are bytecode-identical to the reference; only the
+three private table-initializer closures disappear. ProjectRed's trait checks and static class-ID call, Extra
+Utilities' two client-trait checks, and BuildCraft/MatterManipulator's stable `"mcr_hllw"` ID remain exact.
+
+**High.** `TMicroOcclusion.scala` is next. Freeze the complete shrink/priority math and all generated trait/helper
+surfaces before splitting only the concrete `MicroOcclusion` facade/companion logic. Keep `JMicroShrinkRender`,
+`TMicroOcclusion`, and the stateful `TMicroOcclusionClient` Scala, and do not combine this with generator work.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of

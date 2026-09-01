@@ -17,53 +17,6 @@ import codechicken.lib.raytracer.IndexedCuboid6
 import org.lwjgl.opengl.GL11
 import codechicken.lib.render.uv.IconTransformation
 
-object HollowPlacement extends PlacementProperties {
-  object HollowPlacementGrid extends FaceEdgeGrid(3 / 8d)
-
-  def microClass = HollowMicroClass
-
-  def placementGrid = HollowPlacementGrid
-
-  def opposite(slot: Int, side: Int) = slot ^ 1
-
-  override def expand(slot: Int, side: Int) = sneakOpposite(slot, side)
-
-  override def sneakOpposite(slot: Int, side: Int) = slot == (side ^ 1)
-}
-
-object HollowMicroClass extends CommonMicroClass {
-  var pBoxes: Array[Seq[Cuboid6]] = new Array(256)
-  var occBounds: Array[Cuboid6] = new Array(256)
-  for (s <- 0 until 6) {
-    val transform = sideRotations(s).at(center)
-    for (t <- 1 until 8) {
-      val d = t / 8d
-      val w1 = 1 / 8d
-      val w2 = 3 / 16d
-      pBoxes(t << 4 | s) = Seq(
-        new Cuboid6(0, 0, 0, w1, d, 1),
-        new Cuboid6(1 - w1, 0, 0, 1, d, 1),
-        new Cuboid6(w1, 0, 0, 1 - w1, d, w1),
-        new Cuboid6(w1, 0, 1 - w1, 1 - w1, d, 1)
-      )
-        .map(_.apply(transform))
-      occBounds(t << 4 | s) =
-        new Cuboid6(1 / 8d, 0, 1 / 8d, 7 / 8d, d, 7 / 8d).apply(transform)
-    }
-  }
-
-  def getName = "mcr_hllw"
-
-  def baseTrait = classOf[HollowMicroblock]
-  def clientTrait = classOf[HollowMicroblockClient]
-
-  def itemSlot = 3
-
-  def placementProperties = HollowPlacement
-
-  def getResistanceFactor = 1
-}
-
 trait HollowMicroblockClient
     extends HollowMicroblock
     with CommonMicroblockClient {
@@ -339,7 +292,7 @@ trait HollowMicroblock
     extends CommonMicroblock
     with TFacePart
     with TNormalOcclusion {
-  def microClass = HollowMicroClass
+  def microClass = HollowMicroClass$.MODULE$
 
   def getBounds: Cuboid6 = FaceMicroClass.aBounds()(shape)
 
@@ -347,7 +300,8 @@ trait HollowMicroblock
   override def occlusionTest(npart: TMultiPart): Boolean =
     NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)
 
-  override def getPartialOcclusionBoxes = HollowMicroClass.pBoxes(shape)
+  override def getPartialOcclusionBoxes =
+    HollowMicroClass$.MODULE$.pBoxes()(shape)
 
   def getHollowSize = tile match {
     case null => 8
@@ -360,7 +314,7 @@ trait HollowMicroblock
 
   def getOcclusionBoxes = {
     val size = getHollowSize
-    val c = HollowMicroClass.occBounds(shape)
+    val c = HollowMicroClass$.MODULE$.occBounds()(shape)
     val d1 = 0.5 - size / 32d
     val d2 = 0.5 + size / 32d
     val x1 = c.min.x

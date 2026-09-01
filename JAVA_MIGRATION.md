@@ -1182,3 +1182,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 250 plain-JVM tests and the Java 8 Forge server passes all 108 tests. All callable public
   descriptors match the reference; only four private bounds-initializer closures disappear.
   `microblock/HollowMicroblock.scala` is next.
+- Characterized the Hollow unit against untouched Scala. Two plain-JVM cases freeze all nine retained public
+  surfaces, including the source-visible nested placement-grid relationship and both generated traits. Two Forge
+  cases freeze both 42-entry tables, generated server behavior, every face, connected hollow sizes 1 through 11,
+  and all collision, occlusion and subpart geometry.
+- Ported the four concrete placement/factory facade and companion sources directly to Java while retaining
+  `HollowMicroblock` and the large stateful `HollowMicroblockClient` in `HollowMicroblockTraits.scala`. The nested
+  `HollowPlacement.HollowPlacementGrid$` remains a real public static nested class rather than merely keeping its
+  binary name.
+- A clean build passes all 252 plain-JVM tests and the Java 8 Forge server passes all 110 tests. All nine supported
+  public surfaces match the reference; both retained trait helpers and all seven trait closures are bytecode-identical.
+  Only three private factory table-initializer closures disappear. `microblock/TMicroOcclusion.scala` is next.
