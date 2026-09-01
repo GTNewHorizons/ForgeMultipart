@@ -10,7 +10,7 @@ import Vector3._
 object FacePlacement extends PlacementProperties {
   def microClass = FaceMicroClass
 
-  def placementGrid = FacePlacementGrid
+  def placementGrid = FacePlacementGrid$.MODULE$
 
   def opposite(slot: Int, side: Int) = slot ^ 1
 

@@ -1069,3 +1069,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   matches the reference.
 - A clean build passes all 211 plain-JVM tests and the Java 8 Forge server passes all 102 tests.
   `microblock/PlacementGrids.scala` is next.
+- Characterized `PlacementGrids` against untouched Scala. Five plain-JVM cases freeze the exact nine-class trait,
+  helper, configurable-grid, facade and companion surface plus every face/corner/edge selection boundary on all six
+  hit sides. The tests call ProjectBlue's load-bearing static facade directly.
+- Ported all nine retained types to Java, preserving `PlacementGrid$class` for old Scala forwarders and using safe
+  Java defaults for the three concrete trait methods. The three remaining Scala object-value users now name their
+  companions explicitly.
+- A clean build passes all 216 plain-JVM tests and the Java 8 Forge server passes all 102 tests. The jar class list is
+  unchanged and all callable public descriptors match the reference. `microblock/BlockMicroMaterial.scala` is next.

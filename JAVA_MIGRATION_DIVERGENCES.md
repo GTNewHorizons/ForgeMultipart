@@ -2399,3 +2399,45 @@ Scala's `ACC_PUBLIC` flag.
 - Clean reference/port jars contain the same six runtime classes, and raw `javap` comparison confirms identical
   callable public names/descriptors.
 - Full item-use sound plus client highlight/control-key feedback remain on the manual checklist.
+
+## 2026-09-01 — PlacementGrids Java port
+
+The placement-grid trait, its Scala binary helper, configurable face-edge grid, and the face/corner/edge facade and
+companion pairs are now nine Java types. ProjectBlue's direct static calls to `FacePlacementGrid.getHitSlot` and
+`FacePlacementGrid.render` retain their original owners and descriptors.
+
+### Observable behavior
+
+No known runtime divergence. Face and hollow-style grids still use a strict center-size comparison, select the hit
+side's opposite slot in the center, choose the larger projected axis outside it and resolve equal projections through
+the second axis. Corner grids still treat zero as positive and encode the hit normal plus both projected signs. Edge
+grids retain the strict quarter-block center and diagonal tests, second-axis tie behavior and `PartMap.edgeBetween`
+mapping. These rules are frozen for all six hit sides, including values immediately below and exactly on boundaries.
+
+The OpenGL guide path retains the same face transform, line state, vertex sequence and matrix pop. It is interactive
+client rendering rather than a sustained loop, so no focused performance claim is made.
+
+### ABI and source compatibility
+
+The retained runtime types are exactly `PlacementGrid`, `PlacementGrid$class`, `FaceEdgeGrid`, `FacePlacementGrid`,
+`FacePlacementGrid$`, `CornerPlacementGrid`, `CornerPlacementGrid$`, `EdgePlacementGrid`, and `EdgePlacementGrid$`.
+Every callable public name and descriptor matches the Scala reference. `FaceEdgeGrid` retains its private final
+`double size`, public constructor and four declared methods; all facades and companions retain their exact public
+surfaces and `MODULE$` fields.
+
+`PlacementGrid`'s three concrete trait methods are Java defaults, while `getHitSlot` remains abstract. The deprecated
+`PlacementGrid$class` bridge retains the original four static methods for already-compiled Scala forwarders. The
+three in-repo Scala object-value references now spell the corresponding `MODULE$` explicitly.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, the default-versus-abstract flags
+on the three reusable interface methods, four private Java constructors on the helper/static facades, and companion
+class initializers without Scala's `ACC_PUBLIC` flag. No runtime class was added or removed.
+
+### Validation
+
+- `PlacementGridsCharacterizationTest`: 5 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 216 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 102 tests, 0 failures, 0 errors.
+- Clean reference/port jars contain the same nine runtime classes, and raw `javap` comparison confirms identical
+  callable public names/descriptors.
+- Face/corner/edge/hollow guide-line rendering remains on the manual checklist.

@@ -26,7 +26,7 @@ object EdgePlacement extends PlacementProperties {
 
   def microClass = EdgeMicroClass
 
-  def placementGrid = EdgePlacementGrid
+  def placementGrid = EdgePlacementGrid$.MODULE$
 
   def opposite(slot: Int, side: Int): Int = {
     if (slot < 0) // custom placement

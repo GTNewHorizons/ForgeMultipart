@@ -8,7 +8,7 @@ import Vector3._
 object CornerPlacement extends PlacementProperties {
   def microClass = CornerMicroClass
 
-  def placementGrid = CornerPlacementGrid
+  def placementGrid = CornerPlacementGrid$.MODULE$
 
   def opposite(slot: Int, side: Int) = ((slot - 7) ^ (1 << (side >> 1))) + 7
 }

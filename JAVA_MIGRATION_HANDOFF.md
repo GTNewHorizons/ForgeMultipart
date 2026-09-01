@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 118 commits including the API-cleanup plan and separate characterization and
-port commits through `MicroblockPlacement`.
+Branch: `algent/java`. Base: `master`. 120 commits including the API-cleanup plan and separate characterization and
+port commits through `PlacementGrids`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **211 plain-JVM tests and 102 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **216 plain-JVM tests and 102 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout.
 
 ### ABI diff against the reference
@@ -251,7 +251,8 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
 `MicroblockCPH`/`MicroblockSPH` and `MultipartPH`/`MultipartCPH`/`MultipartSPH` packet-handler units, plus
 `MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, `GrassMicroMaterial`/`TopMicroMaterial`,
-`ItemMicroPart` plus its renderer, and `MicroblockPlacement` plus its executable-placement and property types.
+`ItemMicroPart` plus its renderer, `MicroblockPlacement` plus its executable-placement and property types, and
+`PlacementGrids`.
 The complete `MultipartProxy` and `MicroblockProxy` server/client hierarchies and static facades are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
@@ -267,7 +268,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-140 Java files, 23 Scala files, ~3,966 Scala lines left (non-blank; that is the metric this figure has always used).
+149 Java files, 22 Scala files, ~3,828 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -438,16 +439,22 @@ survival consumption using generated face microblocks. The renderer's sole sourc
 `MicroblockPlacement$.MODULE$` explicitly. Full item-use sound and client highlight/control-key feedback remain on the
 manual checklist.
 
-**Medium.** `PlacementGrids`, `BlockMicroMaterial`, `ConfigContent`, and the
+`PlacementGrids` is now Java while retaining the trait interface and `$class` binary bridge, `FaceEdgeGrid`, three
+static facades and three `MODULE$` companions. Five plain-JVM cases freeze all public surfaces and every face,
+corner and edge selection boundary for all six hit sides. ProjectBlue's load-bearing `FacePlacementGrid` static calls
+remain unchanged. The reusable trait behavior is now three Java defaults; the concrete grids still declare the same
+methods, and old Scala forwarders can still call the bridge. OpenGL guide rendering remains on the manual checklist.
+
+**Medium.** `BlockMicroMaterial`, `ConfigContent`, and the
 remaining material/render units.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-Take `microblock/PlacementGrids.scala` next. It is the small geometry unit immediately upstream of the completed
-placement engine. Freeze every face/corner/edge slot boundary and the retained grid/object surfaces before translating
-it; OpenGL guide rendering remains a client-manual boundary.
+Take `microblock/BlockMicroMaterial.scala` next. It is the material/render base consumed by `ConfigContent` and carries
+the GuideNH mixin-facing fields already identified by the consumer audit. Freeze its reflected field shape, material
+semantics and common-side surface before translating it; actual block-face rendering remains client-manual.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.
