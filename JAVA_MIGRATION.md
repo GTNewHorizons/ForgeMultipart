@@ -1061,3 +1061,11 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 208 plain-JVM tests and the Java 8 Forge server passes all 98 tests. The jar retains exactly
   the four public ItemMicroPart types; three unreferenced Scala iteration closures disappear.
   `microblock/MicroblockPlacement.scala` is next.
+- Characterized `MicroblockPlacement` against untouched Scala. Three plain-JVM cases freeze the exact six-type
+  hierarchy, constructors, fields, callable descriptors, companion and defaults. Four Forge cases freeze external
+  placement, internal/opposite-slot selection, in-place expansion, custom-placement precedence and consumption.
+- Ported the six retained types directly to Java. The only Scala source caller now names
+  `MicroblockPlacement$.MODULE$` explicitly; no runtime class was added or removed and every callable public member
+  matches the reference.
+- A clean build passes all 211 plain-JVM tests and the Java 8 Forge server passes all 102 tests.
+  `microblock/PlacementGrids.scala` is next.

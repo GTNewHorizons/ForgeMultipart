@@ -29,7 +29,7 @@ object MicroblockRender {
     mcrClass.placementProperties.placementGrid
       .render(new Vector3(hit.hitVec), hit.sideHit)
 
-    val placement = MicroblockPlacement(
+    val placement = MicroblockPlacement$.MODULE$.apply(
       player,
       hit,
       size,

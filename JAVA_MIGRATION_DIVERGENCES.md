@@ -2359,3 +2359,43 @@ downstream inventory contains no reference to those compiler artifacts.
   names/descriptors.
 - Creative listing, localized names, successful placement/consumption/sound and real client rendering remain on the
   manual checklist.
+
+## 2026-09-01 — MicroblockPlacement Java port
+
+The placement decision engine, its executable result hierarchy, property base and companion singleton are now six
+Java types. The item and highlight renderer continue to call `MicroblockPlacement$.MODULE$`, preserving the singleton
+entry point exposed by the Scala implementation.
+
+### Observable behavior
+
+No known runtime divergence. Custom placement still wins before a rejected grid slot. Expansion still requires an
+internal, non-converted tile hit without sneaking or the opposite modifier, then checks part type, material, combined
+size, entity collision and replacement compatibility. Successful expansion mutates the original part's shape in
+place, notifies its tile and sends the shape update. Internal placement retains the same shallow-hit and control-key
+slot selection; external placement retains the same side offset. Addition and expansion each consume one item when
+their caller requests consumption.
+
+The Java implementation uses direct conditionals and standard null-safe equality. No focused performance claim is
+made because placement is an interactive path rather than a sustained server loop.
+
+### ABI and source compatibility
+
+The retained runtime types are exactly `ExecutablePlacement`, `AdditionPlacement`, `ExpandingPlacement`,
+`PlacementProperties`, `MicroblockPlacement`, and `MicroblockPlacement$`. Their hierarchy, constructors, stored-field
+names/types/modifiers, `MODULE$`, and every callable public name and descriptor match the Scala reference. No anonymous
+or closure classes existed in the reference unit, so the emitted class list is unchanged.
+
+The remaining Scala highlight renderer now spells the companion call as `MicroblockPlacement$.MODULE$.apply(...)`;
+Scala's object-application sugar does not recognize a Java-authored companion. Accepted classfile-only differences are
+removed Scala signature/marker attributes, a private companion constructor and the companion class initializer without
+Scala's `ACC_PUBLIC` flag.
+
+### Validation
+
+- `MicroblockPlacementCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- `MicroblockPlacementFunctionalTest`: 4 Forge tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 211 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 102 tests, 0 failures, 0 errors.
+- Clean reference/port jars contain the same six runtime classes, and raw `javap` comparison confirms identical
+  callable public names/descriptors.
+- Full item-use sound plus client highlight/control-key feedback remain on the manual checklist.
