@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 132 commits including the API-cleanup plan and separate characterization and
-port commits through `MicroblockRender`.
+Branch: `algent/java`. Base: `master`. 134 commits including the API-cleanup plan and separate characterization and
+port commits through `MicroblockClass`.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **238 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **241 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -270,7 +270,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-162 Java files, 17 Scala files, ~3,285 Scala lines left (non-blank; that is the metric this figure has always used).
+165 Java files, 16 Scala files, ~3,234 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -478,10 +478,15 @@ boundary. A clean compile proves Java retains `invokevirtual Microblock.setShape
 remain, while three private Scala anonymous/closure artifacts disappear. Actual OpenGL item/highlight output remains
 on the manual checklist.
 
-**Medium.** `MicroblockClass.scala` is next. Freeze `MicroblockClass`, `CommonMicroClass`, the `CommonMicroClass$`
-singleton/array surface, factory creation paths and exact `MicroblockGenerator` calls before translating it. GuideNH
-matches `MicroblockGenerator$.create(MicroblockClass, int, boolean)` by exact parameter type, so the class identity and
-descriptor are load-bearing.
+`MicroblockClass`, `CommonMicroClass` and `CommonMicroClass$` are now Java. Three plain-JVM cases freeze their exact
+hierarchy, public/private shape, side annotations, common-class registry behavior and generator call descriptors. The
+Forge suite exercises eager base-trait registration, lazy client-trait avoidance on a dedicated server, all five
+built-in factories and generated parts. The three runtime class names and all callable public descriptors match the
+reference, including the GuideNH-pinned `MicroblockGenerator$.create(MicroblockClass, int, boolean)` boundary.
+
+**High.** `Microblock.scala` is next. It is the shared transformed base for the face, hollow, edge and corner hierarchy,
+so freeze the exact trait/class hierarchy, state fields and accessors, NBT/shape behavior, generated interfaces and
+Scala-trait consumer paths before translating it. Do not combine it with a shape subclass or generator change.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of

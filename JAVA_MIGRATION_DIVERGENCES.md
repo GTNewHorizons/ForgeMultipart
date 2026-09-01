@@ -2657,3 +2657,48 @@ references to them.
 - Clean reference/port jars retain the same two supported types, and raw `javap` comparison confirms identical
   callable public names/descriptors and retained field shape.
 - Actual item, material-face, placement-grid and highlight OpenGL output remains on the manual checklist.
+
+## 2026-09-01 — MicroblockClass Java port
+
+The abstract microblock factory, common factory base and common-factory registry singleton are now Java.
+
+### Observable behavior
+
+No known runtime divergence. Construction still registers the common trait eagerly. The client trait ID remains a
+synchronized, one-time lazy value backed by the same volatile bitmap shape, so a dedicated server does not initialize
+the client trait. `register(int)` still publishes the multipart factory before assigning and publishing the common
+class ID. Packet creation still passes `client = true`; NBT creation still passes `client = false`.
+
+The common-class registry remains a fixed 256-entry array indexed by the signed high byte of the material ID. A
+duplicate registration still throws with the same message and leaves the first entry installed.
+
+### ABI and reflection compatibility
+
+The retained runtime types are exactly `MicroblockClass`, `CommonMicroClass`, and `CommonMicroClass$`. Their hierarchy,
+constructors, callable public names/descriptors, private fields and `@SideOnly` annotations match the Scala reference.
+The compiler-generated covariant `createPart` bridges retain the `TMultiPart` descriptors expected by
+`IPartFactory2`.
+
+This identity is load-bearing: Schematica calls `MicroblockClass.create(boolean, int)` reflectively, while GuideNH
+matches `MicroblockGenerator$.create(MicroblockClass, int, boolean)` by exact parameter type. Both descriptors are
+unchanged. The `CommonMicroClass` static facade and `CommonMicroClass$.MODULE$` companion also remain available to
+downstream Scala and Java consumers.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, removal of the private Scala
+`classId` accessor methods, and the companion class initializer without Scala's `ACC_PUBLIC` flag. The exact private
+`clientTraitId$lzycompute` method, `clientTraitId` field and `bitmap$0` field are deliberately retained.
+
+### Compiler artifacts
+
+No runtime class is added or removed; both clean jars contain the same three supported types.
+
+### Validation
+
+- `MicroblockClassCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 241 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors, including all five built-in factories and
+  runtime-generated microblock classes.
+- Clean reference/port jars retain the same three types, and raw `javap` comparison confirms identical callable public
+  names/descriptors and retained field/annotation shapes.
+- The real constructor cannot be initialized under the plain-JVM application class loader; exact generator calls are
+  therefore frozen at the bytecode boundary and exercised end to end by the Forge suite.

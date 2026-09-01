@@ -1135,3 +1135,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   anonymous/closure classes.
 - A clean build passes all 238 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
   `microblock/MicroblockClass.scala` is next.
+- Characterized `MicroblockClass`, `CommonMicroClass` and its companion against untouched Scala. Three plain-JVM
+  cases freeze the exact hierarchy, constructors, public descriptors, private fields, side annotations, registry
+  semantics and generator call descriptors. Constructor execution remains a Forge-only boundary because generator
+  initialization requires the launch class loader.
+- Ported all three retained types directly to Java. Eager base-trait registration, synchronized one-time client-trait
+  registration, part-factory registration order, class IDs, duplicate rejection and both create paths are unchanged.
+  The GuideNH-pinned `MicroblockGenerator$.create(MicroblockClass, int, boolean)` descriptor remains exact.
+- A clean build passes all 241 plain-JVM tests and the Java 8 Forge server passes all 103 tests. The clean reference and
+  port jars contain the same three runtime types and every callable public descriptor matches. `microblock/Microblock.scala`
+  is the next deliberately high-risk target.
