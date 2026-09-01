@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **230 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **234 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -252,8 +252,9 @@ All eight load-bearing `$class` helpers from the inventory, both registries, and
 `MultipartEventHandler`, `MicroblockMod`, `MicroblockEventHandler`, and the complete `MicroblockPH`/
 `MicroblockCPH`/`MicroblockSPH` and `MultipartPH`/`MultipartCPH`/`MultipartSPH` packet-handler units, plus
 `MultipartSaveLoad`, `MissingMicroMaterial`, `DefaultContent`, `GrassMicroMaterial`/`TopMicroMaterial`,
-`ItemMicroPart` plus its renderer, `MicroblockPlacement` plus its executable-placement and property types, and
-`PlacementGrids`, plus `BlockMicroMaterial`, `MaterialRenderHelper`, `ConfigContent`, and `AngelicaCompat`.
+`ItemMicroPart` plus its renderer, `ItemSaw` plus its renderer, `MicroblockPlacement` plus its executable-placement and
+property types, and `PlacementGrids`, plus `BlockMicroMaterial`, `MaterialRenderHelper`, `ConfigContent`, and
+`AngelicaCompat`.
 The complete `MultipartProxy` and `MicroblockProxy` server/client hierarchies and static facades are also Java.
 
 Plus the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`,
@@ -269,7 +270,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-157 Java files, 19 Scala files, ~3,473 Scala lines left (non-blank; that is the metric this figure has always used).
+160 Java files, 18 Scala files, ~3,362 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -464,16 +465,20 @@ descriptors, `CapturingTessellator` guard, Iris calls and caught-`ClassCastExcep
 reference's `BoxedUnit.UNIT` normal result and `Unit$.MODULE$` fallback result; both jars contain the same sole runtime
 class. The optional live Angelica render path remains on the manual checklist.
 
-**Low/medium.** `ItemSaw.scala` is the next isolated target. It contains the config-backed saw item and its client
-renderer singleton. Freeze both public surfaces, Iguana Tweaks' reflective `harvestLevel` field, durability/container
-semantics and render-type selection before translating it; keep actual model/GL output on the manual checklist.
+`ItemSaw` and `ItemSawRenderer` are now Java. Four plain-JVM cases freeze all three runtime types, Iguana Tweaks'
+reflective private-final `harvestLevel`, default/explicit durability, container behavior, renderer gating and the four
+supported render types. Every callable descriptor and runtime class is retained. Actual model and OpenGL output remain
+on the manual checklist.
+
+**Medium.** `MicroblockRender.scala` is next. Freeze its facade/companion surface, thread-local `BlockFace`, cuboid
+face-mask traversal and no-placement highlight exit before translating it. Its transformed `MicroblockClient` call
+boundary is load-bearing, so preserve the working call opcode rather than forcing an all-Java helper prematurely.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-After `ItemSaw`, take `MicroblockRender` and the remaining material/render units deliberately before entering the
-shape hierarchy.
+After `MicroblockRender`, take the remaining material/render units deliberately before entering the shape hierarchy.
 
 **Phase 6/7, last.** `Microblock` and the microblock shape hierarchy, `MicroblockGenerator`, `MultipartGenerator`, and
 all of `multipart/asm/`. The ASM subsystem should be last; freeze generated-class fixtures before touching it.

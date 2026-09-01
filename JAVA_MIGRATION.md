@@ -1120,3 +1120,10 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   the fallback path. Both jars contain the same runtime class and every callable descriptor matches the reference.
 - A clean build passes all 230 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
   `microblock/ItemSaw.scala` is next.
+- Characterized `ItemSaw` and `ItemSawRenderer` against untouched Scala. Four plain-JVM cases freeze all three runtime
+  types, the reflective private-final harvest field, default and explicit durability, container behavior, renderer
+  gating and supported render-type selection.
+- Ported the item, static renderer facade and registered renderer companion directly to Java. All callable public
+  descriptors, singleton/model fields and three runtime classes match the reference.
+- A clean build passes all 234 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
+  `microblock/MicroblockRender.scala` is next.

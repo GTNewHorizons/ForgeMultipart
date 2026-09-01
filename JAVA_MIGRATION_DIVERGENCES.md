@@ -2572,3 +2572,47 @@ No runtime class is added or removed; both clean jars contain only `AngelicaComp
 - Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical class modifiers, constructor and callable public names/descriptors.
 - Live shader-material selection and reset with Angelica remain on the manual checklist.
+
+## 2026-09-01 — ItemSaw and renderer Java port
+
+The config-backed saw item, renderer facade and registered renderer singleton are now Java.
+
+### Observable behavior
+
+No known runtime divergence. A missing durability value still defaults to `1 << (harvestLevel + 8)`; a positive value
+sets maximum damage, while zero or a negative value leaves the item non-damageable. Saws remain non-repairable,
+single-stack tools on the tools tab. Damageable saws leave a new one-item container with damage incremented by one;
+non-damageable saws return the original stack, and neither leaves the crafting grid.
+
+The renderer still chooses its model when saw icons are disabled or the item icon is missing, always accepts Forge
+render helpers, handles exactly inventory, entity, equipped-first-person and equipped transforms, and ignores other
+render types. It loads the same OBJ groups and texture, uses the same render-state/GL order, and selects the blade UV
+row from cutting strength.
+
+### ABI and reflection compatibility
+
+The retained runtime types are exactly `ItemSaw`, `ItemSawRenderer`, and `ItemSawRenderer$`. Every callable public
+name and descriptor matches the Scala reference, including the static facade's Scala `Seq<Object>` overload, the
+companion's `Object[]` interface bridge, all four model getters and `MODULE$`.
+
+`ItemSaw` remains non-final, extends `Item`, implements `Saw`, and keeps the private final `harvestLevel: int` field
+and public accessor used by Iguana Tweaks. The companion retains its private final `models`, `handle`, `holder`, and
+`blade` fields. The downstream inventory has no direct ItemSaw member reference, so no frozen binary fixture is
+needed; the known reflective source consumer is covered directly.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes, a private constructor on the
+static facade, the companion class initializer without Scala's `ACC_PUBLIC` flag, and an ordinary Java implementation
+of the `Object[]` renderer bridge instead of Scala's synthetic bridge.
+
+### Compiler artifacts
+
+No runtime class is added or removed; both clean jars contain the same three ItemSaw/renderer classes.
+
+### Validation
+
+- `ItemSawCharacterizationTest`: 4 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 234 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors, including registered saws and recipes.
+- Clean reference/port jars retain the same three types, and raw `javap` comparison confirms identical callable
+  public names/descriptors and retained field shapes.
+- Client model loading, transformations, texture/UV output and GL culling remain on the manual checklist.
