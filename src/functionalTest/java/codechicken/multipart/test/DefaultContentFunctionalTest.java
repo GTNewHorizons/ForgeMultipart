@@ -3,6 +3,7 @@ package codechicken.multipart.test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -19,21 +20,28 @@ import net.minecraft.init.Blocks;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.vec.Cuboid6;
 import codechicken.microblock.BlockMicroMaterial;
 import codechicken.microblock.CommonMicroClass;
 import codechicken.microblock.CornerMicroClass$;
 import codechicken.microblock.EdgeMicroClass$;
+import codechicken.microblock.FaceMicroClass;
 import codechicken.microblock.FaceMicroClass$;
+import codechicken.microblock.FaceMicroblock;
+import codechicken.microblock.FacePlacement$;
+import codechicken.microblock.FacePlacementGrid$;
 import codechicken.microblock.GrassMicroMaterial;
 import codechicken.microblock.HollowMicroClass$;
 import codechicken.microblock.MicroMaterialRegistry;
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial;
+import codechicken.microblock.Microblock;
 import codechicken.microblock.MissingMicroMaterial;
 import codechicken.microblock.MissingMicroMaterial$;
 import codechicken.microblock.PostMicroClass$;
 import codechicken.microblock.TopMicroMaterial;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultiPartRegistry.IPartFactory2;
+import codechicken.multipart.TFacePart;
 import scala.Tuple2;
 
 class DefaultContentFunctionalTest {
@@ -69,6 +77,46 @@ class DefaultContentFunctionalTest {
         assertSame(FaceMicroClass$.MODULE$, factories.get("mcr_face"));
         assertSame(HollowMicroClass$.MODULE$, factories.get("mcr_hllw"));
         assertSame(PostMicroClass$.MODULE$, factories.get("mcr_post"));
+    }
+
+    @Test
+    void keepsFaceFactoryPlacementAndAllFortyTwoBounds() {
+        FaceMicroClass$ factory = FaceMicroClass$.MODULE$;
+        assertSame(factory, FacePlacement$.MODULE$.microClass());
+        assertSame(FacePlacementGrid$.MODULE$, FacePlacement$.MODULE$.placementGrid());
+        assertSame(factory.aBounds(), FaceMicroClass.aBounds());
+        assertEquals("mcr_face", factory.getName());
+        assertEquals(3, factory.itemSlot());
+        assertEquals(1f, factory.getResistanceFactor());
+
+        Cuboid6[] bounds = factory.aBounds();
+        assertEquals(256, bounds.length);
+        int populated = 0;
+        for (int side = 0; side < 6; side++) {
+            for (int size = 1; size < 8; size++) {
+                Cuboid6 expected = expectedFaceBounds(side, size / 8d);
+                Cuboid6 actual = bounds[size << 4 | side];
+                assertCuboid(expected, actual);
+                populated++;
+            }
+        }
+        for (Cuboid6 bound : bounds) {
+            if (bound != null) {
+                populated--;
+            }
+        }
+        assertEquals(0, populated, "Only the 6 sides by 7 thicknesses may be populated");
+
+        Microblock generated = factory.create(false, 0);
+        assertTrue(generated instanceof FaceMicroblock);
+        assertTrue(generated instanceof TFacePart);
+        for (int side = 0; side < 6; side++) {
+            generated.setShape(3, side);
+            FaceMicroblock face = (FaceMicroblock) generated;
+            assertSame(bounds[3 << 4 | side], face.getBounds());
+            assertEquals(side, face.getSlot());
+            assertEquals(generated.getIMaterial().isSolid(), face.solid(side));
+        }
     }
 
     @Test
@@ -140,6 +188,34 @@ class DefaultContentFunctionalTest {
     private static void add(List<String> names, Map<String, String> remaps, Block block, String registeredName,
             int maxMeta) {
         add(names, remaps, block, registeredName, maxMeta, block.getUnlocalizedName());
+    }
+
+    private static Cuboid6 expectedFaceBounds(int side, double thickness) {
+        switch (side) {
+            case 0:
+                return new Cuboid6(0, 0, 0, 1, thickness, 1);
+            case 1:
+                return new Cuboid6(0, 1 - thickness, 0, 1, 1, 1);
+            case 2:
+                return new Cuboid6(0, 0, 0, 1, 1, thickness);
+            case 3:
+                return new Cuboid6(0, 0, 1 - thickness, 1, 1, 1);
+            case 4:
+                return new Cuboid6(0, 0, 0, thickness, 1, 1);
+            case 5:
+                return new Cuboid6(1 - thickness, 0, 0, 1, 1, 1);
+            default:
+                throw new AssertionError(side);
+        }
+    }
+
+    private static void assertCuboid(Cuboid6 expected, Cuboid6 actual) {
+        assertEquals(expected.min.x, actual.min.x, 1e-12);
+        assertEquals(expected.min.y, actual.min.y, 1e-12);
+        assertEquals(expected.min.z, actual.min.z, 1e-12);
+        assertEquals(expected.max.x, actual.max.x, 1e-12);
+        assertEquals(expected.max.y, actual.max.y, 1e-12);
+        assertEquals(expected.max.z, actual.max.z, 1e-12);
     }
 
     private static void add(List<String> names, Map<String, String> remaps, Block block, String registeredName,
