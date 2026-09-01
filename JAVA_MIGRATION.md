@@ -1113,3 +1113,10 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Added a dependent GitHub Actions job that accepts the EULA in its ephemeral runner and invokes the existing
   self-validating `runFunctionalTestServer` task after the shared GTNH build. The Forge suite now gates pull requests
   and pushes instead of being local-only.
+- Characterized `AngelicaCompat` against untouched Scala. Two plain-JVM cases freeze its exact non-final public
+  surface, unusual `Object` return descriptors, `CapturingTessellator` guard, Iris calls and caught
+  `ClassCastException` fallback.
+- Ported the sole class directly to Java while retaining `BoxedUnit.UNIT` on the normal path and `Unit$.MODULE$` on
+  the fallback path. Both jars contain the same runtime class and every callable descriptor matches the reference.
+- A clean build passes all 230 plain-JVM tests and the Java 8 Forge server passes all 103 tests.
+  `microblock/ItemSaw.scala` is next.

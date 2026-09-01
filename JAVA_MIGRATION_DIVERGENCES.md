@@ -2538,3 +2538,37 @@ and the downstream inventory contains no references to them.
 - Clean reference/port jars retain the same two supported types; the seven compiler artifacts above disappear, and
   raw `javap` comparison confirms identical callable public names/descriptors.
 - File parsing, registration and IMC behavior are automated; this port adds no new client-only manual check.
+
+## 2026-09-01 — AngelicaCompat Java port
+
+The optional Angelica shader-material adapter is now Java.
+
+### Observable behavior
+
+No known runtime divergence. Both methods still act only when `Tessellator.instance` is a
+`CapturingTessellator`, call the matching Iris shader-material hook, and catch only `ClassCastException`. The public
+methods deliberately continue to return `Object`: the normal path returns `BoxedUnit.UNIT`, while the caught fallback
+returns `Unit$.MODULE$`, exactly as the Scala bytecode did.
+
+### ABI and reflection compatibility
+
+`AngelicaCompat` remains a public, non-final class with one public no-argument constructor, no fields or interfaces,
+and exactly these two callable methods:
+
+- `setShaderMaterialOverride(Block, int): Object`
+- `resetShaderMaterialOverride(): Object`
+
+The downstream inventory contains no reference to this class, so no frozen consumer fixture is needed. Accepted
+classfile-only differences are the removed Scala signature/marker attributes and the Java source-file marker.
+
+### Compiler artifacts
+
+No runtime class is added or removed; both clean jars contain only `AngelicaCompat.class` for this source unit.
+
+### Validation
+
+- `AngelicaCompatCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 230 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical class modifiers, constructor and callable public names/descriptors.
+- Live shader-material selection and reset with Angelica remain on the manual checklist.
