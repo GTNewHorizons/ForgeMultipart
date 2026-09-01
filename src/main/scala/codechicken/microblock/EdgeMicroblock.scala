@@ -48,7 +48,9 @@ object EdgePlacement extends PlacementProperties {
       if (hpart.getType == PostMicroClass.getName) {
         val mpart = hpart.asInstanceOf[Microblock]
         if (mpart.material == pmt.material && mpart.getSize + pmt.size < 8) {
-          part.shape = ((mpart.getSize + pmt.size) << 4 | mpart.getShape).toByte
+          part.shape_$eq(
+            ((mpart.getSize + pmt.size) << 4 | mpart.getShape).toByte
+          )
           return pmt.expand(mpart, part)
         }
       }
@@ -94,8 +96,9 @@ object EdgeMicroClass extends CommonMicroClass {
 }
 
 trait EdgeMicroblock extends CommonMicroblock with TEdgePart {
-  override def setShape(size: Int, slot: Int) = shape =
+  override def setShape(size: Int, slot: Int) = shape_$eq(
     (size << 4 | (slot - 15)).toByte
+  )
 
   def microClass = EdgeMicroClass
 

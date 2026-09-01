@@ -50,12 +50,12 @@ below its table.
 | [ ] | Load the pack with ProjRed installed and place illumar lamp microblocks | The lamps generate, render and light correctly | `MicroblockGenerator.registerTrait` Scala trait path |
 | [ ] | Place and break OpenComputers, ProjectBlue and AE2 parts | No `NoSuchMethodError` or `AbstractMethodError` in the log | retained `$class` bridges |
 | [ ] | Load and render a schematic containing an ordered mixed multipart tile | Every part appears in the preview in the saved order; the integration does not silently disable itself | Schematica private registry-map reflection, `MicroblockClass.create`, and tile NBT reconstruction |
-| [ ] | Open a GuideNH scene containing a multipart tile and export its part/material data | The preview, material data and part statistics are complete | companion reflection, `MicroblockGenerator$.create`, `partList_$eq`, and `BlockMicroMaterial` mixin fields |
+| [ ] | Open a GuideNH scene containing a multipart tile and export its part/material data | The preview, material data and part statistics are complete | companion reflection, `MicroblockGenerator$.create`, `Microblock.microClass/material/shape`, `partList_$eq`, and `BlockMicroMaterial` mixin fields |
 | [ ] | Place FMP buttons on every supported face with Et Futurum loaded | Button orientation matches the fixed vanilla behavior | reflected mutable `ButtonPart` side/meta arrays |
 | [ ] | Toggle an OpenComputers print that shares a block with another slotted part | Its slots are rebuilt without losing, hiding or disconnecting either part | external mutation of `TSlottedTile.v_partMap` plus `bindPart` |
 | [ ] | Move the same composite tile once through ForgeRelocationFMP and once through MatterManipulator | Coordinates, part-to-tile references, generated interfaces and rendering remain correct after `onMoved` | live multipart move lifecycle |
 | [ ] | Inspect a mixed multipart tile with Waila | Providers receive every saved part ID and show the expected part data | reflected block identity and tile NBT `parts`/`id` layout |
-| [ ] | Load a world saved before the port | All microblocks and covers keep their material and shape | `MicroMaterialRegistry` id map |
+| [ ] | Load a world saved before the port | All microblocks and covers keep their material and shape | `Microblock` shape/material NBT and `MicroMaterialRegistry` id map |
 | [ ] | Join a server whose material set differs from the client | The client is disconnected with the missing material list, not a crash | `readIDMap` |
 | [ ] | Join a server whose multipart type set differs from the client | The client is disconnected with the ordered missing-part list, not a crash | `MultipartCPH.handlePartRegistration` |
 
@@ -63,5 +63,5 @@ below its table.
 
 - [ ] A focused pre-optimization CPU/allocation baseline now exists in `JAVA_MIGRATION_PROFILE.md`. A representative
   full-pack capture and the matching post-optimization comparison still need to be performed.
-- [ ] Microblock-specific NBT and packet payloads. The compact core tile/part NBT and logical chunk-description fixtures
-  are complete.
+- [ ] Shape-specific microblock NBT and packet payloads. Core `Microblock` shape/material NBT, description bytes and
+  one-byte shape updates are complete, along with compact core tile/part NBT and logical chunk-description fixtures.

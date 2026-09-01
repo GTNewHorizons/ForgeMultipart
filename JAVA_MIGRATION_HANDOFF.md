@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 134 commits including the API-cleanup plan and separate characterization and
-port commits through `MicroblockClass`.
+Branch: `algent/java`. Base: `master`. 136 commits including the API-cleanup plan and separate characterization and
+port commits through the `Microblock` base.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **241 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **244 plain-JVM tests and 103 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -270,7 +270,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-165 Java files, 16 Scala files, ~3,234 Scala lines left (non-blank; that is the metric this figure has always used).
+167 Java files, 16 Scala files, ~3,139 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -484,9 +484,15 @@ Forge suite exercises eager base-trait registration, lazy client-trait avoidance
 built-in factories and generated parts. The three runtime class names and all callable public descriptors match the
 reference, including the GuideNH-pinned `MicroblockGenerator$.create(MicroblockClass, int, boolean)` boundary.
 
-**High.** `Microblock.scala` is next. It is the shared transformed base for the face, hollow, edge and corner hierarchy,
-so freeze the exact trait/class hierarchy, state fields and accessors, NBT/shape behavior, generated interfaces and
-Scala-trait consumer paths before translating it. Do not combine it with a shape subclass or generator change.
+The `Microblock` abstract base and `Microblock$` are now Java. Three plain-JVM cases freeze all eight retained base,
+companion, trait and `$class` surfaces plus state, signed shape packing, material behavior, item conversion, core NBT
+and packet/update bytes. `MicroblockClient`, `CommonMicroblock` and `CommonMicroblockClient` deliberately remain Scala
+in `MicroblockTraits.scala`: this preserves their multiple-inheritance ABI and ProjectRed's existing Scala-trait
+generator path without an ASM change. The Forge suite still generates built-in parts and the external Scala fixture.
+
+**Medium.** `FaceMicroblock.scala` is next. Apply the same narrow split: characterize its factory/facade, placement
+singleton, bounds table and both traits, then port the concrete/singleton code while retaining generated traits unless
+an exact Java representation is proven first. Do not combine it with another shape family.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
@@ -515,8 +521,9 @@ complete.
   jar instead sees concrete Java mixin inputs and can emit class/field opcodes that are invalid after Forge rewrites
   them to interfaces. Provide a transformed compile stub or downstream source guidance before claiming
   source-compatible rebuilds.
-- Microblock-specific NBT still needs characterization immediately before that subsystem changes. The registry
-  handshake packet's channel, type, count and ordered material names are now frozen.
+- Core microblock `shape`/`material` NBT plus description and one-byte shape updates are frozen. Characterize any
+  shape-specific state or packet behavior immediately before changing its subclass. The registry handshake packet's
+  channel, type, count and ordered material names are also frozen.
 - `TileMultipart` still republishes an immutable Scala `Seq` on every mutation. Its internal read paths now avoid Java
   list copies and wrappers; the remaining mutable snapshots at add/remove sites are intentional.
 - The focused synthetic redstone allocation is resolved (80.5 B to 0.0 B per three-query iteration). A representative

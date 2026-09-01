@@ -1145,3 +1145,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 241 plain-JVM tests and the Java 8 Forge server passes all 103 tests. The clean reference and
   port jars contain the same three runtime types and every callable public descriptor matches. `microblock/Microblock.scala`
   is the next deliberately high-risk target.
+- Characterized the `Microblock` base, its default-argument companion and all three mixin traits against untouched
+  Scala. Three plain-JVM cases freeze the eight retained type surfaces, fields, constructor/default, signed shape
+  packing, material delegation, item conversion, description/update bytes and core NBT.
+- Ported `Microblock` and `Microblock$` directly to Java while moving `MicroblockClient`, `CommonMicroblock` and
+  `CommonMicroblockClient` unchanged to `MicroblockTraits.scala`. Keeping those load-bearing Scala traits avoids a
+  Java single-inheritance workaround and preserves the existing ProjectRed generator path. Three remaining Scala
+  assignments now call the same public field setters explicitly.
+- A clean build passes all 244 plain-JVM tests and the Java 8 Forge server passes all 103 tests, including generated
+  face/hollow parts and the external Scala microblock trait fixture. All eight retained public surfaces match the
+  reference; only two private Scala iteration closures disappear. `microblock/FaceMicroblock.scala` is next.

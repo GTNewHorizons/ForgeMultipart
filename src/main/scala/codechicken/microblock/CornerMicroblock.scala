@@ -41,8 +41,9 @@ object CornerMicroClass extends CommonMicroClass {
 }
 
 trait CornerMicroblock extends CommonMicroblock {
-  override def setShape(size: Int, slot: Int) = shape =
+  override def setShape(size: Int, slot: Int) = shape_$eq(
     (size << 4 | (slot - 7)).toByte
+  )
 
   def microClass = CornerMicroClass
 

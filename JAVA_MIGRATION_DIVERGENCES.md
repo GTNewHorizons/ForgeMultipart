@@ -2702,3 +2702,50 @@ No runtime class is added or removed; both clean jars contain the same three sup
   names/descriptors and retained field/annotation shapes.
 - The real constructor cannot be initialized under the plain-JVM application class loader; exact generator calls are
   therefore frozen at the bytecode boundary and exercised end to end by the Forge suite.
+
+## 2026-09-01 — Microblock base Java port
+
+The shared abstract microblock base and its generated default-argument companion are now Java. The three mixin traits
+from the same source unit remain Scala in `MicroblockTraits.scala`; translating them would require either changing
+their multiple-inheritance shape or widening the mixin generator, neither of which is needed to port the base.
+
+### Observable behavior
+
+No known gameplay divergence. Material and shape state, signed-byte shape packing, cuboid routing, type/strength/light/
+transparency/resistance delegation, drop denominations, pick-item preference, description and update bytes, tile
+notification order, and `shape`/`material` NBT remain unchanged.
+
+`getDrops()` now returns a directly populated `ArrayList` instead of the Java view of a Scala `ListBuffer`. Both are
+mutable Java `List` implementations with the same ordered contents; no audited consumer depends on the concrete list
+class. Direct `4, 2, 1` loops also replace Scala collection traversal and `pickItem`'s non-local-return exception.
+
+### ABI and reflection compatibility
+
+`Microblock` remains a public abstract subclass of `TMultiPart` implementing `TCuboidPart`, with exactly one public
+`(int)` constructor, the same private mutable `material: int` and `shape: byte` fields, and every callable public name
+and descriptor retained. `Microblock$`, `MODULE$`, the constructor-default method and its static forwarder also remain.
+GuideNH's reflected `microClass()`, `material()` and `shape()` members and Schematica's `Microblock` type identity are
+therefore unchanged.
+
+`MicroblockClient`, `CommonMicroblock`, `CommonMicroblockClient` and their three `$class` helpers remain Scala and
+retain their exact interface hierarchy and public descriptors. The three remaining Scala source assignments in the
+corner/edge units now name `shape_$eq(byte)` explicitly because Java classfiles do not carry Scala source-property
+metadata; the emitted call and runtime behavior are the same.
+
+Accepted classfile-only differences are removed Scala signature/marker attributes from `Microblock`, Java's ordinary
+companion class-initializer flag, and the traits' updated source-file marker.
+
+### Compiler artifacts
+
+`Microblock$$anonfun$getDrops$1` and `Microblock$$anonfun$pickItem$1` disappear. The direct Java loops need neither
+private Scala closure; the downstream inventory contains no reference to them. The other eight supported runtime
+types are unchanged.
+
+### Validation
+
+- `MicroblockCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 244 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 103 tests, 0 failures, 0 errors, including generated face/hollow parts and a
+  separately compiled external Scala microblock trait.
+- Raw `javap` comparison confirms identical callable public names/descriptors for `Microblock`, `Microblock$`, all
+  three traits and all three `$class` helpers; the retained class inventory is otherwise exact.
