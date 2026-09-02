@@ -1237,3 +1237,14 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   differences plus one shared classfile section. Removed repeated preservation claims, validation histories and
   superseded intermediate decisions; the original narrative remains in git history. The workflow now records test
   results here and updates the divergence ledger only for a genuinely new difference.
+- Characterized `ByteCodecs` against untouched Scala in five plain-JVM cases: exact facade/companion ABI, every byte
+  value and packing remainder, zero escaping, extra decoded padding, signed shifts and partial writes before malformed
+  input fails. The baseline also rejects a raw `0xBF` escaped into a lone `0xC0`; that behavior is preserved.
+- Ported the facade and companion directly to Java, retaining the original LAMP/EPFL attribution and unrolled
+  algorithm. The signature-parser source is unchanged; its recompiled calls now use the retained static facade.
+- Clean formatting/checkstyle/build passes all 271 plain-JVM tests, and Java 8 Forge passes all 116 tests including
+  external Scala-trait generation. Both packaged types have Java source markers, Java 8 class versions and identical
+  callable public names/descriptors. An additional one-off differential run compared all two-byte inputs across all
+  six methods plus randomized lengths through 256, null and invalid decode lengths: all 450,790 cases matched on
+  return values, exception types and full mutated arrays. No new difference needs a separate ledger entry.
+  `multipart/asm/ASMImplicits.scala` is next; compiler behavior changes remain separate work.
