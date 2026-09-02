@@ -6,7 +6,7 @@ import codechicken.lib.asm.{ObfMapping, CC_ClassWriter}
 import org.objectweb.asm.{Label, FieldVisitor, MethodVisitor}
 import org.objectweb.asm.Opcodes._
 import org.objectweb.asm.tree.{MethodNode, ClassNode}
-import codechicken.multipart.{MultipartGenerator, TileMultipart}
+import codechicken.multipart.{MultipartGenerator$, TileMultipart}
 import java.util.BitSet
 import ASMImplicits._
 
@@ -245,5 +245,5 @@ object MultipartMixinFactory extends ASMMixinFactory(classOf[TileMultipart]) {
       clazz: Class[_ <: TileMultipart],
       traitSet: BitSet
   ) =
-    MultipartGenerator.registerTileClass(clazz, traitSet)
+    MultipartGenerator$.MODULE$.registerTileClass(clazz, traitSet)
 }

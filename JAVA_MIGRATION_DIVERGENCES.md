@@ -3044,3 +3044,52 @@ None. The clean reference and port jars contain the same three `MicroblockGenera
   initialization and dispatch of the external Scala microblock trait.
 - Raw `javap` comparison confirms the exact three-class list and identical callable public names/descriptors.
 - The existing ProjectRed illuminated-microblock row remains the full-pack/client manual checkpoint.
+
+## 2026-09-02 — Multipart generator Java port
+
+The `MultipartGenerator` facade and companion are now Java. `MultipartMixinFactory`, `ASMMixinFactory`,
+`ScratchBitSet` and the compiler remain Scala; the factory callback only changes its source spelling to
+`MultipartGenerator$.MODULE$.registerTileClass`.
+
+### Observable behavior
+
+No known runtime divergence. Trait discovery retains interface/class/superclass traversal order, distinct trait
+names, separate client/server caches and the original lack of cache invalidation after late registration. Duplicate
+registrations keep the first mapping. A failed trait lookup still leaves its side mapping inserted, and null traits
+still exclude that side. Construction clears the same thread-local scratch set and adds the client bit only on the
+client path.
+
+Registered tile classes still receive an independent bit-set snapshot and the proxy's virtual companion callback.
+Composite construction reuses only an exact registered trait set; unregistered tile classes retain the original
+missing-map-entry failure. Vanilla conversion and live tile upgrades/downgrades preserve packet/callback order,
+invalidation, part ordering, rebinding and copying. The removal comparison retains Scala's value equality.
+
+### ABI and reflection compatibility
+
+The facade's seven methods and companion's fifteen methods retain their names and descriptors. The five private
+Scala mutable-map fields, the public mangled map/cache accessors and the `ScratchBitSet` interface remain. GuideNH
+and Schematica still reach `generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` only through
+`MultipartGenerator$.MODULE$`; no new static generation entry point is introduced. Shipping static and companion
+pass-through registration calls also remain exact.
+
+A frozen Scala 2.11.5 consumer compiled against the untouched reference calls both companion generation and default
+pass-through registration, then exercises a generated forwarding method under Forge.
+
+Accepted classfile-only differences are the private Java facade constructor, ordinary Java singleton initialization
+and removed Scala marker attributes. As with `MicroblockGenerator`, the private scratch `ThreadLocal` loses
+`ACC_FINAL` so the public Scala-trait setter remains replaceable. Unreferenced private map getters are gone.
+
+### Compiler artifacts
+
+Six private Scala closure classes disappear: the `traitsForPart` closure and its four hierarchy/mapping helpers, plus
+the `setTraits` traversal closure. The downstream inventory contains no references to them. Hierarchy discovery uses
+a `LinkedHashSet`; part iteration uses the existing Scala iterator without extra collection adapters.
+
+### Validation
+
+- `MultipartGeneratorCharacterizationTest`: 2 plain-JVM tests, unchanged from the Scala baseline.
+- `MultipartGeneratorFunctionalTest`: 5 Forge tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 262 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 116 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors and the expected six-closure removal.
+- Real client conversion packets/render rebinding and GuideNH/Schematica previews remain manual checkpoints.

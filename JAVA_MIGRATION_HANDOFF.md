@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 148 commits including the API-cleanup plan and separate characterization and
-port commits through the microblock generator.
+Branch: `algent/java`. Base: `master`. 150 commits including the API-cleanup plan and separate characterization and
+port commits through the multipart generator.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **260 plain-JVM tests and 111 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **262 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -183,8 +183,8 @@ proves the other branch did reach it. Use `LinkageError`, not the exact type —
 `$class` bridge, but idiomatic and callable from Java.
 
 **`private[multipart]` becomes public, not package-private.** It reaches `codechicken.multipart.handler` too, and Java
-has no scope spanning a package and its siblings. `PacketScheduler.sendScheduled` hit this; `MultipartGenerator` and
-`MicroblockGenerator` will too.
+has no scope spanning a package and its siblings. `PacketScheduler.sendScheduled` and the generator companions keep
+those methods public; do not add static forwarders for originally companion-only methods.
 
 **A Forge `FakePlayer` unlocks the server half of player-dependent code.**
 `FakePlayerFactory.getMinecraft(worldServer)` needs no connection and its world is not remote, which is the branch a
@@ -272,7 +272,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-189 Java files, 15 Scala files, 2,807 Scala lines left (non-blank; that is the metric this figure has always used).
+191 Java files, 14 Scala files, 2,588 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -532,17 +532,25 @@ and clearing, and the load-bearing call opcodes. One Forge case covers the previ
 `IGeneratedMaterial` callback through registered external Scala-trait initialization and dispatch. The runtime class
 list and all callable public descriptors remain exact for ProjectRed and GuideNH.
 
-**High.** `MultipartGenerator.scala` is next. Freeze its companion-only GuideNH entry point, all `private[multipart]`
-members that must become public Java, trait registration maps, server/client exclusion flags, pass-through handling,
-scratch-bit reuse, generated class selection and construction before choosing a split. Reuse the extensive existing
-generated-tile fixtures and do not combine this with `MultipartMixinFactory` or the rest of ASM.
+The multipart generator is now a Java facade and companion. Two plain-JVM cases freeze its exact public surfaces,
+Scala-map fields and side-safe companion calls; five Forge cases freeze hierarchy caches, side exclusion, duplicate
+and failed registration, scratch clearing, registered-class snapshots, generated-class reuse, live tile upgrades and
+downgrades, vanilla torch conversion and a frozen Scala consumer. The generator compiler is unchanged: its callback
+merely spells `MultipartGenerator$.MODULE$` explicitly. Six private Scala closures disappear.
+
+**Next: `multipart/asm/ScratchBitSet.scala`.** Both implementors are now Java, so this is a small, isolated support
+trait before the compiler work. Preserve its public mangled getter/setter and existing helper linkage, and freeze
+per-thread isolation, lazy allocation, clearing and setter replacement. Do not combine it with `ASMMixinFactory`.
+The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
+before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-**Phase 6/7, last.** The retained generated microblock traits, `MultipartGenerator`, and all of `multipart/asm/`.
-The ASM subsystem should be last; freeze generated-class fixtures before touching it.
+**Phase 6/7, last.** The retained generated microblock traits and all of `multipart/asm/`.
+Keep the ASM compiler last, apart from the prerequisite fixes needed by those traits; freeze generated-class fixtures
+before changing it.
 
 **Pre-merge cleanup is explicit in `JAVA_MIGRATION.md`.** It covers relocating eligible Java files out of
 `src/main/scala`, reconsidering forced Scala compilation, refreshing the README, organizing the durable migration

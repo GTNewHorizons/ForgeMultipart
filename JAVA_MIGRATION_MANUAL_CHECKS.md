@@ -45,6 +45,7 @@ below its table.
 | [ ] | Run redstone across an edge microblock | Conduction matches the pre-port behavior | `TEdgePart.conductsRedstone` |
 | [ ] | Cut materials with saws of different harvest levels | Only materials at or below the saw's strength can be cut | `Saw.getMaxCuttingStrength` |
 | [ ] | Place the same microblock in survival and creative, including onto an existing multipart tile | Valid placements play the material sound; survival consumes the expected amount while creative does not | `ItemMicroPart.onItemUse` |
+| [ ] | With a second client watching, convert a vanilla torch by adding a part, then add and remove parts requiring different tile interfaces | Both clients see each part exactly once, with no ghost block, stale render or missing part after tile replacement | `MultipartGenerator` conversion packet order and generated tile upgrade/downgrade |
 
 ## Downstream integration
 

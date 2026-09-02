@@ -1211,3 +1211,13 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 260 plain-JVM tests and the Java 8 Forge server passes all 111 tests. The same three runtime
   classes and every callable public descriptor match the reference, including ProjectRed's companion registration
   and GuideNH's exact companion `create` method. `multipart/MultipartGenerator.scala` is next.
+- Characterized `MultipartGenerator` against untouched Scala. Two plain-JVM cases freeze both public surfaces,
+  private Scala-map descriptors and companion call opcodes. Five Forge cases freeze side-specific hierarchy caches,
+  duplicate/failed registration, scratch clearing, class snapshots/reuse, tile upgrades/downgrades, vanilla-block
+  conversion and a precompiled Scala consumer exercising companion generation and pass-through registration.
+- Ported the facade and companion directly to Java. All five Scala maps, both compiler-generated public accessors,
+  the companion-only `generateCompositeTile` descriptor and side-safe proxy callback remain. Direct iteration removes
+  six private closures; the ASM factory's sole source adjustment explicitly names `MultipartGenerator$.MODULE$`.
+- A clean build passes all 262 plain-JVM tests and the Java 8 Forge server passes all 116 tests. Both supported public
+  surfaces match the reference. `multipart/asm/ScratchBitSet.scala` is the next isolated support target; the generated
+  microblock traits still require the documented abstract-Java-mixin and side-only-member prerequisites.
