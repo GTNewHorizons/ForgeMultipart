@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 160 commits including the API-cleanup plan, divergence-log cleanup and ports
-through `ByteCodeReader`.
+Branch: `algent/java`. Base: `master`. 161 commits including the API-cleanup plan, divergence-log cleanup and ports
+through `ScalaSigReader`.
 
 ## The one rule that matters
 
@@ -278,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-200 Java files, 11 Scala files, 2,286 Scala lines left (non-blank; that is the metric this figure has always used).
+202 Java files, 11 Scala files, 2,254 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -576,10 +576,18 @@ Only the position setter and two-argument `advance` syntax changed in the signat
 and compiler types have identical disassembly, the 463-class inventory is unchanged, and all 39 Forge-suite dump names
 and contents match the reference. Existing suites remain at 276 JVM and 116 Forge tests; no tests were added.
 
-**Next: `ScalaSigReader` in `multipart/asm/ScalaSignature.scala`.** Extract the facade/companion around annotation
-encoding and decoding before the signature model. Preserve both charsets, the exact byte slicing/packing, `write`'s
-returned previous annotation value and the first-match Scala `Option` lookup. Keep the signature model, byte codecs
-and compiler algorithms unchanged, with only required source-call adjustments.
+`ScalaSigReader` is now a Java facade and companion, retaining all five methods on each. Platform-charset decoding,
+UTF-8 encoding, legacy trailing-byte truncation, `write`'s previous-value result and the first-match Scala `Option`
+lookup are preserved. Both public surfaces match the reference. All 137 retained signature/compiler types have
+identical disassembly, and all 39 Forge-suite dump names and contents match. Only the private annotation-search
+closure disappears, reducing the packaged inventory from 463 to 462 classes. Existing suites remain at 276 JVM and
+116 Forge tests; no tests were added.
+
+**Next: `multipart/asm/ASMMixinFactory.scala`.** Port this single factory before the larger nested signature model.
+Preserve its Scala `Seq` constructor/argument boundaries, protected callbacks, synchronized construction, copied
+BitSet cache keys, generated-name sequence and registration/parent-validation order. Keep both Scala- and Java-trait
+registration paths and the existing maps. Leave `MultipartMixinFactory`, the signature model and compiler algorithms
+unchanged apart from necessary source-call adjustments.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

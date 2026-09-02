@@ -213,8 +213,8 @@ object ASMMixinCompiler {
       if (name == null) return null
 
       def scalaInfo(cnode: ClassNode, obj: Boolean) =
-        ScalaSigReader.ann(cnode).flatMap { ann =>
-          val sig = ScalaSigReader.read(ann)
+        ScalaSigReader$.MODULE$.ann(cnode).flatMap { ann =>
+          val sig = ScalaSigReader$.MODULE$.read(ann)
           val name = cnode.name.replace('/', '.')
           (if (obj) sig.findObject(name) else sig.findClass(name))
             .map(csym => new ScalaClassInfo(cnode, sig, csym))

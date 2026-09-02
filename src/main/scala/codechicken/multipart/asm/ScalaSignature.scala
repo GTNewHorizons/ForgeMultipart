@@ -1,13 +1,5 @@
 package codechicken.multipart.asm
 
-import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.AnnotationNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
-import java.util.{List => JList}
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-
 import ScalaSignature._
 
 object ScalaSignature {
@@ -299,34 +291,4 @@ class ScalaSignature(val bytes: Bytes) {
   def findObject(name: String) = collect[ObjectSymbol](7).find(_.full == name)
   def findClass(name: String) =
     collect[ClassSymbol](6).find(c => !c.isModule && c.full == name)
-}
-
-object ScalaSigReader {
-  def decode(s: String) = {
-    val bytes = s.getBytes
-    bytes take ByteCodecs.decode(bytes)
-  }
-
-  def encode(b: Array[Byte]) = {
-    val bytes = ByteCodecs.encode8to7(b)
-    var i = 0
-    while (i < bytes.length) {
-      bytes(i) = ((bytes(i) + 1) & 0x7f).toByte
-      i += 1
-    }
-    new String(bytes.take(bytes.length - 1), "UTF-8")
-  }
-
-  def read(ann: AnnotationNode): ScalaSignature = new ScalaSignature(
-    Bytes(decode(ann.values.get(1).asInstanceOf[String]))
-  )
-
-  def write(sig: ScalaSignature, ann: AnnotationNode) =
-    ann.values.set(1, encode(sig.bytes.arr))
-
-  def ann(cnode: ClassNode): Option[AnnotationNode] =
-    cnode.visibleAnnotations match {
-      case null => None
-      case a => a.find(ann => ann.desc.equals("Lscala/reflect/ScalaSignature;"))
-    }
 }

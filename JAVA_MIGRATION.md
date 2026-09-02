@@ -1287,3 +1287,15 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   unchanged. All 140 retained `ScalaSignature`, `ScalaSigReader` and `ASMMixinCompiler` types have identical
   disassembly. Recompiled Scala uses `pos_$eq` and `advance(length, value)`; the latter source-syntax difference is
   recorded in the ledger. `ScalaSigReader` in `multipart/asm/ScalaSignature.scala` is the next isolated target.
+- Extracted `ScalaSigReader` to a Java facade and companion, retaining all five methods on each and the singleton
+  field. Decode still uses the platform charset; encode keeps UTF-8 and the reference's trailing-byte truncation,
+  including empty input. Annotation reads still use `ScalaSignature.Bytes$`, writes return the replaced list value,
+  and lookup returns the first match as a Scala `Option` with the original malformed-entry failures.
+- Replaced Scala array slicing and annotation traversal with standard-library operations. Only two compiler calls
+  explicitly name the companion; no signature-model, byte-codec or compiler algorithm changed. Both Java 8 public
+  surfaces match the saved `9f92704` reference, and all 137 retained signature/compiler types have identical
+  disassembly. Only the private annotation-search closure disappears, taking the packaged inventory from 463 to 462.
+- No tests were added, per the current user instruction. A clean formatting/checkstyle/build passes all 276 existing
+  JVM tests; Java 8 Forge passes all 116 tests, including external Scala-trait generation. All 39 generated dump names
+  and SHA-256 hashes match the reference. No new ledger entry is needed. `multipart/asm/ASMMixinFactory.scala` is next
+  as a single factory port before the larger nested signature model and compiler.
