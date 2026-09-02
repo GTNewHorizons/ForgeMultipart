@@ -8,7 +8,7 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION.md` | The plan, phase state, and a running findings log |
 | `JAVA_MIGRATION_ABI_INVENTORY.md` | Which downstream mods use what. **The authority on whether anything is load-bearing** |
 | `JAVA_MIGRATION_CONSUMER_AUDIT.md` | How every consumer uses FMP at runtime: data, lifecycle, reflection, and generated tiles |
-| `JAVA_MIGRATION_DIVERGENCES.md` | Every intentional difference from the reference, one entry per port |
+| `JAVA_MIGRATION_DIVERGENCES.md` | Current intentional compatibility differences; shared compiler changes recorded once |
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
@@ -29,7 +29,8 @@ Followed for every port so far. It has caught three real ABI breaks that inspect
 2. **Freeze a binary consumer** if the inventory shows a load-bearing `$class` or singleton. Recipe below.
 3. **Port.** Delete the `.scala`, add the `.java`.
 4. **Verify.** Same tests must pass unchanged, plus the ABI diff below.
-5. **Document** in `JAVA_MIGRATION_DIVERGENCES.md`, then commit as `refactor: port X to Java`.
+5. **Document** results in `JAVA_MIGRATION.md` and update this handoff. Add to `JAVA_MIGRATION_DIVERGENCES.md` only
+   for a new effective difference not already covered there, then commit as `refactor: port X to Java`.
 
 If a characterization test will not compile after the port, that is a signal, not an inconvenience. Twice it was a real
 ABI change (`MissingMicroMaterial` forwarders, the `ACC_SYNTHETIC` super accessor). Investigate before adjusting the
@@ -90,7 +91,8 @@ diff <(javap -p -cp /tmp/ref.jar codechicken.multipart.X | grep "  public" | sor
 diff <(javap -p -s -cp /tmp/ref.jar codechicken.multipart.X | grep descriptor | sort) <(javap -p -s -cp "$NEW" codechicken.multipart.X | grep descriptor | sort)
 ```
 
-Also diff the emitted class list, to catch removed `$$anonfun$` artifacts that belong in the divergence log:
+Also diff the emitted class list. Routine unreferenced closure removal is covered once in the divergence ledger;
+record the specific comparison in the findings log, and investigate any removed named API or reflective type:
 
 ```bash
 diff <(unzip -Z1 /tmp/ref.jar | grep X | sort) <(unzip -Z1 "$NEW" | grep X | sort)

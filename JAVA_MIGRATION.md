@@ -768,7 +768,10 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Found that `IMicroMaterialRender` is implemented for every part solely by `TMultiPart`'s Scala-style `world`/`x`/`y`/`z`/`getRenderBounds` accessors. Renaming any of them to a bean accessor would silently unimplement the interface, so the names are now pinned by a characterization test rather than left to reviewer attention.
 - Established that for interfaces carrying no implementation, the characterization is the shape: every member abstract and public, no superinterface, and the exact member set. That is enough to catch the two realistic failure modes, a stray default and a renamed accessor.
 - Noted that `IRedstonePart.scala` is misleadingly named and is not a marker-trait file. It carries six traits plus `RedstoneInteractions`, whose `MODULE$` is load-bearing, and was moved out of the low-risk group.
-- Noted a documentation gap, not addressed here: this log was last appended for the `TItemMultiPart` port. The eight ports between it and this entry — `TEdgePart`, `Saw`, both registries, `TileMultipart`, `TMultiPart`, `TickScheduler` and `BlockMultipart` — are recorded in `JAVA_MIGRATION_DIVERGENCES.md` but never made it here, so the "Current status" section above should be read with that in mind.
+- Historical documentation gap: the ports between `TItemMultiPart` and this entry — `TEdgePart`, `Saw`, both
+  registries, `TileMultipart`, `TMultiPart`, `TickScheduler` and `BlockMultipart` — did not receive dated findings
+  here. Use the handoff for their current status and git history for the original validation narrative; the divergence
+  ledger now records only their effective compatibility differences.
 - Ported `MultipartHelper`, `MultipartHelper$` and `MultipartHelper$IPartTileConverter` to Java. All three are public-member- and descriptor-identical to the reference and the full emitted class list is unchanged, so this port neither added nor removed a class.
 - Kept `MultipartHelper$` on the strength of a reflective string constant alone. It is not among the 17 `MODULE$` singletons read from bytecode and no jar links against it, but guidenh names it, and the inventory warns that removing a companion breaks such consumers invisibly. This is the opposite call to `IconHitEffects$`, which was dropped because nothing referenced it in bytecode or by name, and it establishes that the `MODULE$` list alone is not sufficient grounds to delete a companion.
 - Found a reusable characterization technique: a class that cannot class-initialize headless is a probe for control flow. `MultipartSaveLoad` reflects into `TileEntity`'s static maps through `ObfMapping` and always throws under a plain JVM, so `createTileFromNBT` returning null rather than raising proves the id guard short-circuits before the `loadingWorld` assignment. Assert `LinkageError` rather than the exact type, because the first attempt raises `ExceptionInInitializerError` and later ones raise `NoClassDefFoundError`.
@@ -1230,3 +1233,7 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 266 plain-JVM tests and the Java 8 Forge server passes all 116 tests. The two-type ABI and
   both generator companions' disassembly match the reference. `multipart/asm/ByteCodecs.scala` is next as an isolated
   codec port, leaving signature parsing and trait compilation for separate targets.
+- Condensed `JAVA_MIGRATION_DIVERGENCES.md` from 3,134 to 189 lines, keeping effective runtime, binary and source
+  differences plus one shared classfile section. Removed repeated preservation claims, validation histories and
+  superseded intermediate decisions; the original narrative remains in git history. The workflow now records test
+  results here and updates the divergence ledger only for a genuinely new difference.
