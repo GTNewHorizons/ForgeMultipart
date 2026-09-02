@@ -24,9 +24,9 @@ must link; the source-level audit is the authority on behavior, serialized data,
 
 Followed for every port so far. It has caught three real ABI breaks that inspection missed.
 
-**Current user instruction: do not add tests unless requested.** The characterization-first workflow below describes
-the prior approach, not permission to add tests. Without that request, save a pre-port reference jar and use the
-existing suites plus ABI/output comparisons, as for `DebugPrinter`.
+**Tests are added only when requested.** The six ASM ports from `b45527e` to `8581d30` were made under that
+instruction, verified with ABI, disassembly and dump comparisons instead; their characterization tests were
+backfilled afterwards on request. Ask before skipping step 1 again, and record which check replaced it.
 
 1. **Characterize first, commit separately.** Write tests against the untouched Scala and confirm they pass. Commit as
    `test: characterize X` before touching the implementation.
@@ -72,7 +72,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **276 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **308 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -607,6 +607,20 @@ publish both primitive `value()` methods and erased `Object value()` bridges, wh
 together, and Java misreads the outer parameter in five Scala 2.11 generic inner constructors. Those construction
 branches also remain in Scala. Moving the model needs an explicit bytecode-bridge strategy; do not lose those methods
 or outer-instance bindings merely to reduce the Scala count.
+
+The six ports above now have backfilled characterization tests in `src/test/java/codechicken/multipart/asm/`.
+`ByteCodeReader` and the signature parser are covered by behavior: section-relative reads, `readNat`/`readLong`
+decoding and overflow, clamped string reads, the `advance` bounds failure, table decoding of the frozen
+`ReferenceScalaEdgePart` fixture, symbol and method-descriptor evaluation, `SigEntry.delete`, and a synthetic table
+for the literal and unknown-tag branches. `ScalaSigReader` is covered by round trips, the lossy trailing group,
+annotation lookup and `write`'s previous-value result. `DebugPrinter`, `ASMMixinFactory` and `MultipartMixinFactory`
+reach Forge from their initializers, so those tests assert public surfaces, fields, and bytecode constants and calls;
+generated tiles, pass-through delegation and Java-trait `copyFrom` stay covered by the Forge suite.
+
+Run against `src/main` restored from `1faf0dd`, the backfill compiles and passes 45 of its 46 tests. The one failure
+is `MultipartMixinFactory`'s facade method set, which is the ledger's four additive static forwarders. Two assertions
+were relaxed to hold on both trees: the facade private constructors Scala never emitted, and `DebugPrinter$`'s
+directory cleanup, which Scala emitted as a separate closure class.
 
 **Next: `multipart/asm/StackAnalyser.scala`.** Treat its analyser control flow and nested model separately if the same
 Java-source limitations appear. Preserve every nested binary name, constructor, outer/implicit instruction binding,

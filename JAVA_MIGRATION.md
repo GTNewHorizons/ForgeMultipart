@@ -1346,3 +1346,16 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   closures are replaced by one Java helper, reducing the packaged inventory from 455 to 452 classes and leaving 206
   Java files plus 9 Scala files / 1,883 nonblank Scala lines. No new compatibility divergence needs a ledger entry.
   `multipart/asm/StackAnalyser.scala` is the next bounded target; keep its control flow and nested model separable.
+- Backfilled, on request, the characterization tests the six ports from `b45527e` to `8581d30` had skipped. Six new
+  suites in `src/test/java/codechicken/multipart/asm/` add 32 plain-JVM tests, taking that suite from 276 to 308.
+  `ByteCodeReader` and the signature parser are covered by behavior; `ScalaSigReader` by round trips, annotation
+  lookup and its replaced-value result. `DebugPrinter`, `ASMMixinFactory` and `MultipartMixinFactory` initialize
+  through Forge, so those tests pin public surfaces, fields and bytecode constants and calls, leaving generated
+  tiles, pass-through delegation and Java-trait `copyFrom` to the Forge suite.
+- Ran the backfill against `src/main` restored from `1faf0dd`: it compiles against the untouched Scala and 45 of 46
+  tests pass. The only failure is `MultipartMixinFactory`'s facade method set, which is the four additive static
+  forwarders already in the ledger. Two assertions were relaxed to hold on both trees: the facade private
+  constructors Scala never emitted, and the `DebugPrinter$` directory cleanup Scala emitted as a closure class.
+- Two behaviors were pinned that inspection had not recorded. `ScalaSigReader.encode` drops the final 7-bit group, so
+  a decode round trip is exact only when that group is empty; a payload ending in a high-bit byte does not survive
+  it. `ScalaSignature.evalS` throws `MatchError` on an unknown tag while `eval` returns the table entry unchanged.
