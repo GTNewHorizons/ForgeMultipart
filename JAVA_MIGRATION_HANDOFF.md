@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 144 commits including the API-cleanup plan and separate characterization and
-port commits through the Hollow microblock factory.
+Branch: `algent/java`. Base: `master`. 146 commits including the API-cleanup plan and separate characterization and
+port commits through micro occlusion.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **252 plain-JVM tests and 110 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **257 plain-JVM tests and 110 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -520,9 +520,16 @@ Both trait helpers and all seven retained geometry/render closures are bytecode-
 three private table-initializer closures disappear. ProjectRed's trait checks and static class-ID call, Extra
 Utilities' two client-trait checks, and BuildCraft/MatterManipulator's stable `"mcr_hllw"` ID remain exact.
 
-**High.** `TMicroOcclusion.scala` is next. Freeze the complete shrink/priority math and all generated trait/helper
-surfaces before splitting only the concrete `MicroOcclusion` facade/companion logic. Keep `JMicroShrinkRender`,
-`TMicroOcclusion`, and the stateful `TMicroOcclusionClient` Scala, and do not combine this with generator work.
+The micro-occlusion source unit is now two Java facade/companion sources plus three retained Scala traits. Five
+plain-JVM cases freeze all seven supported surfaces, every valid shrink-side mapping, exhaustive priority, size and
+transparency decisions, render masks, traversal ranges and the complete trait decision matrix. All retained Scala
+trait/helper disassembly is bytecode-identical; only the private shrink traversal closure disappears. WR-CBE's
+load-bearing static `MicroOcclusion.recalcBounds(JMicroShrinkRender, Cuboid6)` call remains exact.
+
+**High.** `MicroblockGenerator.scala` is next. Freeze its inherited `ASMMixinFactory`/`ScratchBitSet` singleton,
+nested `IGeneratedMaterial` Scala trait, exact companion/reflection surface and fresh trait-bit selection before
+choosing the smallest safe split. ProjectRed exercises external Scala-trait generation and GuideNH pins the exact
+`create(MicroblockClass, int, boolean)` companion method. Do not combine this with `MultipartGenerator` or ASM work.
 
 **Phase 5 is complete.** There are no Scala files left in `multipart/scalatraits/`. The client pair required the first
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of

@@ -32,6 +32,7 @@ below its table.
 | [ ] | Inspect face, hollow, edge and corner microblocks in inventory and as dropped entities | Every size/material combination uses the correct localized name and centered shape/material render | `ItemMicroPart` / `ItemMicroPartRenderer` / `MicroblockRender.renderItem` |
 | [ ] | Place crossing posts of different sizes/transparency beside face covers, then add and remove neighbours | Post segments shrink and split at intersections without missing sections or stale render bounds | `PostMicroblockClient.recalcBounds` / `shrinkFace` / `shrinkPost` |
 | [ ] | Run centre pipes/cables with several connection widths through hollow covers on all six faces, including glass | Each opening follows the connector size; opaque and transparent rims, breaking overlay and highlight have no missing, doubled or stale sections after neighbour changes | `HollowMicroblockClient.recalcBounds` / `renderHollow` / `drawBreaking` / `drawHighlight` |
+| [ ] | Place touching face, corner and edge microblocks of mixed sizes/transparency, then add and remove neighbours | Intersections choose the same winner, opaque covered faces stay masked, and every surviving segment refreshes without gaps or stale bounds | `MicroOcclusion` / `TMicroOcclusionClient.recalcBounds` |
 
 ## Placement and interaction
 

@@ -1193,3 +1193,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 252 plain-JVM tests and the Java 8 Forge server passes all 110 tests. All nine supported
   public surfaces match the reference; both retained trait helpers and all seven trait closures are bytecode-identical.
   Only three private factory table-initializer closures disappear. `microblock/TMicroOcclusion.scala` is next.
+- Characterized `MicroOcclusion` against untouched Scala. Five plain-JVM cases freeze the facade, companion, three
+  generated-trait surfaces, all valid shrink-side mappings, exhaustive priority/size/transparency decisions, render
+  masks, traversal ranges and the complete `TMicroOcclusion` decision matrix.
+- Ported only the concrete facade and companion to Java. `JMicroShrinkRender`, `TMicroOcclusion` and the stateful
+  `TMicroOcclusionClient` remain Scala; both trait helpers and all five retained Scala types have bytecode-identical
+  disassembly. Direct Java iteration removes the sole private shrink closure.
+- A clean build passes all 257 plain-JVM tests and the Java 8 Forge server passes all 110 tests. All seven supported
+  public surfaces and WR-CBE's static `recalcBounds` descriptor match the reference. `microblock/MicroblockGenerator.scala`
+  is next.

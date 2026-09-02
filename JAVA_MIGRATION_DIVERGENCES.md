@@ -2954,3 +2954,46 @@ identical `javap -c -p -s` output after the port.
 - Raw `javap` comparison confirms identical callable public names/descriptors for all nine supported types, the exact
   nested-grid relationship, and bytecode-identical retained trait helpers and closures.
 - Actual client rendering, breaking overlay and hollow highlight geometry remain on the manual checklist.
+
+## 2026-09-02 — Micro occlusion Java port
+
+The concrete `MicroOcclusion` facade and companion are now Java. `JMicroShrinkRender`, `TMicroOcclusion` and the
+stateful `TMicroOcclusionClient` remain Scala in `TMicroOcclusion.scala`, preserving their generated-trait,
+super-accessor and mutable render-state surfaces without involving the generator.
+
+### Observable behavior
+
+No known runtime divergence. Axis shrink remains non-expanding and keeps `-1` as a no-op. Shape priority remains
+cover, corner, then edge/post; priority class, size, transparency and slot tie-breaking retain their original order,
+including transparency taking precedence over size only for covers. Every valid face/corner/edge `shrinkSide`
+mapping is unchanged.
+
+`shrinkFrom` still either contracts the render bounds or masks a fully covered opaque face. Recalculation still
+visits slots 0 through 5 for covers, 0 through 14 for corners, and 0 through 26 for edges/posts. The original Scala
+`TMicroOcclusion` material, size, opposite-part and edge/corner decisions are unchanged.
+
+### ABI and reflection compatibility
+
+All seven supported facade, companion, trait and `$class` types keep their hierarchy and callable public
+names/descriptors. WR-CBE's load-bearing static
+`MicroOcclusion.recalcBounds(JMicroShrinkRender, Cuboid6): int` call remains exact, as does the
+`JMicroShrinkRender` interface. The downstream inventory contains no references to the private implementation
+closure or trait helpers.
+
+The five retained Scala types and helpers have bytecode-identical `javap -p -c -s` output. Accepted classfile-only
+differences in the two Java types are ordinary Java singleton initialization, constructors and removed Scala
+signature/marker attributes.
+
+### Compiler artifacts
+
+`MicroOcclusion$$anonfun$shrink$1` disappears. Direct Java slot iteration needs no closure, and the downstream
+inventory contains no reference to it.
+
+### Validation
+
+- `MicroOcclusionCharacterizationTest`: 5 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 257 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 110 tests, 0 failures, 0 errors.
+- Raw `javap` comparison confirms identical callable public names/descriptors for all seven supported types and
+  bytecode-identical retained trait/helper disassembly.
+- Actual neighbour-driven shrink and render-bound refresh remain on the manual checklist.
