@@ -204,7 +204,7 @@ object ASMMixinCompiler {
     cnode.name
   )
   implicit def getClassInfo(clazz: Class[_]): ClassInfo =
-    if (clazz == null) null else getClassInfo(clazz.nodeName)
+    if (clazz == null) null else getClassInfo(nodeName(clazz.getName))
 
   object ClassInfo {
     class ReflectionClassInfo(clazz: Class[_]) extends ClassInfo {
@@ -212,12 +212,12 @@ object ASMMixinCompiler {
         def owner = ReflectionClassInfo.this
         def name = method.getName
         def desc = getType(method).getDescriptor
-        def exceptions = method.getExceptionTypes.map(_.nodeName)
+        def exceptions = method.getExceptionTypes.map(c => nodeName(c.getName))
         def isPrivate = Modifier.isPrivate(method.getModifiers)
         def isAbstract = Modifier.isAbstract(method.getModifiers)
       }
 
-      def name = clazz.nodeName
+      def name = nodeName(clazz.getName)
       def superClass = Option(clazz.getSuperclass)
       def interfaces = clazz.getInterfaces.map(getClassInfo)
       def methods = clazz.getMethods.map(ReflectionMethodInfo(_))

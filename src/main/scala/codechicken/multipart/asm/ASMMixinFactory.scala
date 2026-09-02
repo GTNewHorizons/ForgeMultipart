@@ -31,7 +31,7 @@ class ASMMixinFactory[T](
       seq += traits(i)
 
     val c = ASMMixinCompiler
-      .mixinClasses(nextName(), baseType.nodeName, seq.result())
+      .mixinClasses(nextName(), nodeName(baseType.getName), seq.result())
       .asInstanceOf[Class[_ <: T]]
     onCompiled(c, traitSet)
     c.getDeclaredConstructor(paramTypes: _*)
@@ -45,7 +45,7 @@ class ASMMixinFactory[T](
       case Some(c) => c
       case None =>
         val c = compile(traitSet)
-        classMap.put(traitSet.copy, c)
+        classMap.put(ExtBitSet$.MODULE$.copy$extension(traitSet), c)
         c
     }).newInstance(args: _*)
   }
@@ -53,7 +53,7 @@ class ASMMixinFactory[T](
   def getId(s_trait: String) = traitMap(s_trait)
 
   def registerTrait(traitClass: Class[_]): Int = registerTrait(
-    traitClass.nodeName
+    nodeName(traitClass.getName)
   )
 
   def registerTrait(s_trait: String): Int = {
@@ -84,7 +84,9 @@ class ASMMixinFactory[T](
       info.name == parentName || info.superClass.exists(checkParent)
     if (!checkParent(getClassInfo(baseType)))
       throw new IllegalArgumentException(
-        baseType.nodeName + " does not extend parent " + parentName + " of mixin trait " + s_trait
+        nodeName(
+          baseType.getName
+        ) + " does not extend parent " + parentName + " of mixin trait " + s_trait
       )
 
     if (info.isTrait) {

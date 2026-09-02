@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 155 commits including the API-cleanup plan, divergence-log cleanup and separate
-characterization and port commits through the byte codec.
+Branch: `algent/java`. Base: `master`. 158 commits including the API-cleanup plan, divergence-log cleanup and separate
+characterization and port commits through the ASM implicit helpers.
 
 ## The one rule that matters
 
@@ -68,7 +68,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **271 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **276 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -274,7 +274,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-195 Java files, 12 Scala files, 2,367 Scala lines left (non-blank; that is the metric this figure has always used).
+197 Java files, 11 Scala files, 2,352 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -551,10 +551,17 @@ unchecked malformed-input failures. A clean jar confirms both Java source marker
 450,790 additional reference/port cases match. The signature-parser source and external Scala-trait fixtures remain
 unchanged; recompiled `ScalaSigReader` calls the retained static facade instead of the companion directly.
 
-**Next: `multipart/asm/ASMImplicits.scala`.** Characterize the BitSet copy/replacement helpers, alias/null behavior,
-node-name conversion and emitted value-class/extension surfaces before porting. Check both consumer audits before
-deciding which compiler-generated entry points to keep. Recompiled Scala callers will need explicit helper calls;
-keep those changes mechanical and leave trait registration, signature parsing and compiler algorithms alone.
+`ASMImplicits` is now Java, retaining the facade, companion, both boxed value classes and both extension companions.
+Five plain-JVM cases freeze their exact surfaces, name/null conversion, BitSet aliasing and partial failure, copy
+independence and boxed equality/hash behavior. Only seven implicit call sites in the Scala compiler/factory changed;
+the packaged class inventory and the multipart generator companion's disassembly are unchanged. Source callers need
+explicit helper calls; normal calls retain the same results. The ledger records Java's public-companion constructor
+publication difference as well.
+
+**Next: `DebugPrinter` in `multipart/asm/ASMMixinCompiler.scala`.** Extract the diagnostic singleton without changing
+the compiler itself. Characterize configuration gating, initial directory cleanup, dump naming/content and the
+16,000-byte logging threshold first. Isolate file-writing checks in temporary directories so they cannot purge real
+debug output. Keep the facade/companion boundary and make only required source-call adjustments in the compiler.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

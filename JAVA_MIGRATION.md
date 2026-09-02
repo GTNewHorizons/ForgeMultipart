@@ -1248,3 +1248,18 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   six methods plus randomized lengths through 256, null and invalid decode lengths: all 450,790 cases matched on
   return values, exception types and full mutated arrays. No new difference needs a separate ledger entry.
   `multipart/asm/ASMImplicits.scala` is next; compiler behavior changes remain separate work.
+- Characterized `ASMImplicits` against untouched Scala in five plain-JVM cases: all six runtime surfaces, identity
+  conversions, node names, null handling, BitSet self-replacement and clear-before-failure, independent plain-BitSet
+  copies, and boxed equality/hash behavior. Neither consumer audit identifies a direct external user.
+- A follow-up characterization, also passed against the saved Scala reference jar, pins virtual `BitSet.equals`
+  dispatch even for identical references. The Java implementation uses an explicit null check here because
+  `Objects.equals` would skip that call.
+- Ported the facade, companion and four nested value-class/extension types to two Java sources, retaining every
+  callable public name, descriptor and modifier. Seven Scala compiler/factory call sites now explicitly invoke the
+  helpers; compiler algorithms and trait registration are unchanged. The ledger records the lost implicit syntax and
+  the Java publication rule: explicitly constructing either public extension companion no longer replaces `MODULE$`,
+  verified against the reference in isolated class loaders.
+- Clean formatting/checkstyle/build passes all 276 plain-JVM tests, and Java 8 Forge passes all 116 tests. All six
+  helpers have Java source markers and Java 8 class versions; compiler/factory public descriptors and the full
+  464-class packaged inventory match the reference. `MultipartGenerator$` disassembly is unchanged. The next bounded
+  target is extracting `DebugPrinter` from `ASMMixinCompiler.scala`, leaving the compiler algorithms for later.

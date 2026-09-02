@@ -18,6 +18,7 @@ and `JAVA_MIGRATION_CONSUMER_AUDIT.md` before extending this list.
 | `NormalOcclusionTest.apply(Traversable, Traversable)` | Materializes both inputs into Java lists before testing instead of nested Scala `forall`. Finite, side-effect-free collections give the same result; eager traversal can change side effects, failure timing and termination for unusual inputs. |
 | `MultipartRenderer` dynamic-part guard | Uses short-circuit `\|\|` instead of `\|`; the second getter is no longer evaluated when the first operand succeeds. Ordinary getters give the same render decision. |
 | `ControlKeyModifer.map()` | The exposed Java map has no Scala default-value wrapper: an absent key returns null from `get`, not false from Scala `apply`. Use `isControlDown` for the unchanged absent-means-false behavior. |
+| Public companion constructors, including `ASMImplicits.ExtBitSet$` / `ExtClass$` | Explicit construction creates an independent instance instead of replacing `MODULE$`. Java initializes the retained final module field in its static initializer; use `MODULE$` for singleton identity. |
 
 Concrete collection implementations also change without changing the declared `java.lang.Iterable`/`List` contracts:
 
@@ -125,6 +126,9 @@ Previously compiled calls to **retained** `$class` bridges still link. This does
   recipes, packet handlers, materials and generators). Static calls alone do not supply a singleton value.
 - Object-application sugar becomes explicit `.apply(...)`, e.g. `NormalOcclusionTest.apply(...)` and
   `MicroblockPlacement$.MODULE$.apply(...)`.
+- `ASMImplicits` no longer provides Scala implicit/value-class syntax. Use `nodeName(clazz.getName)` and
+  `ExtBitSet$.MODULE$.copy$extension(bits)` explicitly, or construct its retained Java wrappers. Existing boxed and
+  `$extension` binary entry points remain; implicit conversion requires Scala metadata Java cannot emit.
 - Scala property assignment needs the explicit Java-authored `_$eq(...)` method, e.g. `renderID`, `loadingWorld`,
   `angelicaCompat` and microblock `shape`.
 - `tile.partList(i)` becomes `tile.partList.apply(i)`. Static bounds getters on Face, Corner, Edge and Post factories
