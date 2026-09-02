@@ -1316,3 +1316,18 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   137 signature/compiler types have identical disassembly. Removing two private parent-traversal closures reduces
   the packaged inventory from 462 to 460 classes. `multipart/asm/MultipartMixinFactory.scala` is next, with the
   signature model and compiler algorithms still reserved for later targets.
+- Ported `MultipartMixinFactory` to a Java facade/companion pair, retaining all ten facade methods, the singleton,
+  both public callback overrides and the two companion-only mangled helpers. No other production source needed an
+  adjustment. The compiler, signature model and stack analyser remain unchanged.
+- Preserved the non-transient-field snapshot, existing `copyFrom` guard, generated delegate binding/removal,
+  single-implementor gate, inherited-method override precedence, names, logging and registration order. The method
+  collector retains Scala's immutable map and ordered inherited-entry buffer, preserving emitted method order;
+  the public bridge helper still updates its supplied `ObjectRef` before emitting instructions. `onCompiled` keeps
+  the side-safe `MultipartGenerator$.MODULE$` call.
+- No tests were added, per the current user instruction. Formatting/checkstyle/build passes all 276 existing JVM
+  tests; Java 8 Forge passes all 116 tests, including pass-through delegation/copying and the frozen Scala consumer.
+  Both Java 8 public surfaces match the saved `13ec2f5` reference. All 39 generated dump names and SHA-256 hashes
+  match, and all 185 retained compiler/model/base-factory/generator types have identical disassembly. Only five
+  private closures disappear, reducing the packaged inventory from 460 to 455 classes. The existing ledger row now
+  describes the retained Java forwarders; no new divergence was added. `multipart/asm/ScalaSignature.scala` is next
+  as the remaining parser/nested-model unit, with ASM compiler algorithm changes still deferred.

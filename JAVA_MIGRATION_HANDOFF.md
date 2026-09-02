@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 162 commits including the API-cleanup plan, divergence-log cleanup and ports
-through `ASMMixinFactory`.
+Branch: `algent/java`. Base: `master`. 163 commits including the API-cleanup plan, divergence-log cleanup and ports
+through `MultipartMixinFactory`.
 
 ## The one rule that matters
 
@@ -278,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-203 Java files, 10 Scala files, 2,170 Scala lines left (non-blank; that is the metric this figure has always used).
+205 Java files, 9 Scala files, 1,933 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -586,17 +586,26 @@ closure disappears, reducing the packaged inventory from 463 to 462 classes. Exi
 `ASMMixinFactory` is now Java. Its Scala `Seq` boundaries, synchronized construction, copied BitSet cache keys,
 generated-name sequence, registration order and both trait-registration paths remain. The callbacks declared
 `protected` in Scala are public in the reference bytecode and remain public, as do both mangled parent helpers.
-All existing callable surfaces match the reference; the retained Scala `MultipartMixinFactory` emits four additional
+All existing callable surfaces match the reference; the then-Scala `MultipartMixinFactory` emitted four additional
 static forwarders, recorded in the ledger. Its companion and five closures, both generator companions and all 137
 signature/compiler types have identical disassembly. All 39 generated dump names and contents match, and the existing
 276 JVM / 116 Forge tests pass unchanged. Removing two private parent-traversal closures reduces the packaged
 inventory from 462 to 460 classes. No tests were added.
 
-**Next: `multipart/asm/MultipartMixinFactory.scala`.** Port this facade/companion pair before the larger nested
-signature model. Preserve the current public surface (including the four new static forwarders), constructor,
-side-safe `onCompiled` callback, non-transient-field `copyFrom` generation and pass-through bytecode. Keep method
-collection/override order, generated names, missing-interface logging and registration order; compare generated dumps
-against a saved reference. Leave the signature model and compiler algorithms unchanged.
+`MultipartMixinFactory` is now a Java facade/companion pair. Both public surfaces remain exact, including the four
+forwarders added by the previous port and the two companion-only mangled helpers. Non-transient-field copying,
+existing `copyFrom` detection, inherited-interface precedence and pass-through instruction order remain unchanged.
+Scala's immutable map still determines method traversal order, and `onCompiled` retains the side-safe generator
+companion call. All 39 generated dump names and contents match the reference; all 185 retained compiler, signature,
+stack-analyser, base-factory and generator types have identical disassembly. The existing 276 JVM / 116 Forge tests
+pass unchanged. Removing five private closures reduces the packaged inventory from 460 to 455 classes. No tests were
+added, and no new compatibility divergence was introduced.
+
+**Next: `multipart/asm/ScalaSignature.scala`.** The remaining parser and its nested model form a larger compatibility
+unit. Preserve nested binary names, case-class/companion surfaces, outer-instance bindings, flags and literal
+decoding, Scala collections and annotation parsing. Keep ProjectRed's external Scala-trait path working; compare
+generated dumps against a saved reference. Leave `StackAnalyser` and the ASM compiler algorithms unchanged apart
+from necessary source-call adjustments.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
