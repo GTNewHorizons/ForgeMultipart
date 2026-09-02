@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 150 commits including the API-cleanup plan and separate characterization and
-port commits through the multipart generator.
+Branch: `algent/java`. Base: `master`. 152 commits including the API-cleanup plan and separate characterization and
+port commits through the scratch bit-set helper.
 
 ## The one rule that matters
 
@@ -67,7 +67,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **262 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **266 plain-JVM tests and 116 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -272,7 +272,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-191 Java files, 14 Scala files, 2,588 Scala lines left (non-blank; that is the metric this figure has always used).
+193 Java files, 13 Scala files, 2,571 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -527,7 +527,7 @@ trait/helper disassembly is bytecode-identical; only the private shrink traversa
 load-bearing static `MicroOcclusion.recalcBounds(JMicroShrinkRender, Cuboid6)` call remains exact.
 
 The microblock generator is now a Java facade, companion and real nested material interface over the unchanged Scala
-`ASMMixinFactory` and `ScratchBitSet`. Three plain-JVM cases freeze all three runtime surfaces, scratch replacement
+`ASMMixinFactory` and the now-Java `ScratchBitSet`. Three plain-JVM cases freeze all three runtime surfaces, scratch replacement
 and clearing, and the load-bearing call opcodes. One Forge case covers the previously missing full path from an
 `IGeneratedMaterial` callback through registered external Scala-trait initialization and dispatch. The runtime class
 list and all callable public descriptors remain exact for ProjectRed and GuideNH.
@@ -538,9 +538,15 @@ and failed registration, scratch clearing, registered-class snapshots, generated
 downgrades, vanilla torch conversion and a frozen Scala consumer. The generator compiler is unchanged: its callback
 merely spells `MultipartGenerator$.MODULE$` explicitly. Six private Scala closures disappear.
 
-**Next: `multipart/asm/ScratchBitSet.scala`.** Both implementors are now Java, so this is a small, isolated support
-trait before the compiler work. Preserve its public mangled getter/setter and existing helper linkage, and freeze
-per-thread isolation, lazy allocation, clearing and setter replacement. Do not combine it with `ASMMixinFactory`.
+`ScratchBitSet` is now a Java interface and `$class` implementation helper. Its four abstract interface methods and
+three helper statics remain exact. Four plain-JVM cases freeze lazy allocation, owner/thread isolation, reuse,
+replacement/reinitialization and override dispatch. Neither generator needed a source change, and no emitted class
+disappears. The existing Forge generator fixtures remain green.
+
+**Next: `multipart/asm/ByteCodecs.scala`.** This standalone byte codec can be characterized and ported without
+changing trait registration or the signature parser. Freeze golden byte vectors, all 7/8-bit remainder cases,
+zero escaping, in-place mutation, malformed-input behavior and the documented extra decoded padding byte before
+changing it. Keep its Scala-signature callers and the external Scala-trait Forge fixtures unchanged.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
@@ -548,7 +554,7 @@ before their Java mixin inputs are safe; do not bypass those prerequisites by fl
 narrow generator relaxation: Java-trait parent linearization, explicit field-accessor recognition, and exclusion of
 transient runtime caches from generated copying.
 
-**Phase 6/7, last.** The retained generated microblock traits and all of `multipart/asm/`.
+**Phase 6/7, last.** The retained generated microblock traits and the remaining Scala in `multipart/asm/`.
 Keep the ASM compiler last, apart from the prerequisite fixes needed by those traits; freeze generated-class fixtures
 before changing it.
 

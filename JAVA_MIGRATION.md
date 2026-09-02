@@ -1221,3 +1221,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 262 plain-JVM tests and the Java 8 Forge server passes all 116 tests. Both supported public
   surfaces match the reference. `multipart/asm/ScratchBitSet.scala` is the next isolated support target; the generated
   microblock traits still require the documented abstract-Java-mixin and side-only-member prerequisites.
+- Characterized `ScratchBitSet` against untouched Scala. Four plain-JVM cases freeze the exact interface/helper
+  surface, lazy allocation, repeated accessor calls, owner/thread isolation, bit preservation/clearing, storage
+  replacement/reinitialization and `freshBitSet` dispatch through an overridden `getBitSet`.
+- Ported the interface and `$class` helper directly to Java without changing either generator. All seven callable
+  methods, their abstract/static modifiers and both binary names remain exact; no new API or default methods are
+  introduced. Neither downstream audit contains a reference to this support trait.
+- A clean build passes all 266 plain-JVM tests and the Java 8 Forge server passes all 116 tests. The two-type ABI and
+  both generator companions' disassembly match the reference. `multipart/asm/ByteCodecs.scala` is next as an isolated
+  codec port, leaving signature parsing and trait compilation for separate targets.

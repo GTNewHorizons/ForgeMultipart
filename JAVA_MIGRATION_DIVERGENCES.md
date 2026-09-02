@@ -3093,3 +3093,42 @@ a `LinkedHashSet`; part iteration uses the existing Scala iterator without extra
 - Java 8 Forge dedicated-server suite: 116 tests, 0 failures, 0 errors.
 - Raw `javap` comparison confirms identical callable public names/descriptors and the expected six-closure removal.
 - Real client conversion packets/render rebinding and GuideNH/Schematica previews remain manual checkpoints.
+
+## 2026-09-02 — Scratch bit-set Java port
+
+`ScratchBitSet` and `ScratchBitSet$class` are now Java. The multipart and microblock generator companions continue
+using the same interface, storage accessors and helper calls without any source changes.
+
+### Observable behavior
+
+No known runtime divergence. Initialization installs a new ordinary `ThreadLocal` through the public setter; the
+first read on each thread lazily allocates a `BitSet`, and subsequent reads reuse it without clearing. Each owner and
+thread has independent storage. `freshBitSet` clears and returns the same set via the owner's virtual `getBitSet`,
+preserving overrides instead of directly calling the helper's implementation.
+
+The lazy-allocation path still reads the storage accessor twice. Public setter replacement and repeated `$init$`
+calls still replace storage, without eagerly allocating a set or clearing the previous storage's contents.
+
+### ABI and source compatibility
+
+The interface retains its four abstract methods, including the exact mangled getter and raw `ThreadLocal` setter.
+The abstract helper class retains all three static methods and their descriptors. Neither type acquires fields,
+and both generator companions have unchanged `javap -p -c -s` output. Neither downstream audit identifies a direct
+consumer of this trait, so no new frozen Scala consumer is needed.
+
+Accepted classfile differences are removed Scala marker/signature attributes and a private Java helper constructor
+(the original helper had no constructor). Recompiled Scala can no longer inherit implementations merely by mixing
+in this Java interface: it must implement the methods and initialize storage explicitly, as the existing Java
+generator companions do. Previously compiled helper calls retain their binary entry points.
+
+### Compiler artifacts
+
+None. The reference and port jars contain the same two `ScratchBitSet` classes.
+
+### Validation
+
+- `ScratchBitSetCharacterizationTest`: 4 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 266 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 116 tests, 0 failures, 0 errors, including both generator families.
+- Raw `javap` comparison confirms the same public names, descriptors, modifiers and class list.
+- No new manual checkpoint; existing generator/client integration checks remain on the checklist.
