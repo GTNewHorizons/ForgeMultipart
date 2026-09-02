@@ -12,8 +12,12 @@ import ASMImplicits._
 
 import scala.collection.JavaConversions._
 
-object MultipartMixinFactory extends ASMMixinFactory(classOf[TileMultipart]) {
-  override protected def autoCompleteJavaTrait(cnode: ClassNode) {
+object MultipartMixinFactory
+    extends ASMMixinFactory[TileMultipart](
+      classOf[TileMultipart],
+      scala.Predef.wrapRefArray(new Array[Class[_]](0))
+    ) {
+  override def autoCompleteJavaTrait(cnode: ClassNode) {
     val copyFields = cnode.fields.filter(f => (f.access & ACC_TRANSIENT) == 0)
     if (
       !copyFields.isEmpty && findMethod(
@@ -241,7 +245,7 @@ object MultipartMixinFactory extends ASMMixinFactory(classOf[TileMultipart]) {
     return tname
   }
 
-  override protected def onCompiled(
+  override def onCompiled(
       clazz: Class[_ <: TileMultipart],
       traitSet: BitSet
   ) =

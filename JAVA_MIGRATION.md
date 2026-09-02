@@ -1299,3 +1299,20 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   JVM tests; Java 8 Forge passes all 116 tests, including external Scala-trait generation. All 39 generated dump names
   and SHA-256 hashes match the reference. No new ledger entry is needed. `multipart/asm/ASMMixinFactory.scala` is next
   as a single factory port before the larger nested signature model and compiler.
+
+### 2026-09-02
+
+- Ported `ASMMixinFactory` directly to Java, retaining the Scala `Seq` constructor/argument descriptors, all six
+  fields, synchronized construction, live parameter conversion, copied cache keys, generated-name sequence and both
+  Scala- and Java-trait registration paths. Parent validation and callback/registration order remain unchanged;
+  reflection failures escape as the same exceptions without adding checked exceptions to the public methods.
+- Kept the reference's public JVM callbacks and both public mangled parent helpers. The retained Scala subclass
+  needs only an explicit empty parameter sequence and public override syntax. Its companion and five closure types
+  have identical disassembly; Scala adds four static facade forwarders without changing any existing entry. The
+  ledger records that additive surface and the Scala-source syntax changes.
+- No tests were added, per the current user instruction. Clean formatting/checkstyle/build passes all 276 existing
+  JVM tests; Java 8 Forge passes all 116 tests, including the external Scala-trait and generated-tile fixtures. All
+  39 generated dump names and SHA-256 hashes match the saved `f7be2b1` reference. Both generator companions and all
+  137 signature/compiler types have identical disassembly. Removing two private parent-traversal closures reduces
+  the packaged inventory from 462 to 460 classes. `multipart/asm/MultipartMixinFactory.scala` is next, with the
+  signature model and compiler algorithms still reserved for later targets.

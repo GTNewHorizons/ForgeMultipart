@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 161 commits including the API-cleanup plan, divergence-log cleanup and ports
-through `ScalaSigReader`.
+Branch: `algent/java`. Base: `master`. 162 commits including the API-cleanup plan, divergence-log cleanup and ports
+through `ASMMixinFactory`.
 
 ## The one rule that matters
 
@@ -278,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-202 Java files, 11 Scala files, 2,254 Scala lines left (non-blank; that is the metric this figure has always used).
+203 Java files, 10 Scala files, 2,170 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -532,8 +532,8 @@ transparency decisions, render masks, traversal ranges and the complete trait de
 trait/helper disassembly is bytecode-identical; only the private shrink traversal closure disappears. WR-CBE's
 load-bearing static `MicroOcclusion.recalcBounds(JMicroShrinkRender, Cuboid6)` call remains exact.
 
-The microblock generator is now a Java facade, companion and real nested material interface over the unchanged Scala
-`ASMMixinFactory` and the now-Java `ScratchBitSet`. Three plain-JVM cases freeze all three runtime surfaces, scratch replacement
+The microblock generator is now a Java facade, companion and real nested material interface over the now-Java
+`ASMMixinFactory` and `ScratchBitSet`. Three plain-JVM cases freeze all three runtime surfaces, scratch replacement
 and clearing, and the load-bearing call opcodes. One Forge case covers the previously missing full path from an
 `IGeneratedMaterial` callback through registered external Scala-trait initialization and dispatch. The runtime class
 list and all callable public descriptors remain exact for ProjectRed and GuideNH.
@@ -583,11 +583,20 @@ identical disassembly, and all 39 Forge-suite dump names and contents match. Onl
 closure disappears, reducing the packaged inventory from 463 to 462 classes. Existing suites remain at 276 JVM and
 116 Forge tests; no tests were added.
 
-**Next: `multipart/asm/ASMMixinFactory.scala`.** Port this single factory before the larger nested signature model.
-Preserve its Scala `Seq` constructor/argument boundaries, protected callbacks, synchronized construction, copied
-BitSet cache keys, generated-name sequence and registration/parent-validation order. Keep both Scala- and Java-trait
-registration paths and the existing maps. Leave `MultipartMixinFactory`, the signature model and compiler algorithms
-unchanged apart from necessary source-call adjustments.
+`ASMMixinFactory` is now Java. Its Scala `Seq` boundaries, synchronized construction, copied BitSet cache keys,
+generated-name sequence, registration order and both trait-registration paths remain. The callbacks declared
+`protected` in Scala are public in the reference bytecode and remain public, as do both mangled parent helpers.
+All existing callable surfaces match the reference; the retained Scala `MultipartMixinFactory` emits four additional
+static forwarders, recorded in the ledger. Its companion and five closures, both generator companions and all 137
+signature/compiler types have identical disassembly. All 39 generated dump names and contents match, and the existing
+276 JVM / 116 Forge tests pass unchanged. Removing two private parent-traversal closures reduces the packaged
+inventory from 462 to 460 classes. No tests were added.
+
+**Next: `multipart/asm/MultipartMixinFactory.scala`.** Port this facade/companion pair before the larger nested
+signature model. Preserve the current public surface (including the four new static forwarders), constructor,
+side-safe `onCompiled` callback, non-transient-field `copyFrom` generation and pass-through bytecode. Keep method
+collection/override order, generated names, missing-interface logging and registration order; compare generated dumps
+against a saved reference. Leave the signature model and compiler algorithms unchanged.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

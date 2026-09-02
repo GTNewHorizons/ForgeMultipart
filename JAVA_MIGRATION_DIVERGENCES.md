@@ -75,6 +75,7 @@ Other retained `$class` bridges and `MODULE$` companions are not covered by this
 | `MicroMaterialRegistry` | Static `setupIDMap`, `calcMaxCuttingStrength` and `loadIcons` forwarders |
 | `PacketScheduler` / `TScheduledPacketPart` | Static `sendScheduled()` on the facade and `readMask(part, packet)` on the interface |
 | `TileMultipart` | No-op `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
+| `MultipartMixinFactory` | Four additional Scala-generated static forwarders: `onCompiled`, `autoCompleteJavaTrait` and the two mangled `ASMMixinFactory` parent helpers. Java must expose the base members at their original public JVM access, so Scala now forwards them too; existing facade entries are unchanged. |
 
 Previously abstract JVM interface methods now have Java defaults, allowing inheritance without Scala forwarders:
 
@@ -133,6 +134,9 @@ Previously compiled calls to **retained** `$class` bridges still link. This does
   `angelicaCompat` and microblock `shape`.
 - `ByteCodeReader.advance(length)(value)` becomes `advance(length, value)` when recompiling Scala. Argument
   evaluation remains eager, and previously compiled calls retain the same binary descriptor.
+- `ASMMixinFactory` constructor parameters and `construct` arguments need an explicit Scala `Seq`, not Scala
+  varargs syntax. Overrides of `onCompiled` and `autoCompleteJavaTrait` must be public: Java preserves their original
+  public JVM access without Scala's protected-source metadata.
 - `tile.partList(i)` becomes `tile.partList.apply(i)`. Static bounds getters on Face, Corner, Edge and Post factories
   need `aBounds()(index)` instead of `aBounds(index)`; Java no-argument methods may need explicit parentheses.
 - `TileMultipart.getOrConvertTile2` exposes `Tuple2<TileMultipart, Object>` instead of a Scala-typed Boolean second
