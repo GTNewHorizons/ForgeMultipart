@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 163 commits including the API-cleanup plan, divergence-log cleanup and ports
-through `MultipartMixinFactory`.
+Branch: `algent/java`. Base: `master`. 164 commits including the API-cleanup plan, divergence-log cleanup and ports
+through the `ScalaSignature` parser extraction.
 
 ## The one rule that matters
 
@@ -278,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-205 Java files, 9 Scala files, 1,933 Scala lines left (non-blank; that is the metric this figure has always used).
+206 Java files, 9 Scala files, 1,883 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -601,11 +601,18 @@ stack-analyser, base-factory and generator types have identical disassembly. The
 pass unchanged. Removing five private closures reduces the packaged inventory from 460 to 455 classes. No tests were
 added, and no new compatibility divergence was introduced.
 
-**Next: `multipart/asm/ScalaSignature.scala`.** The remaining parser and its nested model form a larger compatibility
-unit. Preserve nested binary names, case-class/companion surfaces, outer-instance bindings, flags and literal
-decoding, Scala collections and annotation parsing. Keep ProjectRed's external Scala-trait path working; compare
-generated dumps against a saved reference. Leave `StackAnalyser` and the ASM compiler algorithms unchanged apart
-from necessary source-call adjustments.
+The `ScalaSignature` table/name decoder, most tag evaluation, collection and symbol lookups are now implemented in
+the package-private Java `ScalaSignatureParser`. The nested model remains in Scala: its primitive literal case classes
+publish both primitive `value()` methods and erased `Object value()` bridges, which Java source cannot declare
+together, and Java misreads the outer parameter in five Scala 2.11 generic inner constructors. Those construction
+branches also remain in Scala. Moving the model needs an explicit bytecode-bridge strategy; do not lose those methods
+or outer-instance bindings merely to reduce the Scala count.
+
+**Next: `multipart/asm/StackAnalyser.scala`.** Treat its analyser control flow and nested model separately if the same
+Java-source limitations appear. Preserve every nested binary name, constructor, outer/implicit instruction binding,
+case-class surface, mutable Scala collection descriptor and the current opcode behavior (including its existing
+primitive-cast and `NEWARRAY` limitations). Keep `ASMMixinCompiler` algorithms unchanged and compare all generated
+dumps against a saved reference.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

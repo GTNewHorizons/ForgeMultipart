@@ -1331,3 +1331,18 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   private closures disappear, reducing the packaged inventory from 460 to 455 classes. The existing ledger row now
   describes the retained Java forwarders; no new divergence was added. `multipart/asm/ScalaSignature.scala` is next
   as the remaining parser/nested-model unit, with ASM compiler algorithm changes still deferred.
+- Extracted `ScalaSignature` table decoding, name and literal evaluation, collection and object/class lookup into one
+  package-private Java helper. The Scala shell retains the complete nested model and five generic construction
+  branches. That boundary is required: primitive literal case classes expose both primitive and erased `Object`
+  `value()` methods, which Java cannot declare together, while Java misreads the outer parameter in five Scala 2.11
+  generic inner constructors. A full model port is deferred until it has an explicit bridge strategy.
+- The parser keeps direct case-class construction, path-dependent return types, Scala `List`/`IndexedSeq`/`Option`
+  results, table mutation behavior, annotation grouping, signed literal conversion and the existing partial tag
+  interpretation. All 69 retained signature types' public names, descriptors and generic declarations match the saved
+  `1ad2b0f` reference. The disassembly of 188 otherwise unchanged model, compiler, analyser, factory and generator
+  types is identical; all 39 generated dump names and SHA-256 hashes also match.
+- No tests were added, per the current user instruction. Formatting/checkstyle/build passes all 276 existing JVM
+  tests and Java 8 Forge passes all 116 tests, including the external Scala-trait path. Four private parser/lookup
+  closures are replaced by one Java helper, reducing the packaged inventory from 455 to 452 classes and leaving 206
+  Java files plus 9 Scala files / 1,883 nonblank Scala lines. No new compatibility divergence needs a ledger entry.
+  `multipart/asm/StackAnalyser.scala` is the next bounded target; keep its control flow and nested model separable.
