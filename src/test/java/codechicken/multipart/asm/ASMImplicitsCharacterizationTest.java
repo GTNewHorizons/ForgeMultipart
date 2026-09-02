@@ -155,6 +155,9 @@ class ASMImplicitsCharacterizationTest {
 
     @Test
     void boxedValueClassesKeepValueEqualityAndNullHashFailures() {
+        TrackingBitSet shared = new TrackingBitSet();
+        assertTrue(new ASMImplicits.ExtBitSet(shared).equals(new ASMImplicits.ExtBitSet(shared)));
+        assertEquals(1, shared.equalsCalls, "Even identical non-null values dispatch BitSet.equals");
         BitSet value = bits(1, 65);
         ASMImplicits.ExtBitSet wrapper = new ASMImplicits.ExtBitSet(value);
         assertEquals(wrapper, new ASMImplicits.ExtBitSet(bits(1, 65)));
@@ -225,6 +228,13 @@ class ASMImplicitsCharacterizationTest {
     private static class TrackingBitSet extends BitSet {
 
         private String calls = "";
+        private int equalsCalls;
+
+        @Override
+        public boolean equals(Object other) {
+            equalsCalls++;
+            return super.equals(other);
+        }
 
         @Override
         public void clear() {
