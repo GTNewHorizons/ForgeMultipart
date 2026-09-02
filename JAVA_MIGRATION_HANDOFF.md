@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 158 commits including the API-cleanup plan, divergence-log cleanup and separate
-characterization and port commits through the ASM implicit helpers.
+Branch: `algent/java`. Base: `master`. 159 commits including the API-cleanup plan, divergence-log cleanup and ports
+through `DebugPrinter`.
 
 ## The one rule that matters
 
@@ -23,6 +23,10 @@ must link; the source-level audit is the authority on behavior, serialized data,
 ## Workflow per type
 
 Followed for every port so far. It has caught three real ABI breaks that inspection missed.
+
+**Current user instruction: do not add tests unless requested.** The characterization-first workflow below describes
+the prior approach, not permission to add tests. Without that request, save a pre-port reference jar and use the
+existing suites plus ABI/output comparisons, as for `DebugPrinter`.
 
 1. **Characterize first, commit separately.** Write tests against the untouched Scala and confirm they pass. Commit as
    `test: characterize X` before touching the implementation.
@@ -274,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-197 Java files, 11 Scala files, 2,352 Scala lines left (non-blank; that is the metric this figure has always used).
+199 Java files, 11 Scala files, 2,316 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -558,10 +562,17 @@ the packaged class inventory and the multipart generator companion's disassembly
 explicit helper calls; normal calls retain the same results. The ledger records Java's public-companion constructor
 publication difference as well.
 
-**Next: `DebugPrinter` in `multipart/asm/ASMMixinCompiler.scala`.** Extract the diagnostic singleton without changing
-the compiler itself. Characterize configuration gating, initial directory cleanup, dump naming/content and the
-16,000-byte logging threshold first. Isolate file-writing checks in temporary directories so they cannot purge real
-debug output. Keep the facade/companion boundary and make only required source-call adjustments in the compiler.
+`DebugPrinter` is now a Java facade and companion. Both public surfaces match the pre-port jar. Configuration gating,
+non-recursive startup cleanup, slash-to-hash dump naming and the 16,000-byte logging threshold are retained. All 39
+Forge-suite dump names and contents plus all six ordered byte-count log messages match the reference. With dumping
+disabled, the same suite leaves dump contents and timestamps untouched while still logging the byte counts; the
+original local setting was restored. No tests were added. All 64 compiler types have identical disassembly after
+normalizing private closure renumbering; removing the cleanup closure reduces the packaged inventory from 464 to 463.
+
+**Next: `ByteCodeReader` in `multipart/asm/ScalaSignature.scala`.** Extract this small reader before the signature
+model or compiler. Preserve its mutable position accessors, generic `advance(int, A)` boundary, eager argument
+evaluation, signed-byte/natural-number decoding, default-charset string construction and existing unchecked failures.
+Keep the `ScalaSignature.Bytes` boundary and leave the signature model, codec and compiler algorithms unchanged.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

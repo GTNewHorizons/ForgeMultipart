@@ -10,56 +10,13 @@ import org.objectweb.asm.Type
 import org.objectweb.asm.MethodVisitor
 import Type._
 import codechicken.lib.asm.ASMHelper._
-import codechicken.lib.asm.{
-  InsnListSection,
-  InsnComparator,
-  ASMHelper,
-  ObfMapping
-}
-import java.io.File
+import codechicken.lib.asm.{InsnListSection, InsnComparator, ObfMapping}
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import net.minecraft.launchwrapper.LaunchClassLoader
-import codechicken.multipart.handler.MultipartProxy
 import cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper
-import org.apache.logging.log4j.LogManager
 import ASMImplicits._
 import cpw.mods.fml.relauncher.FMLLaunchHandler
-
-object DebugPrinter {
-  val debug = MultipartProxy.config
-    .getTag("debug_asm")
-    .getBooleanValue(!ObfMapping.obfuscated)
-  val logger = LogManager.getLogger("Multipart ASM")
-
-  private var permGenUsed = 0
-  val dir = new File("asm/multipart")
-  if (debug) {
-    if (!dir.exists)
-      dir.mkdirs()
-    for (file <- dir.listFiles)
-      file.delete
-  }
-
-  def dump(name: String, bytes: Array[Byte]) {
-    if (debug)
-      ASMHelper.dump(
-        bytes,
-        new File(dir, name.replace('/', '#') + ".txt"),
-        false,
-        false
-      )
-  }
-
-  def defined(name: String, bytes: Array[Byte]) {
-    if ((permGenUsed + bytes.length) / 16000 != permGenUsed / 16000)
-      logger.debug(
-        (permGenUsed + bytes.length) + " bytes of permGen has been used by ASMMixinCompiler"
-      )
-
-    permGenUsed += bytes.length
-  }
-}
 
 object ASMMixinCompiler {
   val cl = getClass.getClassLoader.asInstanceOf[LaunchClassLoader]
@@ -86,7 +43,7 @@ object ASMMixinCompiler {
 
   def define(name: String, bytes: Array[Byte]) = {
     internalDefine(name, bytes)
-    DebugPrinter.defined(name, bytes)
+    DebugPrinter$.MODULE$.defined(name, bytes)
 
     try {
       m_defineClass
@@ -131,7 +88,7 @@ object ASMMixinCompiler {
     val name = nodeName(name$)
     traitByteMap.put(name, bytes)
     remClassInfo(name)
-    DebugPrinter.dump(name, bytes)
+    DebugPrinter$.MODULE$.dump(name, bytes)
   }
 
   def classNode(name$ : String) = {
@@ -492,11 +449,13 @@ object ASMMixinCompiler {
 
     val c = define(name, createBytes(cnode, 0))
 
-    DebugPrinter.logger.debug(
-      "Generation [" + superClass + " with " + traits.mkString(
-        ", "
-      ) + "] took " + (System.currentTimeMillis - startTime) + "ms"
-    )
+    DebugPrinter$.MODULE$
+      .logger()
+      .debug(
+        "Generation [" + superClass + " with " + traits.mkString(
+          ", "
+        ) + "] took " + (System.currentTimeMillis - startTime) + "ms"
+      )
     c
   }
 

@@ -1263,3 +1263,15 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   helpers have Java source markers and Java 8 class versions; compiler/factory public descriptors and the full
   464-class packaged inventory match the reference. `MultipartGenerator$` disassembly is unchanged. The next bounded
   target is extracting `DebugPrinter` from `ASMMixinCompiler.scala`, leaving the compiler algorithms for later.
+- Extracted `DebugPrinter` into a Java facade and companion, retaining all five methods on each and the companion
+  singleton field. Configuration/default gating, immediate-child cleanup, dump paths/content and the 16,000-byte
+  logging threshold are unchanged. Only three compiler call sites explicitly name `DebugPrinter$.MODULE$`.
+- Per the current user instruction, no tests were added. A clean formatting/checkstyle/build passes all 276 existing
+  plain-JVM tests; the Java 8 Forge suite passes all 116 tests with dumping both enabled and disabled. Against the
+  saved `1faf0dd` baseline, all 39 generated dump filenames and SHA-256 hashes and all six ordered byte-count messages
+  match. The disabled run leaves the existing dump contents and modification times untouched and retains those log
+  messages. Restored the original local `debug_asm=true` setting afterward.
+- Both converted types have Java source markers and Java 8 class versions, and all callable public names/descriptors
+  match. Removing the private cleanup closure shifts the compiler's private closure numbering; all 64 compiler types'
+  disassembly matches after that renaming alone. The packaged inventory drops from 464 to 463 classes. No new
+  divergence needs a ledger entry. `ByteCodeReader` in `multipart/asm/ScalaSignature.scala` is the next isolated target.
