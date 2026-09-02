@@ -2997,3 +2997,50 @@ inventory contains no reference to it.
 - Raw `javap` comparison confirms identical callable public names/descriptors for all seven supported types and
   bytecode-identical retained trait/helper disassembly.
 - Actual neighbour-driven shrink and render-bound refresh remain on the manual checklist.
+
+## 2026-09-02 — Microblock generator Java port
+
+The `MicroblockGenerator` facade, companion and nested `IGeneratedMaterial` interface are now Java. The companion
+still extends the unchanged Scala `ASMMixinFactory<Microblock>` and implements the unchanged Scala `ScratchBitSet`;
+all ScalaSignature parsing, Scala-trait registration and generated-class compilation remain in the original ASM
+subsystem.
+
+### Observable behavior
+
+No known runtime divergence. Each `create` still clears and reuses the current thread's scratch `BitSet`, selects the
+microblock class's base trait, adds the client trait only for client construction, then lets an
+`IGeneratedMaterial` amend that same set before construction. The material ID remains a boxed `Integer` in the sole
+generated constructor argument.
+
+The public scratch setter remains behaviorally replaceable despite being a compiler-oriented trait member. The
+Forge fixture proves an external material receives only the expected initial base bit, adds a registered third-party
+Scala trait, and produces a generated microblock with that trait's initialized state and dispatch.
+
+### ABI and reflection compatibility
+
+The facade, companion and nested material interface retain the same three binary names, hierarchy and callable
+public names/descriptors. `IGeneratedMaterial` remains a real public static member of `MicroblockGenerator`; the
+original pure abstract Scala trait emitted no `$class` helper, so none is removed.
+
+ProjectRed's load-bearing `MicroblockGenerator$.registerTrait(Class): int` call remains exact, and the unchanged
+`ASMMixinFactory` still recognizes and compiles its external `LightMicroblock` Scala trait. GuideNH's exact reflective
+`MicroblockGenerator$.create(MicroblockClass, int, boolean)` lookup also remains exact. All inherited static
+forwarders, including the Scala `Seq`-shaped `construct`, keep their raw descriptors and generic surface.
+
+Accepted classfile-only differences are the Java facade's private constructor, the ordinary non-public Java class
+initializer flag and removed Scala marker attributes. The private scratch `ThreadLocal` loses `ACC_FINAL`: Java
+cannot assign a final instance field through the required public Scala-trait setter, and preserving the setter's
+observable replacement behavior is more important than an unreferenced private modifier.
+
+### Compiler artifacts
+
+None. The clean reference and port jars contain the same three `MicroblockGenerator` classes.
+
+### Validation
+
+- `MicroblockGeneratorCharacterizationTest`: 3 plain-JVM tests, unchanged from the Scala baseline.
+- Clean complete plain-JVM suite: 260 tests, 0 failures, 0 errors.
+- Java 8 Forge dedicated-server suite: 111 tests, 0 failures, 0 errors, including material-driven addition,
+  initialization and dispatch of the external Scala microblock trait.
+- Raw `javap` comparison confirms the exact three-class list and identical callable public names/descriptors.
+- The existing ProjectRed illuminated-microblock row remains the full-pack/client manual checkpoint.

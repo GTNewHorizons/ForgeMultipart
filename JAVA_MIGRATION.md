@@ -1202,3 +1202,12 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - A clean build passes all 257 plain-JVM tests and the Java 8 Forge server passes all 110 tests. All seven supported
   public surfaces and WR-CBE's static `recalcBounds` descriptor match the reference. `microblock/MicroblockGenerator.scala`
   is next.
+- Characterized `MicroblockGenerator` against untouched Scala. Three plain-JVM cases freeze its facade, companion,
+  nested material interface, inherited `ASMMixinFactory`/`ScratchBitSet` shape, replaceable thread-local scratch state
+  and load-bearing calls. One Forge case freezes the complete material-added external Scala-trait path.
+- Ported the facade, companion and real public static nested `IGeneratedMaterial` interface directly to Java while
+  leaving the generator and ScalaSignature machinery unchanged. Scratch-bit reuse, base/client selection, material
+  callback ordering, boxed constructor argument and the ProjectRed Scala-trait registration path are unchanged.
+- A clean build passes all 260 plain-JVM tests and the Java 8 Forge server passes all 111 tests. The same three runtime
+  classes and every callable public descriptor match the reference, including ProjectRed's companion registration
+  and GuideNH's exact companion `create` method. `multipart/MultipartGenerator.scala` is next.
