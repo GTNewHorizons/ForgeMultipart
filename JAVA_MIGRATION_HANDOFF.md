@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 159 commits including the API-cleanup plan, divergence-log cleanup and ports
-through `DebugPrinter`.
+Branch: `algent/java`. Base: `master`. 160 commits including the API-cleanup plan, divergence-log cleanup and ports
+through `ByteCodeReader`.
 
 ## The one rule that matters
 
@@ -278,7 +278,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-199 Java files, 11 Scala files, 2,316 Scala lines left (non-blank; that is the metric this figure has always used).
+200 Java files, 11 Scala files, 2,286 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -569,10 +569,17 @@ disabled, the same suite leaves dump contents and timestamps untouched while sti
 original local setting was restored. No tests were added. All 64 compiler types have identical disassembly after
 normalizing private closure renumbering; removing the cleanup closure reduces the packaged inventory from 464 to 463.
 
-**Next: `ByteCodeReader` in `multipart/asm/ScalaSignature.scala`.** Extract this small reader before the signature
-model or compiler. Preserve its mutable position accessors, generic `advance(int, A)` boundary, eager argument
-evaluation, signed-byte/natural-number decoding, default-charset string construction and existing unchecked failures.
-Keep the `ScalaSignature.Bytes` boundary and leave the signature model, codec and compiler algorithms unchanged.
+`ByteCodeReader` is now Java, retaining its public constructor, nine methods, private fields and overridable dispatch.
+String reads use a clamped standard-library slice with the original default charset; numeric reads retain eager
+bounds-check ordering, signed-byte handling, overflow and Scala's null-to-zero unboxing through overridden `advance`.
+Only the position setter and two-argument `advance` syntax changed in the signature model. All 140 retained signature
+and compiler types have identical disassembly, the 463-class inventory is unchanged, and all 39 Forge-suite dump names
+and contents match the reference. Existing suites remain at 276 JVM and 116 Forge tests; no tests were added.
+
+**Next: `ScalaSigReader` in `multipart/asm/ScalaSignature.scala`.** Extract the facade/companion around annotation
+encoding and decoding before the signature model. Preserve both charsets, the exact byte slicing/packing, `write`'s
+returned previous annotation value and the first-match Scala `Option` lookup. Keep the signature model, byte codecs
+and compiler algorithms unchanged, with only required source-call adjustments.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

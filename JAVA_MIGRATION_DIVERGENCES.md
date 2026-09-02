@@ -131,6 +131,8 @@ Previously compiled calls to **retained** `$class` bridges still link. This does
   `$extension` binary entry points remain; implicit conversion requires Scala metadata Java cannot emit.
 - Scala property assignment needs the explicit Java-authored `_$eq(...)` method, e.g. `renderID`, `loadingWorld`,
   `angelicaCompat` and microblock `shape`.
+- `ByteCodeReader.advance(length)(value)` becomes `advance(length, value)` when recompiling Scala. Argument
+  evaluation remains eager, and previously compiled calls retain the same binary descriptor.
 - `tile.partList(i)` becomes `tile.partList.apply(i)`. Static bounds getters on Face, Corner, Edge and Post factories
   need `aBounds()(index)` instead of `aBounds(index)`; Java no-argument methods may need explicit parentheses.
 - `TileMultipart.getOrConvertTile2` exposes `Tuple2<TileMultipart, Object>` instead of a Scala-typed Boolean second

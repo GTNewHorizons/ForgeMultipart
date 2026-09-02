@@ -1275,3 +1275,15 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   match. Removing the private cleanup closure shifts the compiler's private closure numbering; all 64 compiler types'
   disassembly matches after that renaming alone. The packaged inventory drops from 464 to 463 classes. No new
   divergence needs a ledger entry. `ByteCodeReader` in `multipart/asm/ScalaSignature.scala` is the next isolated target.
+- Extracted `ByteCodeReader` to one Java source, retaining its public constructor, all nine methods and both private
+  fields. Accessor/reader calls remain virtual, the generic `advance(int, A)` call remains eager, and byte unboxing
+  retains Scala's null-to-zero behavior for overrides. String reads use a standard-library slice with the original
+  default charset and Scala `drop`/`take` clamping; signed-byte decoding, integer overflow and unchecked failures are
+  preserved. No signature-model or compiler algorithm changed.
+- No tests were added, per the current user instruction. A clean formatting/checkstyle/build passes all 276 existing
+  plain-JVM tests; Java 8 Forge passes all 116 tests, including external Scala-trait generation. All 39 generated dump
+  names and SHA-256 hashes match the saved `b45527e` reference.
+- The Java 8 packaged reader retains every callable public name/descriptor and the complete 463-class inventory is
+  unchanged. All 140 retained `ScalaSignature`, `ScalaSigReader` and `ASMMixinCompiler` types have identical
+  disassembly. Recompiled Scala uses `pos_$eq` and `advance(length, value)`; the latter source-syntax difference is
+  recorded in the ledger. `ScalaSigReader` in `multipart/asm/ScalaSignature.scala` is the next isolated target.

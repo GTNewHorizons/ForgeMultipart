@@ -44,12 +44,12 @@ class ScalaSignature(val bytes: Bytes) {
   val minor = bytes.arr(1).toInt
   val table = {
     val bcr = bytes.reader
-    bcr.pos = 2
+    bcr.pos_$eq(2)
     Array.tabulate(bcr.readNat) { i =>
       val start = bcr.pos
       val tpe = bcr.readByte
       val len = bcr.readNat
-      bcr.advance(len)(new SigEntry(i, start, Bytes(bytes.arr, bcr.pos, len)))
+      bcr.advance(len, new SigEntry(i, start, Bytes(bytes.arr, bcr.pos, len)))
     }
   }
 
@@ -299,43 +299,6 @@ class ScalaSignature(val bytes: Bytes) {
   def findObject(name: String) = collect[ObjectSymbol](7).find(_.full == name)
   def findClass(name: String) =
     collect[ClassSymbol](6).find(c => !c.isModule && c.full == name)
-}
-
-class ByteCodeReader(val bc: Bytes) {
-  var pos = bc.pos
-
-  def more = pos < bc.pos + bc.len
-
-  def readString(len: Int) =
-    advance(len)(new String(bc.arr.drop(pos).take(len)))
-
-  def readByte = advance(1)(bc.arr(pos))
-
-  def readNat = {
-    var r = 0
-    var b = 0
-    do {
-      b = readByte
-      r = r << 7 | b & 0x7f
-    } while ((b & 0x80) != 0)
-    r
-  }
-
-  def readLong = {
-    var l = 0L
-    while (more) {
-      l <<= 8
-      l |= readByte & 0xff
-    }
-    l
-  }
-
-  def advance[A](len: Int)(r: A) = {
-    if (pos + len > bc.pos + bc.len)
-      throw new IllegalArgumentException("Ran off the end of bytecode")
-    pos += len
-    r
-  }
 }
 
 object ScalaSigReader {
