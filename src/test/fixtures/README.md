@@ -156,3 +156,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouche
 (reference dev-jar SHA-256 `3dfb365ee96603dec74e22787ba17e324792410265b85afd103b07aa57ddf8f6`). Class-file
 SHA-256 is `710f925a5b4bd44e337672b6c4a3c7a0dddf0c5e31287989c4774c34cf628fa8`, stored as
 `src/test/resources/compat/ReferenceScalaBlockMicroMaterialConsumer.class.b64`.
+
+### `ReferenceScalaMultipartGeneratorConsumer`
+
+`scala/codechicken/multipart/compat/ReferenceScalaMultipartGeneratorConsumer.scala` calls
+`MultipartGenerator$.MODULE$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` and the
+one-argument `registerPassThroughInterface` companion method. GuideNH and Schematica depend on the former through
+reflection; shipping Scala consumers link directly to the companion registration path.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouched classes at `2f4972e`
+(reference dev-jar SHA-256 `69c0723afd70ab6208b97e5fab12062bfb28a941dfae12575c5d61274102ef6f`). Class-file
+SHA-256 is `b0f540b063bd6fffcc2a1462d72de1f31b4c8a68caa92ac9298dfdf18a9eb24f`, stored as
+`src/functionalTest/resources/compat/ReferenceScalaMultipartGeneratorConsumer.class.b64`.
