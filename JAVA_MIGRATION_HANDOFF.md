@@ -12,10 +12,10 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 180 commits including the API-cleanup plan, divergence-log cleanup, ports
-through ASM super-call lookup, and the ASM characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 183 commits including the API-cleanup plan, divergence-log cleanup, ports
+through side-only annotation filtering, and the ASM characterization backfill and review fixes.
 
-Review corrections are on `codex/tile-compatibility-fixes`, based on `fa008b8`, in the separate review worktree.
+The multipart review corrections (`5af333c`) are on `algent/java`; subsequent migration work continues in that branch.
 
 ## The one rule that matters
 
@@ -76,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **333 plain-JVM tests and 141 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 147 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -282,7 +282,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-209 Java files, 9 Scala files, 1,675 Scala lines left (non-blank; that is the metric this figure has always used).
+209 Java files, 9 Scala files, 1,664 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -748,12 +748,36 @@ client/release checks remain as documented. No additional migration target was p
 Clean formatting/checkstyle/build and Forge pass at 333 JVM / 141 Forge tests, zero failures/errors/skips. The clean
 jar retains the API and generated-output matches above, and all five `@Mod` versions match both packaged jars.
 
-**Next: `multipart/asm/ASMMixinCompiler.listSideOnly`, bounded to annotation filtering.** Characterize annotation
-selection, enum-side comparison, owner-name collection/deduplication and malformed/missing annotation values before
-extracting it. Use Forge where side/singleton initialization requires it and preserve the current decoder behavior.
-Keep composition/trait registration and rewriting separate, along with external Scala-trait support, retained
-metadata/stack models and `ScalaSignature` primitive/erased bridges. Save a fresh reference and compare generated
-dumps before expanding scope.
+`ASMMixinCompiler.listSideOnly` now delegates to the existing Java `ClassInfoLookup`. Six Forge characterization
+tests passed against untouched Scala and were committed separately as `b288d3d`. A compiled Scala fixture exercises
+real signature annotations; synthetic signatures freeze exact annotation-name selection, current-side exclusion,
+unknown/null enum names, owner-name deduplication, result snapshots, short-circuiting and malformed-input failures.
+They also prove every filter predicate runs before any selected owner is read, including mutations and exceptions
+from virtual model accessors. Forge is required for the original singleton and side initialization.
+
+The Java helper retains the separate Scala collection `filter`, `map` and `toSet` calls and their builders. No trait
+registration, rewriting, composition or signature-decoding algorithm changed. Unknown enum names and null owner
+names retain their existing behavior, as do missing/wrong/null-value failures. The Scala entry point and retained
+model bridges remain intact. Two private Scala closures become two Java callbacks, keeping 450 packaged classes;
+this is covered by the shared compiler divergence entry and adds no new effective difference.
+
+Reference source/jar, reports, logs and comparisons are under ignored `run/migration-side-only-reference/`. All 16
+named compiler APIs retain their member names/descriptors/modifiers/generic signatures and private fields. All 218
+other named compiler methods, 32 algorithm closures, 18 existing metadata-helper methods and 144 other ASM/generator
+disassemblies match; only shared-source debug line numbers move in the retained compiler models. All 40 generated
+dump names/hashes match exactly. Sources total 209 Java files and 9 Scala files / 1,664 nonblank Scala lines.
+
+Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 333 JVM / 147 Forge,
+zero failures/errors/skips. Characterization tests remain unchanged after the port. Clean APIs and generated dumps
+repeat the matches above; the dev config and forced Scala-compilation guard are unchanged. All five `@Mod` versions
+match both packaged jar versions. External Scala-trait tests remain green; manual client checks and Java-source
+model-bridge limitations remain outstanding.
+
+**Next: Scala-trait registration metadata in `ASMMixinCompiler`: `getAndRegisterParentTraits` and
+`registerScalaTrait`.** Characterize parent traversal/registration order, cached registration, side filtering,
+field/method/super metadata and failures before extraction. Preserve the existing registration algorithm, Scala
+collection behavior, external Scala-trait support and retained model/`ScalaSignature` bridges. Keep Java-trait
+rewriting and composition separate. Save a fresh reference and compare generated dumps before expanding scope.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

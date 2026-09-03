@@ -16,7 +16,6 @@ import java.lang.reflect.Modifier
 import net.minecraft.launchwrapper.LaunchClassLoader
 import cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper
 import ASMImplicits._
-import cpw.mods.fml.relauncher.FMLLaunchHandler
 
 object ASMMixinCompiler {
   val cl = getClass.getClassLoader.asInstanceOf[LaunchClassLoader]
@@ -713,17 +712,7 @@ object ASMMixinCompiler {
     )
   }
 
-  def listSideOnly(sig: ScalaSignature) = {
-    val side = "cpw.mods.fml.relauncher.Side." + FMLLaunchHandler.side.name
-    sig
-      .collect[sig.AnnotationInfo](40)
-      .filter { a =>
-        a.annType.name == "cpw.mods.fml.relauncher.SideOnly" &&
-        a.getValue[sig.EnumLiteral]("value").value.full != side
-      }
-      .map(_.owner.full)
-      .toSet
-  }
+  def listSideOnly(sig: ScalaSignature) = ClassInfoLookup.listSideOnly(sig)
 
   def registerScalaTrait(cnode: ClassNode): MixinInfo = {
     getMixinInfo(cnode.name) match {

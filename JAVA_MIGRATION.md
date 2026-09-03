@@ -1497,5 +1497,28 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   no divergence entry. The next migration target remains `ASMMixinCompiler.listSideOnly`.
 - Clean formatting/checkstyle/build and the full Forge suite pass after stopping Gradle: 333 JVM / 141 Forge tests,
   zero failures/errors/skips. The clean jar repeats the API/generated-output checks above; all five `@Mod` annotations
-  match both packaged jar versions. The forced Scala-compilation guard is unchanged. Review corrections are isolated
-  on `codex/tile-compatibility-fixes`, based on `fa008b8`; no additional migration unit was started.
+  match both packaged jar versions. The forced Scala-compilation guard is unchanged. Review corrections were committed
+  as `5af333c` and fast-forwarded onto `algent/java`; subsequent migration work continues on that branch.
+- Added six Forge characterization tests for `ASMMixinCompiler.listSideOnly`, passing against untouched Scala and
+  committed separately as `b288d3d`. A compiled Scala fixture covers actual signature annotations; synthetic signatures
+  freeze exact-name selection, current-side exclusion, unknown/null enum names, owner-name deduplication, immutable
+  result snapshots, short-circuiting and missing/wrong/null-value failures. Virtual accessor mutations and exceptions
+  prove all filter predicates run before any selected owner is read. Baseline: 333 JVM / 147 Forge. The original
+  singleton and side initialization require the existing Forge harness.
+- Extracted only annotation filtering into the existing Java `ClassInfoLookup`, retaining the Scala entry point and
+  separate Scala collection `filter`, `map` and `toSet` dispatch/builders. Trait registration, rewriting, composition
+  and signature decoding remain unchanged. Unknown enum names, null owner names and malformed-input failures keep
+  their original behavior; no algorithm fixes are mixed in and the external Scala-trait/model bridges remain intact.
+- Saved the pre-port source/jar, reports and 40 generated dumps under ignored `run/migration-side-only-reference/`.
+  All 16 named compiler APIs match by member names/descriptors/modifiers/generic signatures and private fields.
+  All 218 other named compiler methods, 32 algorithm closures, 18 existing metadata-helper methods and 144 other
+  ASM/generator disassemblies match. Retained compiler models have shared-source debug line shifts only. All 40 dump
+  names/hashes match exactly. Two private Scala closures become two Java callbacks, leaving 450 packaged classes;
+  the shared compiler entry covers this and no new divergence entry is needed. Sources total 209 Java files and
+  9 Scala files / 1,664 nonblank Scala lines.
+- Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 333 JVM / 147 Forge,
+  zero failures/errors/skips. The six characterization tests are unchanged after the port. The clean jar repeats the
+  API/disassembly/dump matches; the local dev config and forced Scala-compilation guard are unchanged. All five `@Mod`
+  versions match both packaged jar versions. External Scala-trait tests remain green; existing manual client checks
+  and Java-source model-bridge limitations remain outstanding. Next: Scala-trait registration metadata,
+  `getAndRegisterParentTraits` and `registerScalaTrait`, characterized first with no registration algorithm changes.

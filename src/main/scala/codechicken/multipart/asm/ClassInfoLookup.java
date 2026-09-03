@@ -15,6 +15,7 @@ import codechicken.multipart.asm.ASMMixinCompiler.MethodInfo;
 import codechicken.multipart.asm.StackAnalyser.Load;
 import codechicken.multipart.asm.StackAnalyser.StackEntry;
 import codechicken.multipart.asm.StackAnalyser.This;
+import cpw.mods.fml.relauncher.FMLLaunchHandler;
 import scala.Array$;
 import scala.Function1;
 import scala.Function3;
@@ -29,7 +30,10 @@ import scala.collection.IterableView$;
 import scala.collection.JavaConversions;
 import scala.collection.Seq;
 import scala.collection.TraversableLike;
+import scala.collection.TraversableOnce;
+import scala.collection.immutable.IndexedSeq$;
 import scala.collection.immutable.List$;
+import scala.collection.immutable.Set;
 import scala.collection.mutable.Buffer;
 import scala.collection.mutable.Buffer$;
 import scala.collection.mutable.Map;
@@ -197,5 +201,29 @@ final class ClassInfoLookup {
                         return parent.findPublicImpl(methodName, call.desc);
                     }
                 });
+    }
+
+    static Set<String> listSideOnly(ScalaSignature sig) {
+        final String side = "cpw.mods.fml.relauncher.Side." + FMLLaunchHandler.side().name();
+        TraversableLike filtered = (TraversableLike) sig.<ScalaSignature.AnnotationInfo>collect(40)
+                .filter(new AbstractFunction1<ScalaSignature.AnnotationInfo, Object>() {
+
+                    @Override
+                    public Object apply(ScalaSignature.AnnotationInfo annotation) {
+                        return Objects.equals(annotation.annType().name(), "cpw.mods.fml.relauncher.SideOnly")
+                                && !Objects.equals(
+                                        annotation.<ScalaSignature.EnumLiteral>getValue("value").value().full(),
+                                        side);
+                    }
+                });
+        TraversableOnce owners = (TraversableOnce) filtered
+                .map(new AbstractFunction1<ScalaSignature.AnnotationInfo, String>() {
+
+                    @Override
+                    public String apply(ScalaSignature.AnnotationInfo annotation) {
+                        return annotation.owner().full();
+                    }
+                }, IndexedSeq$.MODULE$.canBuildFrom());
+        return owners.toSet();
     }
 }
