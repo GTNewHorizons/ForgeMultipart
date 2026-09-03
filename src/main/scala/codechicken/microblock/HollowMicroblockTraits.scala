@@ -294,79 +294,24 @@ trait HollowMicroblock
     with TNormalOcclusion {
   def microClass = HollowMicroClass$.MODULE$
 
-  def getBounds: Cuboid6 = FaceMicroClass.aBounds()(shape)
+  def getBounds: Cuboid6 = HollowMicroblockTraitLogic.getBounds(this)
 
-  // TNormalOcclusion is a Java interface, so its box test must be applied here rather than by the super chain.
+  // Scala retains the synthetic super accessor and its trait linearization.
   override def occlusionTest(npart: TMultiPart): Boolean =
-    NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)
+    HollowMicroblockTraitLogic.normalOcclusionTest(this, npart) && super
+      .occlusionTest(npart)
 
   override def getPartialOcclusionBoxes =
-    HollowMicroClass$.MODULE$.pBoxes()(shape)
+    HollowMicroblockTraitLogic.getPartialOcclusionBoxes(this)
 
-  def getHollowSize = tile match {
-    case null => 8
-    case _ =>
-      tile.partMap(6) match {
-        case part: ISidedHollowConnect => part.getHollowSize(getSlot)
-        case _                         => 8
-      }
-  }
+  def getHollowSize = HollowMicroblockTraitLogic.getHollowSize(this)
 
-  def getOcclusionBoxes = {
-    val size = getHollowSize
-    val c = HollowMicroClass$.MODULE$.occBounds()(shape)
-    val d1 = 0.5 - size / 32d
-    val d2 = 0.5 + size / 32d
-    val x1 = c.min.x
-    val x2 = c.max.x
-    val y1 = c.min.y
-    val y2 = c.max.y
-    val z1 = c.min.z
-    val z2 = c.max.z
+  def getOcclusionBoxes = HollowMicroblockTraitLogic.getOcclusionBoxes(this)
 
-    getSlot match {
-      case 0 | 1 =>
-        Seq(
-          new Cuboid6(d2, y1, d1, x2, y2, d2),
-          new Cuboid6(x1, y1, d1, d1, y2, d2),
-          new Cuboid6(x1, y1, d2, x2, y2, z2),
-          new Cuboid6(x1, y1, z1, x2, y2, d1)
-        )
-      case 2 | 3 =>
-        Seq(
-          new Cuboid6(d1, d2, z1, d2, y2, z2),
-          new Cuboid6(d1, y1, z1, d2, d1, z2),
-          new Cuboid6(d2, y1, z1, x2, y2, z2),
-          new Cuboid6(x1, y1, z1, d1, y2, z2)
-        )
-      case 4 | 5 =>
-        Seq(
-          new Cuboid6(x1, d1, d2, x2, d2, z2),
-          new Cuboid6(x1, d1, z1, x2, d2, d1),
-          new Cuboid6(x1, d2, z1, x2, y2, z2),
-          new Cuboid6(x1, y1, z1, x2, d1, z2)
-        )
-    }
-  }
+  override def getCollisionBoxes =
+    HollowMicroblockTraitLogic.getCollisionBoxes(this)
 
-  override def getCollisionBoxes = {
-    val size = getHollowSize
-    val d1 = 0.5 - size / 32d
-    val d2 = 0.5 + size / 32d
-    val t = (shape >> 4) / 8d
-
-    val tr = sideRotations(shape & 0xf).at(center)
-    Seq(
-      new Cuboid6(0, 0, 0, 1, t, d1),
-      new Cuboid6(0, 0, d2, 1, t, 1),
-      new Cuboid6(0, 0, d1, d1, t, d2),
-      new Cuboid6(d2, 0, d1, 1, t, d2)
-    )
-      .map(c => c.apply(tr))
-  }
-
-  override def getSubParts =
-    getCollisionBoxes.map(c => new IndexedCuboid6(0, c))
+  override def getSubParts = HollowMicroblockTraitLogic.getSubParts(this)
 
   override def allowCompleteOcclusion = true
 

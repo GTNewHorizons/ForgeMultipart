@@ -26,10 +26,11 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
 placement/render helpers, both generators and all built-in tile traits are Java. Two files still contain generated
 microblock implementations in Scala, alongside the compiler/signature/analyser compatibility shells. The common,
-face, corner, edge and post traits retain inheritance/bridge declarations over Java behavior. Composite generation,
+face, corner, edge, post and hollow server traits retain inheritance/bridge declarations over Java behavior.
+Composite generation,
 Java-trait rewriting and compiler startup also delegate to Java helpers. Abstract Java mixins and Java-path side-only
 filtering are complete; multiple Scala-trait inheritance still needs its metadata. The next bounded target is
-`HollowMicroblock` in `microblock/HollowMicroblockTraits.scala`, followed separately by its client trait. Retain the
+`HollowMicroblockClient` in `microblock/HollowMicroblockTraits.scala`. Retain the
 post lifecycle/super-dispatch bridges and the ScalaSignature path-dependent model bridges.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and

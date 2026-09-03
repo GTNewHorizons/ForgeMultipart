@@ -1163,3 +1163,30 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
 - Expanded the existing manual post check with Stone, Glass and ProjectRed Inverted White Lamp examples. The
   dedicated server strips the client factory entry point; helper/geometry coverage does not establish actual client
   generation or GPU output. Next: `HollowMicroblock`, followed separately by `HollowMicroblockClient`.
+
+### 2026-09-03 — Hollow microblock trait implementation
+
+- Committed five JVM and four Forge characterization tests first as `6e807cc`, before changing production code.
+  Frozen Scala 2.11.5 forwarders compiled under Java 8 against the untouched jar pin repeated tile/raw-shape reads,
+  center-slot lookup and arbitrary connector results, signed thickness and invalid rotations, fresh read-only collision
+  boxes, mutable copied subparts, normal/partial overlap short-circuiting and the real Scala super chain. Forge covers
+  all 42 supported shapes, live opening sizes, public bounds arrays/views, null/signed-index/invalid-slot failures and
+  exact material/shape NBT and description bytes. Existing ordered geometry and ProjectRed trait fixtures still run.
+- Extracted seven method bodies to package-private `HollowMicroblockTraitLogic.java`; retained Scala inheritance,
+  singleton/constants and the synthetic super bridge. Java cannot directly invoke that Scala synthetic accessor.
+  Kept Scala collection builders and conversions: a null partial-box sequence returns a wrapper whose use throws,
+  collision lists reject mutations, and subparts are mutable copies. Connector sizes remain unclamped; applying the
+  original transformation still normalizes inverted collision bounds. These are characterized existing behaviors,
+  not new defects or fixes. Two internal Scala callbacks are replaced under the existing shared classfile policy;
+  no new effective divergence, compiler change or client-rendering change was introduced.
+- Saved the source/reference jar, frozen fixture compilation, reports and 116 generated dumps in ignored
+  `run/migration-hollow-trait-reference/`. Normal and clean verification after stopping Gradle preserve all 441
+  retained original class/member APIs, all 17 ScalaSignature payloads, 3,704 unrelated method bodies and all 116
+  generated dump names/hashes. The helper and two callbacks replace two Scala callbacks: 443 -> 444 packaged classes.
+  Formatting, checkstyle, build and Forge pass with 370 JVM / 231 Forge tests, zero failures/errors/skips. The forced
+  Scala-compilation guard and all five packaged `@Mod` versions remain verified. Sources total 221 Java files and
+  9 Scala files / 1,051 nonblank Scala lines.
+- Next: `HollowMicroblockClient`. Characterize render-mask initialization/recalculation and super ordering,
+  pass/transparency dispatch, rim geometry/callback order, breaking and highlight behavior before extraction.
+  Added a manual hollow-cover interaction/reload check with ProjectRed Framed Red Alloy Wire and Hollow Inverted
+  White Lamp Cover examples; actual client generation, GPU output and full-pack validation remain manual gates.

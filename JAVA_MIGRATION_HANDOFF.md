@@ -16,22 +16,21 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**365 plain-JVM tests and 227 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **220 Java
-files and 9 Scala files / 1,104 nonblank Scala lines**. The packaged inventory has 443 classes.
+**370 plain-JVM tests and 231 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **221 Java
+files and 9 Scala files / 1,051 nonblank Scala lines**. The packaged inventory has 444 classes.
 
-Latest bounded target: `PostMicroblockClient` delegates render/recalculation/shrink behavior to
-`PostMicroblockClientLogic.java`. Scala retains its state, inheritance metadata, `$class` and lifecycle/super
-forwarders. Characterization was committed first as `47885d1`: frozen Scala forwarders pin render pass selection,
-material reuse, repeated getters, equality receivers, collection `foreach`, split/reset behavior and lifecycle
-failure ordering. Forge exercises real cover/post geometry on all three axes through the client helper; actual
-client generation/GPU output remains a manual gate. Clean verification after stopping Gradle preserves all 441
-retained class/member APIs, all 17 ScalaSignature payloads, 3,703 unrelated method bodies and all 116 generated dumps.
-One internal Scala callback is replaced by the Java helper/callback under the shared classfile policy. Local evidence
-is in `run/migration-post-client-reference/`; `clean` preserves it.
+Latest bounded target: `HollowMicroblock` delegates connector lookup, geometry, collections and normal occlusion to
+`HollowMicroblockTraitLogic.java`. Scala retains inheritance metadata, `$class`, singleton/constants and its
+short-circuiting super bridge. Characterization was committed first as `6e807cc`: frozen Scala forwarders pin
+repeated tile/raw-shape reads, connector/slot dispatch, list mutability/copies and occlusion super ordering. Forge
+covers all 42 shapes, live opening sizes, bounds-array replacement/errors and NBT/description bytes. Clean checks
+preserve 441 retained class/member APIs, all 17 ScalaSignature payloads, 3,704 unrelated method bodies and all 116
+generated dumps. Two internal Scala callbacks become Java callbacks under the shared classfile policy. Evidence:
+`run/migration-hollow-trait-reference/`; `clean` preserves it.
 
-**Next: port `HollowMicroblock` in `microblock/HollowMicroblockTraits.scala`.** Characterize its center connector
-lookup, hollow-size/slot geometry, normal/partial/collision boxes, subparts and occlusion super ordering before
-conversion. Leave `HollowMicroblockClient` rendering for a separate bounded target.
+**Next: port `HollowMicroblockClient` in `microblock/HollowMicroblockTraits.scala`.** Characterize render-mask
+initialization/recalculation and super ordering, pass/transparency dispatch, rim geometry/callback order, breaking
+and highlight behavior before extraction. Actual client generation, GPU output and full-pack checks remain manual.
 Retain the Scala declarations where inheritance metadata is required, the external ProjectRed Scala-trait fixture
 and the ScalaSignature model bridges; compiler changes stay separate.
 
@@ -43,7 +42,7 @@ Remaining Scala units:
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
 | `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala` | Nine retained state/inheritance/bridge shells over Java implementation, including post lifecycle/super dispatch |
-| `microblock/HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated trait implementations; port in bounded groups while preserving inheritance metadata |
+| `microblock/HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Hollow server shell plus remaining client/occlusion implementations; preserve inheritance metadata |
 
 Both generators, both registries, core tile/part classes, ordinary microblock helpers/factories, handlers, networking,
 placement/render helpers and built-in tile traits are Java. The low-risk queue and immediate consumer gate are

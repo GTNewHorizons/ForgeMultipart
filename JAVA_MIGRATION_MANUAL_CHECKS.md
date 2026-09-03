@@ -61,6 +61,7 @@ entries complete.
 | [ ] | Repeat with **Red Alloy Wire**, clicking deep into a face | The part is placed in the neighbouring block on that side | `TItemMultiPart.onItemUse` offset path |
 | [ ] | Place a part where it would overlap an existing one | Placement is refused rather than silently replacing | `NormalOcclusionTest`, `PartialOcclusionTest` |
 | [ ] | Place a cover on a face that already has a hollow cover | Redstone still passes through the hollow centre | `TFacePart.redstoneConductionMap` |
+| [ ] | Place **Hollow Stone Cover** and **Hollow Inverted White Lamp Cover** parts at several thicknesses around ProjectRed **Framed Red Alloy Wire** on all six faces; add/remove the wire, select the rim, then save and reload | The opening follows the connector, selection/collision respect the hollow centre, incompatible overlaps are refused, and shape/material survive reload | `HollowMicroblock` / `HollowMicroblockTraitLogic` |
 | [ ] | Run ProjectRed **Red Alloy Wire** across a **Stone Strip** edge microblock | Conduction matches the pre-port behavior | `TEdgePart.conductsRedstone` |
 | [ ] | Cut materials with saws of different harvest levels | Only materials at or below the saw's strength can be cut | `Saw.getMaxCuttingStrength` |
 | [ ] | Place the same microblock in survival and creative, including onto an existing multipart tile | Valid placements play the material sound; survival consumes the expected amount while creative does not | `ItemMicroPart.onItemUse` |
