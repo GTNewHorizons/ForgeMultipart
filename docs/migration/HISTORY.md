@@ -1035,3 +1035,26 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   zero failures/errors/skips. All five packaged `@Mod` versions, the forced
   Scala-compilation guard and dev config remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188
   nonblank Scala lines. Next: `microblock/MicroblockTraits.scala`, characterized before conversion.
+
+### 2026-09-03 — Common microblock trait implementation
+
+- Committed seven JVM and two Forge characterization tests first as `d6eb56b`. A frozen Scala 2.11.5 concrete
+  `CommonMicroblockClient`, compiled under Java 8 against the unchanged jar, exercises all three trait helper bridges.
+  Tests pin initialization, signed shape/slot handling and virtual shift operands, fresh immutable partial-box lists
+  with shared bounds, dynamic class/material lookup, render-pass gating, common cuboid face masks and particle callback
+  evaluation order. Forge verifies generated common parts and the original `NoSuchMethodError` when the missing-material
+  client icon fallback reaches server-stripped `Block.getIcon`; the test does not turn that existing limitation into a fix.
+- Moved eight implementation methods to package-private `MicroblockTraitLogic.java`. Particle callbacks were already
+  Java delegates. Retained the three Scala trait declarations, exact inheritance/signature metadata and `$class`
+  bridges: Scala parent collection does not recognize Java interfaces as Scala traits, and Java registration does not
+  incorporate implemented Scala interfaces into linearization. Both prior Java-mixin prerequisites remain useful,
+  but are insufficient to remove this multiple-inheritance shell without another compiler behavior target.
+- Saved the reference jar, source, reports and generated dumps under ignored `run/migration-microblock-traits-reference/`.
+  The clean comparison preserves all 437 original class/member APIs, all 17 ScalaSignature payloads and 3,674 non-target
+  method bodies; only the new helper raises the class inventory to 438. All 116 generated dump names/hashes are exact,
+  including external Scala and pass-through fixtures. No new effective divergence is introduced.
+- Formatting, checkstyle, build and Forge pass both normally and after stopping Gradle for a clean rebuild:
+  340 JVM / 213 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged
+  `@Mod` versions remain verified. Sources total 215 Java files and 9 Scala files / 1,170 nonblank Scala lines.
+  Next: `microblock/FaceMicroblockTraits.scala` implementation, with characterization before conversion. GPU rendering
+  and full client selection remain on the manual checklist.

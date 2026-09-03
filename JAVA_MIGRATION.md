@@ -24,11 +24,12 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 ## Current status
 
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
-placement/render helpers, both generators and all built-in tile traits are Java. Six generated microblock trait
-files and the compiler/signature/analyser compatibility shells remain Scala. Composite generation, Java-trait
-rewriting and compiler startup now delegate to Java helpers. Abstract Java mixins and Java-path side-only filtering
-are complete; the next bounded target is `microblock/MicroblockTraits.scala`. Retain the ScalaSignature
-path-dependent model bridges.
+placement/render helpers, both generators and all built-in tile traits are Java. Five generated microblock trait
+implementations and the compiler/signature/analyser compatibility shells remain Scala. `MicroblockTraits.scala`
+retains three inheritance/bridge declarations over Java behavior. Composite generation, Java-trait rewriting and
+compiler startup also delegate to Java helpers. Abstract Java mixins and Java-path side-only filtering are complete;
+multiple Scala-trait inheritance still needs its metadata. The next bounded target is the implementation in
+`microblock/FaceMicroblockTraits.scala`. Retain the ScalaSignature path-dependent model bridges.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
 Java-source limitations. Read both the [ABI inventory](JAVA_MIGRATION_ABI_INVENTORY.md) and
@@ -364,9 +365,10 @@ cache remain reference-identical; pass-through-interface coverage remains green.
 
 ### Phase 6 — Convert multipart core and microblocks
 
-Status: core code, factories and ordinary helpers are Java. The six remaining generated microblock trait files
-can now move through the Java mixin path because both Phase 7 prerequisites are complete. The following gates
-continue to apply to those remaining units; completed per-type evidence is in the history.
+Status: core code, factories, ordinary helpers and common microblock trait behavior are Java. Five generated trait
+implementations remain. Extract their behavior while retaining Scala declarations where multiple-trait inheritance
+still needs signature metadata; abstract Java mixins and side filtering alone do not replace that metadata. The
+following gates continue to apply to those remaining units; completed per-type evidence is in the history.
 
 - [ ] Add characterization coverage for each subsystem immediately before its conversion.
 - [ ] Convert the central tile, part, registry, placement, rendering, networking, scheduler, and microblock code in dependency order.
@@ -548,8 +550,10 @@ The rewrite has two Phase 7 prerequisites:
    `@SideOnly(Side.CLIENT)` when ProjectRed rewrites the trait to Java, even though its `addTraits` ignores the
    `client` argument.
 
-Both compiler prerequisites are complete. The FMP microblock trait files can now move through the Java path; removing
-external Scala-signature support still waits for a released ProjectRed Java rewrite.
+Both compiler prerequisites for the single-parent ProjectRed rewrite are complete. FMP's own microblock traits also
+use multiple Scala-trait inheritance: their implementation can move to Java helpers, while removing their Scala
+declarations needs a separate inheritance strategy. Removing external Scala-signature support still waits for a
+released ProjectRed Java rewrite.
 
 UtilitiesInExcess is the cheapest case in the table because it is not yet in the pack. Anything fixed before it ships
 never becomes a compatibility obligation at all.
@@ -677,7 +681,7 @@ Still open, and only to be decided when they become necessary:
 Track remaining work by completed compatibility gates, not the retired pre-audit calendar estimates:
 
 1. Extract the remaining compiler algorithms with unchanged characterization and generated output.
-2. Characterize and port the remaining generated microblock traits through the completed Java-mixin path.
+2. Characterize and port the remaining generated microblock behavior, retaining necessary trait inheritance metadata.
 3. Resolve or explicitly retain the Scala model bridges; finish the applicable API and pre-merge cleanup gates.
 4. Complete packaged-pack, client and performance validation with recorded results.
 

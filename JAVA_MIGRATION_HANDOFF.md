@@ -16,23 +16,23 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**333 plain-JVM tests and 211 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **214 Java
-files and 9 Scala files / 1,188 nonblank Scala lines**. The packaged inventory has 437 classes.
+**340 plain-JVM tests and 213 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **215 Java
+files and 9 Scala files / 1,170 nonblank Scala lines**. The packaged inventory has 438 classes.
 
-Latest bounded compiler change: Java mixins now filter opposite-side fields, methods and constructors before metadata
-or bytecode rewriting. The Forge test first characterized the previous retention of visible/invisible annotations,
-state and constructor initialization (`a481859`). Current-side members remain; when the no-argument constructor is absent,
-an empty `$init$` satisfies the generated initializer contract without executing the opposite-side body. A regression
-also passes input through Forge's real side transformer before registration. Clean verification after stopping Gradle
-matched 432 class APIs, all five compiler closures and 3,643 non-target method bodies. All 112 reference dump names
-remain; 109 hashes are exact and only the trait, helper and composite from the SideOnly fixture differ. Four outputs
-are new for the already-stripped-constructor fixture. Local evidence is in
-`run/migration-java-side-only-reference/`; `clean` preserves this ignored directory.
+Latest bounded target: `MicroblockTraits.scala` delegates its eight remaining implementation methods to
+`MicroblockTraitLogic.java`; its particle callbacks already delegated to Java. The three Scala trait declarations,
+inheritance metadata and `$class` bridges remain. Characterization was committed first as `d6eb56b`, including a
+frozen concrete Scala consumer compiled against the unchanged jar. It exercises initialization, slots, immutable
+partial-box views, virtual class/material/render dispatch and particle evaluation order. Forge covers generated common
+microblocks and the existing server-side failure when a client fallback reaches the stripped `Block.getIcon`.
+Clean verification after stopping Gradle matches all 437 original class/member APIs, all 17 ScalaSignature payloads,
+3,674 non-target method bodies and all 116 generated dump names/hashes. Only the package-private Java helper is added.
+Local evidence is in `run/migration-microblock-traits-reference/`; `clean` preserves this ignored directory.
 
-**Next: port `microblock/MicroblockTraits.scala` as the first generated microblock trait group.** Both Java-mixin
-prerequisites are complete. Characterize its interface/helper ABI, initialization, generated common/client dispatch,
-render/effect routing, slots, partial-occlusion boxes and item class ID before conversion. Keep the external ProjectRed
-Scala-trait fixture green and retain the ScalaSignature path-dependent model bridges.
+**Next: port the implementation in `microblock/FaceMicroblockTraits.scala`.** Characterize bounds/shape indexing,
+material solidity, negative-pass rendering, transparent/opaque face masks and generated dispatch before conversion.
+Retain the Scala declarations where inheritance metadata is still required. Keep the external ProjectRed Scala-trait
+fixture green and retain the ScalaSignature path-dependent model bridges; compiler changes stay separate.
 
 Remaining Scala units:
 
@@ -41,7 +41,8 @@ Remaining Scala units:
 | `multipart/asm/ASMMixinCompiler.scala` | Retained nested models, construction callbacks and Scala entry-point shell |
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
-| `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated traits; port in dependency order now that both Java-mixin prerequisites are complete |
+| `microblock/MicroblockTraits.scala` | Three retained inheritance/bridge shells over Java implementation |
+| `microblock/FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated trait implementations; port in dependency order while preserving inheritance metadata |
 
 Both generators, both registries, core tile/part classes, ordinary microblock helpers/factories, handlers, networking,
 placement/render helpers and built-in tile traits are Java. The low-risk queue and immediate consumer gate are
@@ -102,6 +103,13 @@ Compilation against the migrated artifact would defeat the binary-compatibility 
 
 ## Retained compiler constraints
 
+- **Microblock trait inheritance still needs Scala metadata.** Abstract Java mixins and Java `@SideOnly` filtering
+  are supported, but that does not supply Scala multiple-trait linearization. `getAndRegisterParentTraits` collects
+  Scala-signature traits, while Java registration only incorporates an already registered superclass trait, not
+  implemented Scala interfaces. `CommonMicroblockClient` combines three trait parents, including the still-Scala
+  `TMicroOcclusionClient`. Keep its declarations and bridges while extracting behavior; replacing them outright needs
+  a separately characterized compiler/inheritance strategy. Extra Utilities, ForgeRelocationFMP and GuideNH also use
+  these runtime interface types.
 - **External Scala traits remain supported.** ProjectRed registers `LightMicroblock` through
   `MicroblockGenerator.registerTrait`; keep its ScalaSignature ingestion, `$class` helper and generated dispatch.
   The Java path now supports its `@SideOnly` requirement, but retiring this external Scala path still needs a released

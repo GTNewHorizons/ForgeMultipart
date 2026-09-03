@@ -8,18 +8,14 @@ import codechicken.multipart.{
   TSlottedPart
 }
 import net.minecraft.client.particle.EffectRenderer
-import net.minecraft.init.Blocks
 import net.minecraft.util.MovingObjectPosition
-import scala.collection.JavaConversions._
 
+// Keep Scala inheritance metadata and helper bridges while derived and external mixins use Scala registration.
 trait MicroblockClient
     extends Microblock
     with TIconHitEffects
     with IMicroMaterialRender {
-  def getBrokenIcon(side: Int) = getIMaterial match {
-    case null => Blocks.stone.getIcon(0, 0)
-    case mat  => mat.getBreakingIcon(side)
-  }
+  def getBrokenIcon(side: Int) = MicroblockTraitLogic.getBrokenIcon(this, side)
 
   // TIconHitEffects is a Java interface, so these must be declared explicitly or TMultiPart's empty versions win.
   override def addHitEffects(
@@ -30,35 +26,20 @@ trait MicroblockClient
   override def addDestroyEffects(effectRenderer: EffectRenderer) =
     IconHitEffects.addDestroyEffects(this, effectRenderer)
 
-  override def renderStatic(pos: Vector3, pass: Int) = {
-    if (getIMaterial.canRenderInPass(pass)) {
-      render(pos, pass)
-      true
-    } else
-      false
-  }
+  override def renderStatic(pos: Vector3, pass: Int) =
+    MicroblockTraitLogic.renderStatic(this, pos, pass)
 
   def render(pos: Vector3, pass: Int)
 
-  override def getRenderBounds = getBounds
+  override def getRenderBounds = MicroblockTraitLogic.getRenderBounds(this)
 }
 
 trait CommonMicroblockClient
     extends CommonMicroblock
     with MicroblockClient
     with TMicroOcclusionClient {
-  def render(pos: Vector3, pass: Int) {
-    if (pass < 0)
-      MicroblockRender.renderCuboid(pos, getIMaterial, pass, getBounds, 0)
-    else
-      MicroblockRender.renderCuboid(
-        pos,
-        getIMaterial,
-        pass,
-        renderBounds,
-        renderMask
-      )
-  }
+  def render(pos: Vector3, pass: Int) =
+    MicroblockTraitLogic.render(this, pos, pass)
 }
 
 trait CommonMicroblock
@@ -68,9 +49,10 @@ trait CommonMicroblock
     with TSlottedPart {
   def microClass: CommonMicroClass
 
-  def getSlot = getShape
-  def getSlotMask = 1 << getSlot
-  def getPartialOcclusionBoxes = Seq(getBounds)
+  def getSlot = MicroblockTraitLogic.getSlot(this)
+  def getSlotMask = MicroblockTraitLogic.getSlotMask(this)
+  def getPartialOcclusionBoxes =
+    MicroblockTraitLogic.getPartialOcclusionBoxes(this)
 
-  override def itemClassID = microClass.getClassId
+  override def itemClassID = MicroblockTraitLogic.itemClassID(this)
 }
