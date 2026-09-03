@@ -192,3 +192,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchange
 `3848f0ba68344b103614e6aaa85dfe300a1b3c41b94cb171224b411a46ecdf3b`; class-file SHA-256 is
 `96283797af5f81137e6fa354fbce5886e0de4f00655a6ab89a21de94bfadcbde`, stored as
 `src/test/resources/compat/ReferenceScalaFaceMicroblockClient.class.b64`. Do not regenerate it against the port.
+
+### `ReferenceScalaCornerMicroblock`
+
+`scala/codechicken/multipart/compat/ReferenceScalaCornerMicroblock.scala` freezes a concrete corner implementor
+whose forwarders call `CornerMicroblock$class`. Observable shape accessors pin virtual dispatch, byte truncation,
+out-of-range input behavior and the seven-slot offset without requiring Forge initialization.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchanged dev jar at `cfde822`
+(SHA-256 `0c01bf316fe3706155dda05f6cb56a084658e5133b7590503e69a263a3fdfb85`). Source SHA-256 is
+`6c0ff48c4bc6ff5508a429d53f13b718062173cc4a117095c192aed9cf0a0311`; class-file SHA-256 is
+`5a6c3cf1ce593eb189af59f6db26a04d85902972073de83a77d8f0d920642cfa`, stored as
+`src/test/resources/compat/ReferenceScalaCornerMicroblock.class.b64`. Do not regenerate it against the port.
