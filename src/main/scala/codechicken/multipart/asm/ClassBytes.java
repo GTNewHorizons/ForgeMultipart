@@ -20,6 +20,24 @@ final class ClassBytes {
 
     private ClassBytes() {}
 
+    static Class<?> define(String name, byte[] bytes) throws IllegalAccessException, InvocationTargetException {
+        ASMMixinCompiler$ compiler = ASMMixinCompiler$.MODULE$;
+        compiler.internalDefine(name, bytes);
+        DebugPrinter$.MODULE$.defined(name, bytes);
+        try {
+            return (Class<?>) compiler.m_defineClass().invoke(compiler.cl(), bytes, 0, bytes.length);
+        } catch (LinkageError link) {
+            // Reflective failures normally remain wrapped; retain the original direct-error guard.
+            if (link.getMessage().contains("duplicate")) {
+                throw new IllegalStateException(
+                        "class with name: " + name
+                                + " already loaded. Do not reference your java mixin classes before registering",
+                        link);
+            }
+            throw link;
+        }
+    }
+
     static byte[] getBytes(String name) throws IOException, IllegalAccessException, InvocationTargetException {
         ASMMixinCompiler$ compiler = ASMMixinCompiler$.MODULE$;
         final String javaName = name.replace('/', '.');

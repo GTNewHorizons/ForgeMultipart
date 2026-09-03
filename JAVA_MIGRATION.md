@@ -1599,3 +1599,20 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   both packaged jar versions. External Scala-trait tests remain green; existing manual client checks and Java-source
   model/trait limitations remain. Next: `ASMMixinCompiler.define`, characterized first for publication/debug
   accounting, reflective definition and failure ordering, without algorithm changes.
+- Added ten Forge characterization tests for `ASMMixinCompiler.define`, passing on untouched Scala and committed
+  first as `4d59900`. They execute real JVM definitions in isolated LaunchClassLoaders and restore compiler caches,
+  loader/reflection state and debug state. Tests freeze bytecode-name versus cache-key handling, delayed class
+  initialization, exact byte publication, metadata invalidation, byte accounting and failures before/after reflection.
+  Real duplicate definitions remain `InvocationTargetException` wrapping `LinkageError`; direct linkage errors from
+  reflective class initialization exercise the original case-sensitive duplicate guard, including its null-message
+  `NullPointerException`. Dump/accounting failures remain outside that guard. These quirks are preserved, not fixed.
+- Moved only `define` into the existing Java `ClassBytes`, retaining its exact Scala entry point and the loader's
+  startup initialization. Class composition, trait rewriting and external Scala-trait/model bridges are unchanged.
+  Reference source/jar, reports, 42 dumps and verification scripts are in ignored `run/migration-define-reference/`.
+  The 456-class inventory is unchanged; all 426 non-closure APIs (including 16 named compiler APIs), 3,628 other method
+  bodies and 30 compiler closures match. All 42 generated dump names/hashes match exactly. No new divergence is needed.
+- Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 333 JVM / 183 Forge,
+  zero failures/errors/skips. The characterization tests, dev config and forced Scala-compilation guard are unchanged;
+  all five `@Mod` versions match both packaged jar versions. Sources total 211 Java files and 9 Scala files / 1,583
+  nonblank Scala lines. Next: `ASMMixinCompiler.mixinClasses`, characterized for composition/constructor/dispatch and
+  generated output before extraction; keep compiler algorithm fixes separate.

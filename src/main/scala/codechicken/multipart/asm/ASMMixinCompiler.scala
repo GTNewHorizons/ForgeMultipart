@@ -37,22 +37,7 @@ object ASMMixinCompiler {
   private val traitByteMap = MMap[String, Array[Byte]]()
   private val mixinMap = MMap[String, MixinInfo]()
 
-  def define(name: String, bytes: Array[Byte]) = {
-    internalDefine(name, bytes)
-    DebugPrinter$.MODULE$.defined(name, bytes)
-
-    try {
-      m_defineClass
-        .invoke(cl, bytes, 0: Integer, bytes.length: Integer)
-        .asInstanceOf[Class[_]]
-    } catch {
-      case link: LinkageError if link.getMessage.contains("duplicate") =>
-        throw new IllegalStateException(
-          "class with name: " + name + " already loaded. Do not reference your java mixin classes before registering",
-          link
-        )
-    }
-  }
+  def define(name: String, bytes: Array[Byte]) = ClassBytes.define(name, bytes)
 
   getBytes("cpw/mods/fml/common/asm/FMLSanityChecker")
 

@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 189 commits including the API-cleanup plan, divergence-log cleanup, ports
-through class-byte loading/cache helpers, the ASM characterization backfill, and review/client-rendering fixes.
+Branch: `algent/java`. Base: `master`. 191 commits including the API-cleanup plan, divergence-log cleanup, ports
+through reflective class definition, the ASM characterization backfill, and review/client-rendering fixes.
 
 The multipart review corrections (`5af333c`) are on `algent/java`; subsequent migration work continues in that branch.
 
@@ -76,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **333 plain-JVM tests and 173 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 183 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -852,10 +852,20 @@ zero failures/errors/skips. Clean APIs and dumps repeat the matches above; the d
 guard are unchanged. All five `@Mod` versions match both packaged jar versions. Manual client checks and the
 previously documented Java-source model/trait limitations remain outstanding.
 
-**Next: `ASMMixinCompiler.define` reflective class definition.** Characterize publication, debug accounting and
-definition/error ordering first, including duplicate definitions and reflection wrapping. Preserve its current
-algorithm and leave startup initialization, Java-trait rewriting and composition separate. Retain external
-Scala-trait support and the model bridges.
+`ASMMixinCompiler.define` now delegates to the existing Java `ClassBytes`. Ten Forge characterization tests passed
+against untouched Scala first (`4d59900`) and remain unchanged. Real JVM definitions pin delayed initialization,
+bytecode names versus cache keys, publication/invalidation/accounting order, dump failures and reflective errors.
+Ordinary duplicates remain reflection-wrapped; the case-sensitive direct-LinkageError guard and its null-message
+failure remain unchanged. Clean formatting/checkstyle/build and Forge pass at 333 JVM / 183 Forge, zero failures or
+skips. All 456 classes remain; 426 non-closure APIs, 3,628 other method bodies, 30 compiler closures and all 42 dump
+names/hashes match. Reference evidence is in ignored `run/migration-define-reference/`. The version guard and dev
+config are unchanged; all five `@Mod` annotations match both jars. Sources: 211 Java / 9 Scala / 1,583 nonblank Scala
+lines. There is no new divergence.
+
+**Next: `ASMMixinCompiler.mixinClasses` composite generation.** Characterize constructor selection, trait
+linearization, field initialization, method/super dispatch, failure ordering and emitted class shapes before
+extraction. Preserve the compiler algorithm; keep Java-trait rewriting and startup initialization separate. Retain
+external Scala-trait support and the model bridges.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
