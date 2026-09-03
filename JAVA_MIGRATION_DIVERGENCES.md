@@ -74,7 +74,7 @@ Other retained `$class` bridges and `MODULE$` companions are not covered by this
 | `JItemMultiPart` | Static `hitDepth` and `onItemUse(part, ...)` implementations |
 | `MicroMaterialRegistry` | Static `setupIDMap`, `calcMaxCuttingStrength` and `loadIcons` forwarders |
 | `PacketScheduler` / `TScheduledPacketPart` | Static `sendScheduled()` on the facade and `readMask(part, packet)` on the interface |
-| `TileMultipart` | No-op `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
+| `TileMultipart` | `hasDynamicParts` (false by default), `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
 | `MultipartMixinFactory` | Four additional static forwarders: `onCompiled`, `autoCompleteJavaTrait` and the two mangled `ASMMixinFactory` parent helpers. Scala emitted them when the base became Java with its original public JVM access; the Java facade retains them. Existing facade entries are unchanged. |
 
 Previously abstract JVM interface methods now have Java defaults, allowing inheritance without Scala forwarders:

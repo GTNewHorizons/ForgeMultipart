@@ -34,6 +34,13 @@ below its table.
 | [ ] | Run centre pipes/cables with several connection widths through hollow covers on all six faces, including glass | Each opening follows the connector size; opaque and transparent rims, breaking overlay and highlight have no missing, doubled or stale sections after neighbour changes | `HollowMicroblockClient.recalcBounds` / `renderHollow` / `drawBreaking` / `drawHighlight` |
 | [ ] | Place touching face, corner and edge microblocks of mixed sizes/transparency, then add and remove neighbours | Intersections choose the same winner, opaque covered faces stay masked, and every surviving segment refreshes without gaps or stale bounds | `MicroOcclusion` / `TMicroOcclusionClient.recalcBounds` |
 
+2026-09-03: Placing a ProjectRed part with `1.7.12-algent-java.186+60d060a3ff` crashed in
+`MultipartRenderer$.renderTileEntityAt`: its class call to `TileMultipartClient.hasDynamicParts()` encountered the
+transformed runtime interface. The renderer now calls the generated getter through a stable `TileMultipart` base
+hook. Four headless Forge cases cover the actual renderer bytecode's guards and dispatch; both nonempty cases
+reproduced the original crash. Re-test placement, static/dynamic drawing and part updates in the full client with the
+fixed jar before marking the rendering entries complete.
+
 ## Placement and interaction
 
 | Done | Check | Expected | From |

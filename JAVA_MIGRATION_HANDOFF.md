@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 185 commits including the API-cleanup plan, divergence-log cleanup, ports
-through Scala-trait registration metadata, and the ASM characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 187 commits including the API-cleanup plan, divergence-log cleanup, ports
+through Scala-trait registration metadata, the ASM characterization backfill, and review/client-rendering fixes.
 
 The multipart review corrections (`5af333c`) are on `algent/java`; subsequent migration work continues in that branch.
 
@@ -76,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **333 plain-JVM tests and 159 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 163 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -805,6 +805,29 @@ zero failures/errors/skips. All twelve characterization tests remain unchanged a
 repeat the matches above; the dev config and forced Scala-compilation guard are unchanged. All five `@Mod` versions
 match both packaged jar versions. External Scala-trait tests remain green; manual client checks and Java-source
 model-bridge limitations remain outstanding.
+
+The 2026-09-03 client crash while placing a ProjectRed part on `60d060a` exposed a renderer regression from the earlier
+client-trait port (`970e888`): javac emitted `INVOKEVIRTUAL TileMultipartClient.hasDynamicParts()Z`, but Forge rewrites
+that class into an interface. Any nonempty multipart reaching the TESR could fail with `IncompatibleClassChangeError`.
+`MultipartRenderer$` now queries the same flag through a new `TileMultipart.hasDynamicParts()` base hook; generated
+client tiles already override that signature. The checked client-trait cast and empty/static early returns remain.
+The only ABI addition is that public boolean base hook, documented in the divergence ledger. No generator algorithm
+or runtime trait interface changed.
+
+Four Forge regression tests execute the actual renderer method body against generated client tiles, replacing only
+GL/pass services and recording the drawing callback (the server strips `TMultiPart.renderDynamic`). They cover static
+and empty early returns, non-client rejection, state setup and dynamic dispatch with exact coordinates/frame/pass.
+Both nonempty cases reproduce the exact original crash before the fix; all four pass after it. Earlier client-tile
+tests used method handles and did not exercise the compiled renderer call site. Reference jar/source, reproduction
+reports and verification scripts are in ignored `run/renderer-compatibility-review/`.
+
+Clean formatting/checkstyle/build and Forge pass after stopping Gradle: 333 JVM / 163 Forge, zero failures/errors/skips.
+All 455 class APIs match except the additive base hook; 3,713 other method bodies are unchanged. The raw-jar audit finds
+no remaining unsafe external calls/field accesses to the eight transformed Java tile inputs. All 40 generated outputs
+retain their instructions: 34 names/hashes match exactly, and six composite numbers move because the new tests create
+the client composite earlier. The dev config and forced Scala-compilation guard are unchanged, and all five `@Mod`
+versions match both packaged jar versions. The full client rendering check remains open until the fixed jar is tried
+in the pack; see the dated note in the manual checklist.
 
 **Next: `ASMMixinCompiler` class-byte loading/cache helpers: `getBytes`, `classNode` and `internalDefine`.**
 Characterize name normalization, cache identity/invalidation, transformer exclusions/remapping, nulls and failure

@@ -1550,3 +1550,25 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   five `@Mod` versions match both packaged jar versions. External Scala-trait tests remain green; existing manual
   client checks and Java-source model-bridge limitations remain. Next: `getBytes`, `classNode` and `internalDefine`
   class-byte loading/cache helpers, characterized first and without loader/cache algorithm changes.
+- Investigated the 2026-09-03 ProjectRed placement crash on `60d060a`. The failure occurs in multipart TESR rendering,
+  not registration: the earlier client-trait port (`970e888`) left an `INVOKEVIRTUAL` call to
+  `TileMultipartClient.hasDynamicParts()Z` in `MultipartRenderer$`, while Forge exposes that type as an interface.
+  A raw-jar audit of calls/field accesses to all eight Java-authored tile trait inputs found this one unsafe external
+  call. The recent Scala-trait registration extraction is not its cause.
+- Added four Forge regression cases executing the shipped renderer method body against generated client tiles.
+  Only GL/pass services and the final drawing callback are recorded, because the dedicated server strips the actual
+  `TMultiPart.renderDynamic` method. Static and empty early returns, non-client rejection, render-state setup and
+  exact dynamic coordinates/frame/pass are covered. The final tests were rerun against the broken renderer: both
+  nonempty cases raise the same `IncompatibleClassChangeError` as the supplied crash. This closes the call-site gap
+  left by earlier client-tile tests, which invoked trait methods through method handles.
+- Added a default-false `TileMultipart.hasDynamicParts()` base hook and routed the renderer's flag query through it.
+  Generated client tiles already supply the overriding getter. The original checked client-trait cast and guards
+  remain; no generator algorithm or runtime trait interface changes. The additive base method is recorded in the
+  existing divergence entry. Reference source/jar, reproduction reports and scripts are saved under ignored
+  `run/renderer-compatibility-review/`; the manual checklist records the failed full-client check and required retest.
+- Clean formatting/checkstyle/build and Forge pass after stopping Gradle: 333 JVM / 163 Forge tests, zero
+  failures/errors/skips. All 455 class APIs match except the new base hook, and 3,713 other method bodies match.
+  No unsafe external calls/field accesses to the eight transformed Java tile inputs remain. All 40 generated outputs
+  keep their instructions: 34 names/hashes are exact; six composites are renumbered by the new tests' earlier client
+  tile construction. The dev config and forced Scala-compilation guard remain unchanged; all five `@Mod` versions
+  match both packaged jars. Full-client placement/rendering with the fixed jar still needs confirmation.

@@ -39,9 +39,8 @@ public final class MultipartRenderer$ extends TileEntitySpecialRenderer implemen
 
     @Override
     public void renderTileEntityAt(TileEntity t, double x, double y, double z, float f) {
-        TileMultipartClient client = (TileMultipartClient) t;
-        TileMultipart tile = (TileMultipart) t;
-        if (tile.partList().isEmpty() || !client.hasDynamicParts()) {
+        TileMultipart tile = TileMultipart.class.cast((TileMultipartClient) t);
+        if (tile.partList().isEmpty() || !tile.hasDynamicParts()) {
             return;
         }
 
