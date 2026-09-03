@@ -1080,3 +1080,22 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
 - Added a manual face-cover check using Stone, Glass and ProjectRed Inverted White Lamp materials. Headless tests
   prove per-face dispatch, not GPU output. Next: `microblock/CornerMicroblockTraits.scala` implementation, characterized
   before conversion.
+
+### 2026-09-03 — Corner microblock trait implementation
+
+- Committed three JVM and three Forge characterization tests first as `82da452`. A frozen Scala 2.11.5 corner
+  implementor, compiled under Java 8 against the untouched jar, pins the virtual shape setter/getter and seven-slot
+  offset, including byte truncation and out-of-range integer behavior. Forge covers all 56 supported corner bounds,
+  singleton/type identity, signed-index failures, null/live-replaced bounds arrays and generated NBT/description
+  round-trips for the packed shape and material name.
+- Moved shape packing, bounds lookup and slot decoding to package-private `CornerMicroblockTraitLogic.java`.
+  The Scala trait declaration, inheritance metadata, `$class` helper and singleton accessor remain. No compiler
+  algorithm, validation or existing behavior changed; no new divergence entry is needed.
+- Saved reference jar/source, reports and 116 generated dumps under ignored `run/migration-corner-traits-reference/`.
+  Clean verification preserves all 439 original class/member APIs, all 17 ScalaSignature payloads and 3,692 non-target
+  method bodies. All 116 generated names and SHA-256 hashes match; only the helper raises the inventory to 440 classes.
+  Formatting, checkstyle, build and Forge pass normally and after stopping Gradle for a clean rebuild: 348 JVM /
+  219 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged `@Mod` versions
+  remain verified. Sources total 217 Java files and 9 Scala files / 1,144 nonblank Scala lines.
+- Next: `EdgeMicroblock` in `microblock/EdgeMicroblockTraits.scala`; characterize and port the post traits separately.
+  Client/GPU and full-pack validation remain on the existing manual checklist.

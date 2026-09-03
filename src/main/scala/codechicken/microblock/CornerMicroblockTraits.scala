@@ -1,13 +1,13 @@
 package codechicken.microblock
 
+// Retain Scala inheritance metadata and helper bridges for generated and external mixins.
 trait CornerMicroblock extends CommonMicroblock {
-  override def setShape(size: Int, slot: Int) = shape_$eq(
-    (size << 4 | (slot - 7)).toByte
-  )
+  override def setShape(size: Int, slot: Int) =
+    CornerMicroblockTraitLogic.setShape(this, size, slot)
 
   def microClass = CornerMicroClass$.MODULE$
 
-  def getBounds = CornerMicroClass.aBounds()(shape)
+  def getBounds = CornerMicroblockTraitLogic.getBounds(this)
 
-  override def getSlot = getShape + 7
+  override def getSlot = CornerMicroblockTraitLogic.getSlot(this)
 }
