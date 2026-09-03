@@ -162,18 +162,50 @@ class JavaTraitRegistrationFunctionalTest {
     }
 
     @Test
-    void sideOnlyAnnotationsDoNotStripJavaMethodsOnTheServer() throws Exception {
+    void sideOnlyAnnotationsDoNotStripJavaMembersOrInitializationOnTheServer() throws Exception {
         try (Scope scope = new Scope()) {
             ClassNode parent = base("SideJavaBase");
             scope.define(parent);
             ClassNode input = input("SideOnly", parent.name);
-            constant(input, "clientMarked", "()I", 37, ACC_PUBLIC);
-            method(input, "clientMarked").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+            input.visitField(ACC_PRIVATE, "clientVisibleField", "I", null, null)
+                    .visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
                     .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            input.visitField(ACC_PRIVATE, "clientInvisibleField", "I", null, null)
+                    .visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", false)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            input.visitField(ACC_PRIVATE, "serverField", "I", null, null)
+                    .visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "SERVER");
+            MethodNode constructor = method(input, "<init>");
+            constructor.visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            constructor.instructions.remove(constructor.instructions.getLast());
+            initialize(constructor, input.name, "clientVisibleField", 11);
+            initialize(constructor, input.name, "clientInvisibleField", 13);
+            initialize(constructor, input.name, "serverField", 17);
+            constructor.visitInsn(RETURN);
+            constructor.visitMaxs(2, 1);
+            constant(input, "clientVisible", "()I", 37, ACC_PUBLIC);
+            method(input, "clientVisible").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            constant(input, "clientInvisible", "()I", 41, ACC_PUBLIC);
+            method(input, "clientInvisible").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", false)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            constant(input, "serverVisible", "()I", 43, ACC_PUBLIC);
+            method(input, "serverVisible").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "SERVER");
             COMPILER.registerJavaTrait(input);
+            MixinInfo info = COMPILER.getMixinInfo(input.name).get();
+            assertEquals(Arrays.asList("clientVisible()I", "clientInvisible()I", "serverVisible()I"), signatures(info));
             Object value = COMPILER.mixinClasses(ROOT + "SideComposite", parent.name, seq(input.name))
                     .getConstructor(int.class).newInstance(0);
-            assertEquals(37, value.getClass().getMethod("clientMarked").invoke(value));
+            assertEquals(37, value.getClass().getMethod("clientVisible").invoke(value));
+            assertEquals(41, value.getClass().getMethod("clientInvisible").invoke(value));
+            assertEquals(43, value.getClass().getMethod("serverVisible").invoke(value));
+            String fieldPrefix = input.name.replace('/', '$') + "$$";
+            assertEquals(11, value.getClass().getMethod(fieldPrefix + "clientVisibleField").invoke(value));
+            assertEquals(13, value.getClass().getMethod(fieldPrefix + "clientInvisibleField").invoke(value));
+            assertEquals(17, value.getClass().getMethod(fieldPrefix + "serverField").invoke(value));
         }
     }
 
@@ -288,6 +320,12 @@ class JavaTraitRegistrationFunctionalTest {
         method.visitLdcInsn(value);
         method.visitInsn(IRETURN);
         method.visitMaxs(1, desc.equals("(I)I") ? 2 : 1);
+    }
+
+    private static void initialize(MethodVisitor constructor, String owner, String field, int value) {
+        constructor.visitVarInsn(ALOAD, 0);
+        constructor.visitLdcInsn(value);
+        constructor.visitFieldInsn(PUTFIELD, owner, field, "I");
     }
 
     private static MethodNode method(ClassNode node, String name) {
