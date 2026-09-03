@@ -1119,3 +1119,25 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
 - Next: `PostMicroblock` in the same file; characterize its occlusion ordering, axis bounds, item identity, torch
   support and generated state before extraction. `PostMicroblockClient` follows separately. The existing manual
   Stone Strip / ProjectRed Red Alloy Wire and illuminated-strip checks cover the remaining client/full-pack gate.
+
+### 2026-09-03 — Post microblock trait implementation
+
+- Committed six JVM and four Forge characterization tests first as `afd6c69`. Frozen Scala 2.11.5 post/face
+  implementors compiled under Java 8 against the untouched jar pin virtual calls, failure ordering and a real
+  superclass predecessor. Tests cover post-first and aligned-face bypasses, normal/partial box rejection before
+  super, superclass results/exceptions, fresh read-only lists and partial-list delegation. Forge covers all nine
+  supported post bounds, signed/live/null array behavior, torch support, edge-item drops/picking, NBT/descriptions,
+  crossing posts and aligned/non-overlapping face covers.
+- Extracted seven method bodies to package-private `PostMicroblockTraitLogic.java`; retained Scala declarations,
+  metadata, singleton access and the synthetic super accessor. Java returns an occlusion decision or requests the
+  original Scala super call, preserving short-circuit ordering without exposing a new accessor or allocating a
+  callback. The returned list still uses the same Scala Seq-to-Java conversion. `PostMicroblockClient` is untouched;
+  no compiler algorithm, existing behavior or effective compatibility difference changed.
+- Saved reference source/jar, reports and 116 generated dumps under ignored `run/migration-post-trait-reference/`.
+  Clean verification preserves all 441 original class/member APIs, all 17 ScalaSignature payloads and 3,696 non-target
+  method bodies. All 116 generated names/hashes match; the helper alone raises the jar inventory to 442 classes.
+  Formatting, checkstyle, build and Forge pass normally and after stopping Gradle for a clean rebuild: 357 JVM /
+  226 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged `@Mod`
+  versions remain verified. Sources total 219 Java files and 9 Scala files / 1,140 nonblank Scala lines.
+- Next: `PostMicroblockClient`; characterize render dispatch, lifecycle super ordering, shrink/split/reset behavior
+  and size/transparency/axis tie-breaks before conversion. Client/GPU and full-pack checks remain manual.

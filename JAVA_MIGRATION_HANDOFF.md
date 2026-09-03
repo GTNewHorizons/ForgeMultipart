@@ -16,22 +16,22 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**351 plain-JVM tests and 222 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **218 Java
-files and 9 Scala files / 1,144 nonblank Scala lines**. The packaged inventory has 441 classes.
+**357 plain-JVM tests and 226 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **219 Java
+files and 9 Scala files / 1,140 nonblank Scala lines**. The packaged inventory has 442 classes.
 
-Latest bounded target: `EdgeMicroblock` in `EdgeMicroblockTraits.scala` delegates shape packing, bounds lookup and
-slot decoding to `EdgeMicroblockTraitLogic.java`. Its Scala declaration, inheritance metadata, `$class` bridge,
-singleton accessor and inherited `TEdgePart` conduction remain. Characterization was committed first as `5e020e5`,
-with a frozen Scala implementor that observes virtual shape access. Tests cover the fifteen-slot offset, byte
-truncation/integer overflow, all 84 supported edge bounds, live/null array replacement, signed-index failures and
-generated NBT/description round-trips. Clean verification after stopping Gradle matches all 440 original class/member
-APIs, all 17 ScalaSignature payloads, 3,696 non-target method bodies and all 116 generated dump names/hashes. Only the
-package-private helper is added. Local evidence is in `run/migration-edge-trait-reference/`; `clean` preserves it.
+Latest bounded target: `PostMicroblock` in `EdgeMicroblockTraits.scala` delegates its implementation to
+`PostMicroblockTraitLogic.java`. Its Scala declaration, inheritance metadata, `$class` bridges and singleton accessor
+remain. The Scala occlusion bridge retains the synthetic super call after Java evaluates the special cases and box
+test. Characterization was committed first as `afd6c69`, with frozen Scala post/face implementors and a real superclass
+predecessor. Tests pin call/failure ordering, virtual dispatch, read-only list behavior, all nine supported bounds,
+edge-item drops/picking, torch support, generated post/cover occlusion and NBT/description round-trips. Clean
+verification after stopping Gradle matches all 441 original class/member APIs, all 17 ScalaSignature payloads,
+3,696 non-target method bodies and all 116 generated dump names/hashes. Only the package-private helper is added.
+Local evidence is in `run/migration-post-trait-reference/`; `clean` preserves it.
 
-**Next: port `PostMicroblock` in `microblock/EdgeMicroblockTraits.scala`.** Characterize its axis/shape bounds,
-occlusion boxes and special-case ordering (posts, aligned face covers, normal box test and superclass fallback),
-item/class identity, torch support and generated state/dispatch before conversion. Leave `PostMicroblockClient`
-rendering and lifecycle behavior for a subsequent bounded target.
+**Next: port `PostMicroblockClient` in `microblock/EdgeMicroblockTraits.scala`.** Characterize render pass/bounds
+dispatch, lifecycle super-call ordering, face/post shrinking, split-bound reset and the size/transparency/axis
+tie-breaks before conversion. Retain equality semantics and observe virtual calls rather than caching them.
 Retain the Scala declarations where inheritance metadata is required, the external ProjectRed Scala-trait fixture
 and the ScalaSignature model bridges; compiler changes stay separate.
 
@@ -43,7 +43,7 @@ Remaining Scala units:
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
 | `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala` | Six retained inheritance/bridge shells over Java implementation |
-| `microblock/EdgeMicroblockTraits.scala` | Retained `EdgeMicroblock` shell over Java behavior; post/server and post/client implementations remain |
+| `microblock/EdgeMicroblockTraits.scala` | Edge/post shells over Java behavior, with retained post super dispatch; `PostMicroblockClient` implementation remains |
 | `microblock/HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated trait implementations; port in bounded groups while preserving inheritance metadata |
 
 Both generators, both registries, core tile/part classes, ordinary microblock helpers/factories, handlers, networking,
@@ -156,6 +156,9 @@ code must cast. Seen with `JIconHitEffects`, `TRandomUpdateTick`, `TileMultipart
 **Trait super accessors are `ACC_SYNTHETIC`.** `javac` cannot see or implement them. Where one is load-bearing, emit
 it as a non-synthetic `default` returning the identity for the chain, as
 `codechicken$multipart$TNormalOcclusion$$super$occlusionTest` does.
+For retained Scala traits, keep the accessor and its call in Scala instead. `PostMicroblockTraitLogic.occlusionResult`
+returns 0/1 for a completed decision or -1 for the Scala bridge to invoke the original super chain; no callback
+allocation, eager super evaluation or new public accessor is needed.
 
 **Recompiled Scala consumers.** These are source-only breaks; binaries are fine. Expect and document them:
 `x.partList(i)` becomes `x.partList.apply(i)`; assignment to a Java accessor needs `_$eq`; a Scala `object` becoming a

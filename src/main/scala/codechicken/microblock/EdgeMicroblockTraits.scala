@@ -4,12 +4,10 @@ import codechicken.lib.data.MCDataInput
 import codechicken.lib.vec.{Cuboid6, Vector3}
 import codechicken.multipart.{
   JPartialOcclusion,
-  NormalOcclusionTest,
   TEdgePart,
   TMultiPart,
   TNormalOcclusion
 }
-import scala.collection.JavaConversions._
 
 // Retain Scala inheritance metadata and helper bridges for generated and external mixins.
 trait EdgeMicroblock extends CommonMicroblock with TEdgePart {
@@ -100,27 +98,23 @@ trait PostMicroblock
     with TNormalOcclusion {
   def microClass = PostMicroClass$.MODULE$
 
-  def getBounds = PostMicroClass.aBounds()(shape)
+  def getBounds = PostMicroblockTraitLogic.getBounds(this)
 
-  def getOcclusionBoxes = Seq(getBounds)
+  def getOcclusionBoxes = PostMicroblockTraitLogic.getOcclusionBoxes(this)
 
-  def getPartialOcclusionBoxes = getOcclusionBoxes
+  def getPartialOcclusionBoxes =
+    PostMicroblockTraitLogic.getPartialOcclusionBoxes(this)
 
-  override def itemClassID = EdgeMicroClass.getClassId()
+  override def itemClassID = PostMicroblockTraitLogic.itemClassID(this)
 
   override def occlusionTest(npart: TMultiPart): Boolean = {
-    if (npart.isInstanceOf[PostMicroblock])
-      return npart.asInstanceOf[PostMicroblock].getShape != getShape
-
-    if (npart.getType.equals("mcr_face"))
-      if (npart.asInstanceOf[CommonMicroblock].getSlot >> 1 == getShape)
-        return true
-
-    // TNormalOcclusion is a Java interface, so its box test must be applied here rather than by the super chain.
-    return NormalOcclusionTest.apply(this, npart) && super.occlusionTest(npart)
+    // Java source cannot call the synthetic super accessor; keep only that dispatch here.
+    val result = PostMicroblockTraitLogic.occlusionResult(this, npart)
+    if (result < 0) super.occlusionTest(npart) else result != 0
   }
 
-  def getResistanceFactor = PostMicroClass.getResistanceFactor()
+  def getResistanceFactor = PostMicroblockTraitLogic.getResistanceFactor(this)
 
-  override def canPlaceTorchOnTop = getShape == 0
+  override def canPlaceTorchOnTop =
+    PostMicroblockTraitLogic.canPlaceTorchOnTop(this)
 }

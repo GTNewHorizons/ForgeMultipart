@@ -515,10 +515,9 @@ covers generated common microblocks; the runtime interfaces used by Extra Utilit
 remain intact. `FaceMicroblockTraitsCharacterizationTest` additionally executes a frozen Scala face-client forwarder
 and checks every emitted face for all masks/slots, including material reuse and repeated virtual slot lookup between
 opaque draws. Its Forge companion pins generated face bounds and solidity. The `FaceMicroblockClient` interface
-tested by Extra Utilities' connected-texture renderer remains intact. The corner-trait tests add a frozen Scala
-implementor for virtual shape access, generated geometry and NBT/description checks for the packed shape and material
-name contracts. The edge-trait tests cover the corresponding fifteen-slot mapping, all 84 supported bounds,
-generated NBT/descriptions and the inherited `TEdgePart.conductsRedstone` default used by redstone tile dispatch.
+tested by Extra Utilities' connected-texture renderer remains intact. Corner, edge and post tests freeze virtual
+access, every supported geometry, packed shape/material NBT and descriptions, edge conduction and post occlusion
+ordering. The post's frozen Scala superclass also pins its synthetic super dispatch, including short-circuiting.
 Full downstream mixed tiles and client-side selection remain Phase 7 integration cases.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
