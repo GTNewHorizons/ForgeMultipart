@@ -168,3 +168,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouche
 (reference dev-jar SHA-256 `69c0723afd70ab6208b97e5fab12062bfb28a941dfae12575c5d61274102ef6f`). Class-file
 SHA-256 is `b0f540b063bd6fffcc2a1462d72de1f31b4c8a68caa92ac9298dfdf18a9eb24f`, stored as
 `src/functionalTest/resources/compat/ReferenceScalaMultipartGeneratorConsumer.class.b64`.
+
+### `ReferenceScalaMicroblockTraits`
+
+`scala/codechicken/multipart/compat/ReferenceScalaMicroblockTraits.scala` is a concrete `Microblock` with
+`CommonMicroblockClient`. Its frozen Scala forwarders exercise all three `MicroblockTraits.scala` helper classes,
+initialization, virtual slot/material/class dispatch, particle callbacks and both common rendering branches.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchanged dev jar at `f5d449d`
+(SHA-256 `8061ae3ebb260b619a283519b1752a32e38126ccff537e0fbcdb33c1a736fde3`). Source SHA-256 is
+`8a8754632121c8bac8c0c61bf2facbd317462c1c4e43b82127511908ffbcbd98`; class-file SHA-256 is
+`dccc96505689e4c6084e11133812b56b39ae90b274762327815a22ef9a1ce75c`, stored as
+`src/test/resources/compat/ReferenceScalaMicroblockTraits.class.b64`. Do not regenerate it against the Java helper.
