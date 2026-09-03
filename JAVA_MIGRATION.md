@@ -26,8 +26,9 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
 placement/render helpers, both generators and all built-in tile traits are Java. Six generated microblock trait
 files and the compiler/signature/analyser compatibility shells remain Scala. Composite generation, Java-trait
-rewriting and compiler startup now delegate to Java helpers. The next bounded target is abstract-Java-mixin support,
-separate from Java-path side-only filtering; retain the ScalaSignature path-dependent model bridges.
+rewriting and compiler startup now delegate to Java helpers. Abstract Java mixins and Java-path side-only filtering
+are complete; the next bounded target is `microblock/MicroblockTraits.scala`. Retain the ScalaSignature
+path-dependent model bridges.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
 Java-source limitations. Read both the [ABI inventory](JAVA_MIGRATION_ABI_INVENTORY.md) and
@@ -364,8 +365,8 @@ cache remain reference-identical; pass-through-interface coverage remains green.
 ### Phase 6 — Convert multipart core and microblocks
 
 Status: core code, factories and ordinary helpers are Java. The six remaining generated microblock trait files
-still need the abstract-Java-mixin and side-only-member prerequisites from Phase 7. The following gates continue
-to apply to those remaining units; completed per-type evidence is in the history.
+can now move through the Java mixin path because both Phase 7 prerequisites are complete. The following gates
+continue to apply to those remaining units; completed per-type evidence is in the history.
 
 - [ ] Add characterization coverage for each subsystem immediately before its conversion.
 - [ ] Convert the central tile, part, registry, placement, rendering, networking, scheduler, and microblock code in dependency order.
@@ -383,9 +384,9 @@ Exit condition: normal runtime implementation is Java; any remaining Scala is is
 - [ ] Keep Scala-trait registration while deprecated bridges or supported external Scala traits require it.
 - [x] Allow abstract Java mixins whose base type is abstract, skipping their abstract members instead of rejecting the
   class. Required before any Java mixin over `Microblock` is possible. See Phase 10.
-- [ ] Implement `@SideOnly` member stripping on the Java mixin path, matching what `listSideOnly` does for Scala
+- [x] Implement `@SideOnly` member stripping on the Java mixin path, matching what `listSideOnly` does for Scala
   signatures. Required before a client-only Java mixin method is safe on a dedicated server. See Phase 10.
-- [ ] Run ProjectRed's `LightMicroblock` external Scala-trait fixture and pass-through-interface fixtures against the
+- [x] Run ProjectRed's `LightMicroblock` external Scala-trait fixture and pass-through-interface fixtures against the
   ported generator.
 - [ ] Decide separately whether a future generator design can avoid custom bytecode generation. Do not couple that experiment to the source-language port.
 
@@ -518,7 +519,7 @@ The standard pattern is a three-step ratchet, and only the first step is on FMP'
 
 | Consumer | What FMP is currently forced to preserve | Upstream fix | Can start |
 | --- | --- | --- | --- |
-| ProjectRed | Runtime Scala-signature decoding and external trait registration, reached through `MicroblockGenerator.registerTrait(classOf[LightMicroblock])` | Rewrite the ~60-line `LightMicroblock` trait as a Java mixin registered through the `registerJavaTrait` path | **Blocked on FMP**; see the prerequisites below |
+| ProjectRed | Runtime Scala-signature decoding and external trait registration, reached through `MicroblockGenerator.registerTrait(classOf[LightMicroblock])` | Rewrite the ~60-line `LightMicroblock` trait as a Java mixin registered through the `registerJavaTrait` path | FMP compiler prerequisites complete; consumer rewrite and release remain |
 | Schematica | Private Scala-mangled field `codechicken$multipart$MultiPartRegistry$$typeMap`, cast to `scala.collection.mutable.Map` | FMP exposes a supported registry lookup; Schematica uses it instead of the field | After step 1 |
 | GuideNH | Companion-only `MultipartGenerator$.MODULE$.generateCompositeTile` and `MicroblockGenerator$.create`; `partList_$eq(scala.collection.Seq)`; mixin into private `BlockMicroMaterial.block` and `.meta` | FMP exposes supported static entry points and `setPartList(List)`; GuideNH targets those and public material accessors | After step 1 and Phase 9.1 |
 | Et Futurum Requiem | Mutable static `int[] ButtonPart.metaSideMap` and `sideMetaMap` must stay public and mutable | FMP exposes a supported orientation-override API; Et Futurum uses it | After step 1 |
@@ -539,15 +540,16 @@ The rewrite has two Phase 7 prerequisites:
    method metadata until a later mixin supplies an implementation. A no-argument mixin constructor may call an
    argument-taking base constructor; that direct call is discarded because the generated composite invokes the real
    base constructor before trait initialization.
-2. **`@SideOnly` stripping on the Java path — outstanding.** Side stripping is implemented only for Scala traits,
-   through
-   `listSideOnly(sig: ScalaSignature)` reading the Scala signature annotation table inside `registerScalaTrait`.
-   `LightMicroblock.renderDynamic` is `@SideOnly(Side.CLIENT)` and the trait is applied on both sides, because
-   ProjectRed's `addTraits` ignores its `client` argument. Without an equivalent annotation-driven strip in
-   `registerJavaTrait`, a Java rewrite would merge a client-only method into server-side generated microblocks.
+2. **`@SideOnly` stripping on the Java path — complete.** `registerJavaTrait` checks both visible and invisible
+   annotations before collecting fields, signatures or methods. Opposite-side members are omitted; an excluded
+   no-argument constructor produces an empty `$init$` so generated composites remain valid without executing its
+   body, including when Forge stripped it before registration. Current-side members retain their generated behavior.
+   `LightMicroblock.renderDynamic` can therefore remain
+   `@SideOnly(Side.CLIENT)` when ProjectRed rewrites the trait to Java, even though its `addTraits` ignores the
+   `client` argument.
 
-Both prerequisites are Phase 7 work and are worth doing regardless, since they are also what any future FMP-internal
-Java microblock mixin would need.
+Both compiler prerequisites are complete. The FMP microblock trait files can now move through the Java path; removing
+external Scala-signature support still waits for a released ProjectRed Java rewrite.
 
 UtilitiesInExcess is the cheapest case in the table because it is not yet in the pack. Anything fixed before it ships
 never becomes a compatibility obligation at all.
@@ -560,8 +562,9 @@ placeholder, rather than lost material data. Extra Utilities writes `mat` as wel
 `PartConnecting`, and `PartPipeJacket`, so correcting the key also matches the legacy tags reached through
 UtilitiesInExcess's `extrautils:*` aliases; there is no legacy-conversion risk in the fix.
 
-- [ ] Land the two Phase 7 Java-mixin prerequisites, then the ProjectRed `LightMicroblock` Java rewrite, with a
-  fixture proving the Java-trait path produces equivalent generated microblocks on both sides.
+- [x] Land the two Phase 7 Java-mixin prerequisites with generated Java-trait fixtures.
+- [ ] Land the ProjectRed `LightMicroblock` Java rewrite with a fixture proving equivalent generated microblocks on
+  both sides.
 - [ ] Land the Galacticraft reflection signature check.
 - [ ] Fix the UtilitiesInExcess `mat`/`material` key mismatch and its `getIdMap()` use before it enters the pack.
 - [ ] Add the supported public equivalents needed by Schematica, GuideNH, Et Futurum, and Iguana as additive API.
@@ -674,7 +677,7 @@ Still open, and only to be decided when they become necessary:
 Track remaining work by completed compatibility gates, not the retired pre-audit calendar estimates:
 
 1. Extract the remaining compiler algorithms with unchanged characterization and generated output.
-2. Characterize and add the Java-mixin prerequisites, then port the remaining generated microblock traits.
+2. Characterize and port the remaining generated microblock traits through the completed Java-mixin path.
 3. Resolve or explicitly retain the Scala model bridges; finish the applicable API and pre-merge cleanup gates.
 4. Complete packaged-pack, client and performance validation with recorded results.
 

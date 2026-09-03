@@ -1012,3 +1012,26 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   zero failures/errors/skips. All five packaged `@Mod` versions, the forced Scala-compilation guard and dev config
   remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188 nonblank Scala lines. Next: Java-path
   `@SideOnly` member filtering, characterized first as its own compiler behavior target.
+
+### 2026-09-03 — Java mixin side filtering
+
+- Expanded the Forge Java-trait fixture against the untouched implementation and committed it first as `a481859`.
+  It proves that the old Java path retained runtime-visible and runtime-invisible client annotations on a dedicated
+  server: both methods execute, both fields keep initialized state, and a client-marked constructor runs its body.
+- `registerJavaTrait` now filters opposite-side fields and methods before building field metadata, method signatures
+  or helper bodies. It reads both annotation tables and retains current-side members. When the no-argument constructor
+  is absent, the helper receives an empty `$init$`; generated composites construct normally without executing
+  side-specific initialization. The regressions cover a method body that would otherwise fail primitive-array
+  analysis and input already processed by Forge's real side transformer. External Scala traits still use the
+  unchanged ScalaSignature path.
+- This deliberately changes the previously ignored Java annotation, so the divergence ledger records it. No audited
+  Java trait depends on retaining an opposite-side member; the change supplies the remaining compiler prerequisite
+  for a Java ProjectRed `LightMicroblock`, whose `renderDynamic` is client-only while the trait is selected both ways.
+- Saved the pre-change jar/source, Forge report and 112 generated outputs under ignored
+  `run/migration-java-side-only-reference/`. Clean verification after stopping Gradle keeps all 437 packaged classes,
+  matches 432 class APIs, 3,643 non-target method bodies and all five compiler closures. All 112 reference dump names
+  remain: 109 hashes are exact and only the SideOnly fixture's trait, helper and composite change; four outputs are
+  new for the already-stripped-constructor fixture. Formatting, checkstyle, build and Forge pass: 333 JVM / 211 Forge,
+  zero failures/errors/skips. All five packaged `@Mod` versions, the forced
+  Scala-compilation guard and dev config remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188
+  nonblank Scala lines. Next: `microblock/MicroblockTraits.scala`, characterized before conversion.

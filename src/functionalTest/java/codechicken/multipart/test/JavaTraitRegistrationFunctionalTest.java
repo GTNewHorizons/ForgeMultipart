@@ -19,6 +19,7 @@ import org.objectweb.asm.tree.TypeInsnNode;
 
 import codechicken.lib.asm.ASMHelper;
 import codechicken.multipart.asm.ASMMixinCompiler.MixinInfo;
+import cpw.mods.fml.common.asm.transformers.SideTransformer;
 import scala.MatchError;
 import scala.collection.JavaConversions;
 
@@ -162,7 +163,7 @@ class JavaTraitRegistrationFunctionalTest {
     }
 
     @Test
-    void sideOnlyAnnotationsDoNotStripJavaMembersOrInitializationOnTheServer() throws Exception {
+    void sideOnlyAnnotationsStripOppositeJavaMembersAndInitializationOnTheServer() throws Exception {
         try (Scope scope = new Scope()) {
             ClassNode parent = base("SideJavaBase");
             scope.define(parent);
@@ -191,21 +192,63 @@ class JavaTraitRegistrationFunctionalTest {
             constant(input, "clientInvisible", "()I", 41, ACC_PUBLIC);
             method(input, "clientInvisible").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", false)
                     .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            MethodVisitor clientInvalid = input.visitMethod(ACC_PUBLIC, "clientInvalid", "()[I", null, null);
+            clientInvalid.visitInsn(ICONST_1);
+            clientInvalid.visitIntInsn(NEWARRAY, T_INT);
+            clientInvalid.visitInsn(ARETURN);
+            clientInvalid.visitMaxs(1, 1);
+            clientInvalid.visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
             constant(input, "serverVisible", "()I", 43, ACC_PUBLIC);
             method(input, "serverVisible").visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
                     .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "SERVER");
             COMPILER.registerJavaTrait(input);
             MixinInfo info = COMPILER.getMixinInfo(input.name).get();
-            assertEquals(Arrays.asList("clientVisible()I", "clientInvisible()I", "serverVisible()I"), signatures(info));
+            assertEquals(Arrays.asList("serverVisible()I"), signatures(info));
+            assertEquals(1, info.fields().size());
+            assertEquals("serverField", info.fields().apply(0).name());
             Object value = COMPILER.mixinClasses(ROOT + "SideComposite", parent.name, seq(input.name))
                     .getConstructor(int.class).newInstance(0);
-            assertEquals(37, value.getClass().getMethod("clientVisible").invoke(value));
-            assertEquals(41, value.getClass().getMethod("clientInvisible").invoke(value));
+            assertThrows(NoSuchMethodException.class, () -> value.getClass().getMethod("clientVisible"));
+            assertThrows(NoSuchMethodException.class, () -> value.getClass().getMethod("clientInvisible"));
+            assertThrows(NoSuchMethodException.class, () -> value.getClass().getMethod("clientInvalid"));
             assertEquals(43, value.getClass().getMethod("serverVisible").invoke(value));
             String fieldPrefix = input.name.replace('/', '$') + "$$";
-            assertEquals(11, value.getClass().getMethod(fieldPrefix + "clientVisibleField").invoke(value));
-            assertEquals(13, value.getClass().getMethod(fieldPrefix + "clientInvisibleField").invoke(value));
-            assertEquals(17, value.getClass().getMethod(fieldPrefix + "serverField").invoke(value));
+            assertThrows(
+                    NoSuchMethodException.class,
+                    () -> value.getClass().getMethod(fieldPrefix + "clientVisibleField"));
+            assertThrows(
+                    NoSuchMethodException.class,
+                    () -> value.getClass().getMethod(fieldPrefix + "clientInvisibleField"));
+            assertEquals(0, value.getClass().getMethod(fieldPrefix + "serverField").invoke(value));
+        }
+    }
+
+    @Test
+    void alreadyStrippedForgeConstructorStillSuppliesAnEmptyMixinInitializer() throws Exception {
+        try (Scope scope = new Scope()) {
+            ClassNode parent = base("PrestrippedSideJavaBase");
+            scope.define(parent);
+            ClassNode input = input("PrestrippedSide", parent.name);
+            input.visitField(ACC_PRIVATE, "state", "I", null, null);
+            MethodNode constructor = method(input, "<init>");
+            constructor.visitAnnotation("Lcpw/mods/fml/relauncher/SideOnly;", true)
+                    .visitEnum("value", "Lcpw/mods/fml/relauncher/Side;", "CLIENT");
+            constructor.instructions.remove(constructor.instructions.getLast());
+            initialize(constructor, input.name, "state", 29);
+            constructor.visitInsn(RETURN);
+            constructor.visitMaxs(2, 1);
+            constant(input, "available", "()I", 47, ACC_PUBLIC);
+            ClassNode stripped = ASMHelper.createClassNode(
+                    new SideTransformer().transform(input.name, input.name, ASMHelper.createBytes(input, 0)),
+                    0);
+            assertTrue(stripped.methods.stream().noneMatch(m -> ((MethodNode) m).name.equals("<init>")));
+            COMPILER.registerJavaTrait(stripped);
+            Object value = COMPILER.mixinClasses(ROOT + "PrestrippedSideComposite", parent.name, seq(input.name))
+                    .getConstructor(int.class).newInstance(7);
+            assertEquals(7, value.getClass().getMethod("score").invoke(value));
+            assertEquals(47, value.getClass().getMethod("available").invoke(value));
+            assertEquals(0, value.getClass().getMethod(input.name.replace('/', '$') + "$$state").invoke(value));
         }
     }
 

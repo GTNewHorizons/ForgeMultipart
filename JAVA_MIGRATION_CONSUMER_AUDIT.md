@@ -507,7 +507,9 @@ name like ProjectRed's `LightMicroblock`, direct-Java-source `TPartialOcclusionT
 direct-Java-source `TRedstoneTile`'s exact eight-method interface and class caching, and server-only pass-through
 forwarding, overloading, single-implementor selection, copying/rebinding, and removal cleanup.
 `TRedstoneTileFunctionalTest` additionally pins the ProjectRed/Extra Utilities query surface, masks, conduction, and
-world-side routing. Full downstream mixed tiles and client-side selection remain Phase 7 integration cases.
+world-side routing. `JavaTraitRegistrationFunctionalTest` now pins current/opposite-side selection for visible and
+invisible Java annotations, including method dispatch, field state and constructor initialization. Full downstream
+mixed tiles and client-side selection remain Phase 7 integration cases.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
 changes, while each externally observed behavior has a named consumer and a focused way to prove compatibility.

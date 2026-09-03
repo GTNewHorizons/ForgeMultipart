@@ -10,6 +10,7 @@ import java.util.function.Function;
 
 import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AbstractInsnNode;
+import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.FieldNode;
@@ -24,6 +25,8 @@ import codechicken.lib.asm.InsnComparator;
 import codechicken.lib.asm.InsnListSection;
 import codechicken.multipart.asm.ASMMixinCompiler.FieldMixin;
 import codechicken.multipart.asm.ASMMixinCompiler.MixinInfo;
+import cpw.mods.fml.relauncher.FMLLaunchHandler;
+import cpw.mods.fml.relauncher.SideOnly;
 import scala.Function1;
 import scala.Option;
 import scala.Tuple2;
@@ -48,14 +51,21 @@ final class JavaTraitRegistration {
                 "Inner classes are not permitted for " + input.name + " as a java mixin trait. Use scala");
         ASMMixinCompiler$ compiler = ASMMixinCompiler$.MODULE$;
         Option<MixinInfo> parentTrait = compiler.getMixinInfo(input.superName);
-        Buffer<FieldNode> sourceFields = JavaConversions.asScalaBuffer(input.fields);
         Map<String, FieldMixin> fields = scala.collection.immutable.Map$.MODULE$.empty();
-        for (FieldNode field : iterable(sourceFields))
-            fields = fields.$plus(new Tuple2<>(field.name, new FieldMixin(field.name, field.desc, field.access)));
+        for (FieldNode field : input.fields) {
+            if (!excludedOnCurrentSide(field.visibleAnnotations, field.invisibleAnnotations))
+                fields = fields.$plus(new Tuple2<>(field.name, new FieldMixin(field.name, field.desc, field.access)));
+        }
         ListBuffer<String> supers = new ListBuffer<>();
         ListBuffer<MethodNode> methods = new ListBuffer<>();
         java.util.Set<String> methodSignatures = new LinkedHashSet<>();
-        for (MethodNode method : input.methods) methodSignatures.add(method.name + method.desc);
+        List<MethodNode> sourceMethods = new ArrayList<>();
+        for (MethodNode method : input.methods) {
+            if (!excludedOnCurrentSide(method.visibleAnnotations, method.invisibleAnnotations)) {
+                sourceMethods.add(method);
+                methodSignatures.add(method.name + method.desc);
+            }
+        }
 
         ClassNode implementation = new ClassNode();
         implementation.visit(V1_6, ACC_ABSTRACT | ACC_PUBLIC, input.name + "$class", null, "java/lang/Object", null);
@@ -78,13 +88,19 @@ final class JavaTraitRegistration {
         }
 
         Context context = new Context(input, implementation, contract, fields, methodSignatures, supers, methods);
-        Buffer<MethodNode> sourceMethods = JavaConversions.asScalaBuffer(input.methods);
-        Buffer<MethodNode> selected = (Buffer<MethodNode>) ((TraversableLike) sourceMethods)
-                .filterNot(fn(context::isGeneratedFieldAccessor));
+        Buffer<MethodNode> selected = (Buffer<MethodNode>) ((TraversableLike) JavaConversions
+                .asScalaBuffer(sourceMethods)).filterNot(fn(context::isGeneratedFieldAccessor));
         selected.foreach(fn(method -> {
             context.convertMethod(method);
             return scala.runtime.BoxedUnit.UNIT;
         }));
+        // Forge may have stripped the constructor before this ClassNode reaches the compiler.
+        if (!methodSignatures.contains("<init>()V")) {
+            MethodNode initializer = (MethodNode) implementation
+                    .visitMethod(ACC_PUBLIC | ACC_STATIC, "$init$", "(L" + input.name + ";)V", null, null);
+            initializer.visitInsn(RETURN);
+            initializer.visitMaxs(0, 1);
+        }
 
         compiler.define(implementation.name, ASMHelper.createBytes(implementation, 0));
         compiler.define(contract.name, ASMHelper.createBytes(contract, 0));
@@ -100,6 +116,27 @@ final class JavaTraitRegistration {
                         fields.values().toSeq(),
                         methods,
                         supers));
+    }
+
+    private static boolean excludedOnCurrentSide(List<AnnotationNode> visible, List<AnnotationNode> invisible) {
+        return excludedOnCurrentSide(visible) || excludedOnCurrentSide(invisible);
+    }
+
+    private static boolean excludedOnCurrentSide(List<AnnotationNode> annotations) {
+        if (annotations == null) return false;
+        String side = FMLLaunchHandler.side().name();
+        String descriptor = Type.getDescriptor(SideOnly.class);
+        for (AnnotationNode annotation : annotations) {
+            if (!Objects.equals(annotation.desc, descriptor) || annotation.values == null) continue;
+            for (int i = 0; i < annotation.values.size() - 1; i += 2) {
+                if (!Objects.equals(annotation.values.get(i), "value")) continue;
+                Object value = annotation.values.get(i + 1);
+                if (value instanceof String[] && ((String[]) value).length > 1
+                        && !Objects.equals(((String[]) value)[1], side))
+                    return true;
+            }
+        }
+        return false;
     }
 
     private static final class Context {
