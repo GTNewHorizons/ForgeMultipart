@@ -24,6 +24,7 @@ import java.util.Collection
 import codechicken.lib.raytracer.ExtendedMOP
 import net.minecraft.util.{AxisAlignedBB, Vec3}
 
+import java.lang.Iterable
 import codechicken.lib.world.IChunkLoadTile
 import com.gtnewhorizon.gtnhlib.client.model.ModelISBRH
 import net.minecraft.client.renderer.RenderBlocks
