@@ -1378,3 +1378,30 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Formatting/checkstyle/build and the Forge suite pass; all 39 generated dump hashes and the dev config are unchanged.
   No production ABI, source counts or next target changed. `multipart/asm/StackAnalyser.scala` remains next, using
   explicit migration-test authorization and separate characterization and refactor commits.
+- Characterized `StackAnalyser` against untouched Scala in 15 plain-JVM tests, committed separately as `a6aca65`.
+  The baseline build passed 320 JVM tests and the Forge suite passed 122. The new tests exercise receiver/parameter
+  initialization, narrow/wide slot aliases, partial failures, every duplication opcode, typed constants, case-class
+  equality/copy/products, instruction provenance, loads/stores/increments, arithmetic/casts, arrays, fields, calls,
+  branches/switches/returns, handler precedence, unsupported-node behavior and overridable default-argument dispatch.
+- Extracted analyser control flow (`setL`, `pop`, `insert`, `popArgs`, `visitInsn`) into package-private Java
+  `StackAnalyserLogic`. The Scala shell retains construction/state, default-argument bridges, simple accessors and
+  the complete nested model. An isolated Scala 2.11.5 probe rejects a Java class alongside its same-name Scala
+  companion; completing the model requires a coordinated class/companion conversion rather than replacing the class
+  independently. The retained `ScalaSignature` model and its primitive/erased bridges are untouched.
+- Preserved current opcode behavior, including wide `DUP2` expansion, int-conversion/comparison/`INSTANCEOF` result
+  types, reference-array descriptor construction, reversed multidimensional size capture and `NEWARRAY`'s existing
+  `MatchError`. Virtual calls still use the Scala default-argument getters. No compiler algorithm, optimization or
+  unrelated bug fix is included.
+- Saved the pre-port dev jar, Scala source, test reports and generated dumps under ignored
+  `run/migration-stack-analyser-reference/`. All 40 named analyser surfaces match by member name, descriptor,
+  modifiers, generic declarations and private fields; the other 39 named model/companion classfiles are byte-identical,
+  preserving their serialized and Scala-facing behavior. All 199 retained ASM/generator disassemblies and all 39
+  generated dump names/hashes match. An additional one-off comparison of 8,960 opcode/node/stack combinations matches
+  expression trees, types, aliases, instruction bindings, locals, exceptions and partial mutation.
+- Formatting/checkstyle/build and Forge pass, including a clean build after stopping Gradle: 320 JVM / 122 Forge
+  tests, zero failures/errors/skips. All characterization tests remain unchanged after the port. The forced Scala
+  compilation version guard is retained, and all five `@Mod` version annotations match both clean packaged jars.
+  Two unreferenced traversal closures become one Java helper (452 to 451 packaged classes); sources now total 207
+  Java files and 9 Scala files / 1,726 nonblank Scala lines. No new compatibility divergence is introduced. Next is
+  `ASMMixinCompiler.scala`, bounded to `ClassInfo`/`MethodInfo` metadata lookup and traversal, with fresh characterization
+  before touching its Forge-initialized state and no trait-rewriting algorithm changes.

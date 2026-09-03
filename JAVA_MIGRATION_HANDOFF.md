@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 172 commits including the API-cleanup plan, divergence-log cleanup, ports
-through the `ScalaSignature` parser extraction, and its characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 174 commits including the API-cleanup plan, divergence-log cleanup, ports
+through the `StackAnalyser` control-flow extraction, and the ASM characterization backfill and review fixes.
 
 ## The one rule that matters
 
@@ -74,7 +74,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **305 plain-JVM tests and 122 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **320 plain-JVM tests and 122 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -280,7 +280,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-206 Java files, 9 Scala files, 1,883 Scala lines left (non-blank; that is the metric this figure has always used).
+207 Java files, 9 Scala files, 1,726 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -632,11 +632,33 @@ is `MultipartMixinFactory`'s facade method set, which is the ledger's four addit
 were relaxed to hold on both trees: the facade private constructors Scala never emitted, and `DebugPrinter$`'s
 directory cleanup, which Scala emitted as a separate closure class.
 
-**Next: `multipart/asm/StackAnalyser.scala`.** Treat its analyser control flow and nested model separately if the same
-Java-source limitations appear. Preserve every nested binary name, constructor, outer/implicit instruction binding,
-case-class surface, mutable Scala collection descriptor and the current opcode behavior (including its existing
-primitive-cast and `NEWARRAY` limitations). Keep `ASMMixinCompiler` algorithms unchanged and compare all generated
-dumps against a saved reference.
+`StackAnalyser` control flow is now implemented in package-private Java `StackAnalyserLogic`. Fifteen plain-JVM
+characterization tests passed on untouched Scala and were committed separately as `a6aca65`. They freeze slot/local
+aliasing and partial mutation, expression trees, instruction identity, case-class equality/copy/product behavior,
+argument/dimension order, handlers, unsupported opcodes and virtual/default-argument dispatch. The same tests pass
+unchanged after extraction; no new Forge-specific fixture is needed for this isolated logic.
+
+The Scala shell retains construction, fields/accessors, default arguments, width helpers and all nested model types.
+A Scala 2.11.5 compiler probe rejects a Java class alongside its same-name Scala object, so replacing the shell alone
+would break the retained companion/model boundary. A future full source port needs a coordinated class/companion/model
+conversion, including case-class and serialization surfaces; this is separate from the `ScalaSignature` primitive
+bridge limitation. All 40 named analyser APIs (including private fields, flags and generic signatures) match, and all
+39 model/companion classfiles are byte-identical. The original cast, comparison, `INSTANCEOF`, wide-duplication,
+reference-array descriptor and primitive `NEWARRAY` quirks remain; compiler fixes are separate work.
+
+The reference jar, source, 39 generated dumps, test reports, clean logs and comparison scripts are saved locally under
+ignored `run/migration-stack-analyser-reference/` (outside `build`, so `clean` preserves them). Clean build and Forge
+verification pass at 320 JVM / 122 Forge, with no skips. All 39 dump names/hashes match; 199 retained ASM/generator
+disassemblies are unchanged; 8,960 additional paired instruction cases match. Two private traversal closures are
+replaced by the Java helper, taking the packaged inventory from 452 to 451. The forced Scala compilation guard is
+unchanged; both clean jars have all five `@Mod` annotations matching their packaged version. No new divergence entry
+is needed.
+
+**Next: `multipart/asm/ASMMixinCompiler.scala`, bounded to `ClassInfo`/`MethodInfo` metadata lookup and traversal.**
+Characterize hierarchy order, lazy traversal, public implementation selection and lookup/cache behavior first, using
+Forge where the compiler's `LaunchClassLoader` initialization requires it. Keep trait registration/rewriting algorithms,
+external Scala-trait support, retained `StackAnalyser` model and `ScalaSignature` primitive/erased bridges unchanged.
+Save a fresh reference and compare generated dumps again before expanding the compiler scope.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
