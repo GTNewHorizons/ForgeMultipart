@@ -180,3 +180,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchange
 `8a8754632121c8bac8c0c61bf2facbd317462c1c4e43b82127511908ffbcbd98`; class-file SHA-256 is
 `dccc96505689e4c6084e11133812b56b39ae90b274762327815a22ef9a1ce75c`, stored as
 `src/test/resources/compat/ReferenceScalaMicroblockTraits.class.b64`. Do not regenerate it against the Java helper.
+
+### `ReferenceScalaFaceMicroblockClient`
+
+`scala/codechicken/multipart/compat/ReferenceScalaFaceMicroblockClient.scala` freezes a concrete face-client
+implementor and its `FaceMicroblockClient$class.render` forwarder. Tests execute exact per-face rendering for all
+six slots and 64 masks, negative passes, virtual transparency/slot dispatch and material caching across both draws.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchanged dev jar at `d89aaea`
+(SHA-256 `c97d389524bab62fabe6584fcaace5b5fe2d59db3e575a60605fb083fc46856f`). Source SHA-256 is
+`3848f0ba68344b103614e6aaa85dfe300a1b3c41b94cb171224b411a46ecdf3b`; class-file SHA-256 is
+`96283797af5f81137e6fa354fbce5886e0de4f00655a6ab89a21de94bfadcbde`, stored as
+`src/test/resources/compat/ReferenceScalaFaceMicroblockClient.class.b64`. Do not regenerate it against the port.
