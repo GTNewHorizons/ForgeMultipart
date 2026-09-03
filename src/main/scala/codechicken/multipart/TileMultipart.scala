@@ -10,11 +10,7 @@ import net.minecraft.world.{IBlockAccess, World}
 import java.util.List
 import net.minecraft.nbt.NBTTagCompound
 import codechicken.lib.data.MCDataOutput
-import codechicken.multipart.handler.{
-  MultipartCompatiblity,
-  MultipartProxy,
-  MultipartSPH
-}
+import codechicken.multipart.handler.{MultipartCompatiblity, MultipartProxy, MultipartSPH}
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagList
 
@@ -28,9 +24,8 @@ import java.util.Collection
 import codechicken.lib.raytracer.ExtendedMOP
 import net.minecraft.util.{AxisAlignedBB, Vec3}
 
-import java.lang.Iterable
 import codechicken.lib.world.IChunkLoadTile
-import net.minecraft.block.Block
+import com.gtnewhorizon.gtnhlib.client.model.ModelISBRH
 import net.minecraft.client.renderer.RenderBlocks
 import net.minecraftforge.client.ForgeHooksClient
 
@@ -72,6 +67,13 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     */
   def jPartList(): List[TMultiPart] = partList
 
+  /**
+   * Java refuses to use jPartList. This is a workaround.
+   */
+  def getPart(index: Int): TMultiPart = partList(index)
+
+  def testJavaAccess(): Int = 123
+  
   override def canUpdate = doesTick
 
   def operate(f: (TMultiPart) => Unit) {
@@ -534,6 +536,18 @@ trait TileMultipartClient extends TileMultipart {
         return
 
       part match {
+        case jsonModeledPart: JsonModeledPart =>
+          if (ModelISBRH.INSTANCE.get().renderWorldBlock(
+              jsonModeledPart.getRenderWorld,
+              vec.x.toInt,
+              vec.y.toInt,
+              vec.z.toInt,
+              jsonModeledPart.getBlock,
+              ModelISBRH.JSON_ISBRH_ID,
+              renderer)) 
+          {
+            rendered = true
+          }
         case isbrh: ISBRHPart =>
           if (
             isbrh.renderWorldBlock(

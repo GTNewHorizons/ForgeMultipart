@@ -5,18 +5,16 @@ import codechicken.lib.vec.Vector3
 import cpw.mods.fml.client.registry.ISimpleBlockRenderingHandler
 import cpw.mods.fml.client.registry.RenderingRegistry
 import net.minecraft.block.Block
-import net.minecraft.client.renderer.{Tessellator, RenderBlocks}
+import net.minecraft.client.renderer.{RenderBlocks, Tessellator}
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer
 import net.minecraft.tileentity.TileEntity
 import net.minecraft.world.IBlockAccess
 import net.minecraft.client.Minecraft
-import net.minecraftforge.client.ForgeHooksClient
 import net.minecraftforge.client.MinecraftForgeClient
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import codechicken.lib.raytracer.ExtendedMOP
-import codechicken.lib.lighting.LightMatrix
-import com.gtnewhorizons.angelica.api.ThreadSafeISBRH
+import com.gtnewhorizon.gtnhlib.client.model.{BreakingTextureSetter, CrackTextureHolder, ModelISBRH}
 
 /** Internal class for rendering callbacks. Should be moved to the handler
   * package
@@ -81,16 +79,13 @@ object MultipartRenderer
         )
           {
             val part = tmpart.partList(hitInfo._1)
-
             part match {
-              case isbrhPart: ISBRHPart =>
-                isbrhPart.renderWorldBlock(world, x, y, z, renderer)
-
+              case isbrh: ISBRHPart =>
+                isbrh.renderWorldBlock(world, x, y, z, renderer)
               case _ =>
                 part.drawBreaking(renderer)
             }
           }
-
       }
       return false
     }
