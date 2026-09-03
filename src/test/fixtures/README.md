@@ -249,3 +249,19 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouche
 | --- | --- |
 | `ReferencePostClientBase` | `88a996255cae7f981f4386eba5bc1d4b5308c2eef900d120b105ec5727536342` |
 | `ReferenceScalaPostMicroblockClient` | `71afd739893a0cff7022c758cccff8a653a219c7937310df7b893b31f0ef82a4` |
+
+### `ReferenceScalaHollowMicroblock`
+
+`scala/codechicken/multipart/compat/ReferenceScalaHollowMicroblock.scala` freezes hollow-cover forwarders with a
+real Scala trait super chain. Tests pin repeated tile/raw-shape reads, connector slot dispatch, collision geometry,
+list mutability and copying, normal/partial occlusion short-circuiting and superclass failures.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouched dev jar at `556fd51`
+(SHA-256 `8bffb00300087a3f202354a836c9f3f2cf22c4cb3b145e03c8c2ac893028c311`). Source SHA-256 is
+`277b708d11e37a66f311759af50b1b1e98d84238550add0e98b43793d1f55ad5`. Frozen class files under
+`src/test/resources/compat/` have these SHA-256s; do not regenerate against the port:
+
+| Class | SHA-256 |
+| --- | --- |
+| `ReferenceHollowMicroblockBase` | `a329f86030d4706ba07a478d36a2fe9fd6b4e2bcaac76bd92e128769cd91110e` |
+| `ReferenceScalaHollowMicroblock` | `3df6e92864c984ad973a115c56495deee8fb8a8c4014dbd34786a2caf754c7f6` |
