@@ -204,3 +204,15 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchange
 `6c0ff48c4bc6ff5508a429d53f13b718062173cc4a117095c192aed9cf0a0311`; class-file SHA-256 is
 `5a6c3cf1ce593eb189af59f6db26a04d85902972073de83a77d8f0d920642cfa`, stored as
 `src/test/resources/compat/ReferenceScalaCornerMicroblock.class.b64`. Do not regenerate it against the port.
+
+### `ReferenceScalaEdgeMicroblock`
+
+`scala/codechicken/multipart/compat/ReferenceScalaEdgeMicroblock.scala` freezes a concrete edge implementor
+whose forwarders call `EdgeMicroblock$class`. Observable shape accessors pin virtual dispatch, byte truncation,
+out-of-range input behavior and the fifteen-slot offset; tests also exercise inherited `TEdgePart` conduction.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchanged dev jar at `33e0bc2`
+(SHA-256 `764bff78657bc14ab918c267e836702982f7a72d64e998357709df13bce90058`). Source SHA-256 is
+`6524a023b8015e6ecc75aaab9dafa09bb353e66ccdb72e7d76a3469288ba5952`; class-file SHA-256 is
+`2b51d17fb89999fd0324e4ea53843596539c5885c2b2eb0a476926e18446b587`, stored as
+`src/test/resources/compat/ReferenceScalaEdgeMicroblock.class.b64`. Do not regenerate it against the port.
