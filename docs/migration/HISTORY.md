@@ -949,3 +949,23 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   the forced Scala-compilation guard and dev config remain correct. Sources total 212 Java files and 9 Scala files /
   1,444 nonblank Scala lines. Next: `ASMMixinCompiler.registerJavaTrait`, characterized before extraction; abstract
   mixins, side-only filtering and the wide-field defect remain separate compiler changes.
+
+### 2026-09-03 — Java trait rewriting
+
+- Added nine Forge characterization tests for `ASMMixinCompiler.registerJavaTrait`, passing against untouched Scala
+  and committed first as `85ad2e4`. They freeze rejected shapes, exact input cloning, constructors, initialization,
+  field accessors, private/public methods, virtual self calls, super dispatch, parent traits, source metadata,
+  implemented-interface deduplication, side-only annotation retention and partial publication after definition errors.
+  They also preserve the existing primitive-`NEWARRAY`, foreign-field and inherited-call failures.
+- Moved only rewriting into Java `JavaTraitRegistration`; registration dispatch and the Scala `MixinInfo` shell remain
+  in the singleton. Abstract mixins and Java-path side filtering remain planned behavior changes. Nine unreferenced
+  target closures and local compiler helpers become the Java helper, its context and callback, taking the packaged
+  inventory from 442 to 436 classes. The shared classfile ledger covers these artifacts; no effective divergence was
+  added.
+- Saved the pre-port source/jar, reports, 102 generated outputs and checks in ignored
+  `run/migration-java-trait-reference/`. Clean verification after stopping Gradle matches 428 non-target class APIs,
+  3,635 non-target method bodies, all five other compiler closures and every output name/hash. Formatting, checkstyle,
+  build and Forge pass: 333 JVM / 200 Forge, zero failures/errors/skips. All five packaged `@Mod` versions, the forced
+  Scala-compilation guard and dev config remain correct. Sources total 213 Java files and 9 Scala files / 1,196
+  nonblank Scala lines. Next: assess the remaining compiler startup/model shell before selecting another extraction;
+  retained ScalaSignature model bridges remain the Java-source limit.

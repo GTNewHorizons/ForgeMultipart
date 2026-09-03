@@ -16,18 +16,18 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**333 plain-JVM tests and 191 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **212 Java
-files and 9 Scala files / 1,444 nonblank Scala lines**. The packaged inventory has 442 classes.
+**333 plain-JVM tests and 200 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **213 Java
+files and 9 Scala files / 1,196 nonblank Scala lines**. The packaged inventory has 436 classes.
 
-Latest bounded port: `ASMMixinCompiler.mixinClasses` delegates to Java `MixinClassGenerator`, after eight
-characterization tests passed against untouched Scala (`1c9cd65`). Clean verification after stopping Gradle matched
-426 non-closure APIs, all 13 non-target compiler closures, 3,628 non-target method bodies and all 79 generated dump
-names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars, reports and scripts are
-in `run/migration-composition-reference/`; `clean` preserves this ignored directory.
+Latest bounded port: `ASMMixinCompiler.registerJavaTrait` delegates to Java `JavaTraitRegistration`, after nine
+characterization tests passed against untouched Scala (`85ad2e4`). Clean verification after stopping Gradle matched
+428 non-target class APIs, all five non-target compiler closures, 3,635 non-target method bodies and all 102 generated
+dump names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars, reports and scripts
+are in `run/migration-java-trait-reference/`; `clean` preserves this ignored directory.
 
-**Next: `ASMMixinCompiler.registerJavaTrait` rewriting.** Characterize rejected shapes, cloning, initialization,
-field/method/super rewriting, publication and failure ordering before extraction. Preserve the existing algorithm;
-keep abstract-mixin support, side-only member filtering and other compiler changes separate.
+**Next: assess the remaining `ASMMixinCompiler` startup/model shell and select the next isolated extraction.** The
+ScalaSignature path-dependent model bridges must remain Scala-facing. Keep abstract-Java-mixin support, Java-path
+side-only filtering and other compiler changes as separate behavior targets with fresh characterization.
 
 Remaining Scala units:
 
