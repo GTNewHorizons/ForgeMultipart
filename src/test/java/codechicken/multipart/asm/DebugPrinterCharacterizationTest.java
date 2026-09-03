@@ -14,18 +14,11 @@ import java.util.TreeSet;
 
 import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.Test;
-import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Type;
-import org.objectweb.asm.tree.AbstractInsnNode;
-import org.objectweb.asm.tree.ClassNode;
-import org.objectweb.asm.tree.IntInsnNode;
-import org.objectweb.asm.tree.LdcInsnNode;
-import org.objectweb.asm.tree.MethodInsnNode;
-import org.objectweb.asm.tree.MethodNode;
 
 /**
- * Reflection and bytecode only: the companion's initializer reads the Forge config, so loading it in a plain JVM is not
- * possible. Dump content and the byte-count log are covered by the Forge suite.
+ * Reflection only: initialization reads the Forge config. DebugPrinterFunctionalTest covers directory cleanup,
+ * enabled/disabled dumping and byte-count logging under Forge.
  */
 class DebugPrinterCharacterizationTest {
 
@@ -63,73 +56,6 @@ class DebugPrinterCharacterizationTest {
         // The running permGen total is the only mutable field.
         assertField("permGenUsed", int.class, Modifier.PRIVATE);
         assertEquals(5, DebugPrinter$.class.getDeclaredFields().length);
-    }
-
-    @Test
-    void gatesOnTheConfigTagAndClearsTheDumpDirectoryOnce() throws Exception {
-        ClassNode node = companion();
-        assertEquals(signatures("debug_asm", "Multipart ASM", "asm/multipart"), constants(node, "<init>"));
-        assertCall(node, "<init>", "codechicken/multipart/handler/MultipartProxy", "config");
-        assertCall(node, "<init>", "java/io/File", "mkdirs");
-        // The per-file delete itself is covered by the Forge suite, which compares generated dump names.
-        assertCall(node, "<init>", "java/io/File", "listFiles");
-        assertCall(node, "<init>", "java/io/File", "exists");
-    }
-
-    @Test
-    void dumpsThroughASMHelperAndLogsEverySixteenThousandBytes() throws Exception {
-        ClassNode node = companion();
-        assertEquals(signatures(".txt"), constants(node, "dump"));
-        assertCall(node, "dump", "codechicken/lib/asm/ASMHelper", "dump");
-
-        assertEquals(signatures(" bytes of permGen has been used by ASMMixinCompiler"), constants(node, "defined"));
-        assertTrue(intOperands(node, "defined").contains(16000));
-        assertCall(node, "defined", "org/apache/logging/log4j/Logger", "debug");
-    }
-
-    private static ClassNode companion() throws Exception {
-        ClassNode node = new ClassNode();
-        new ClassReader(DebugPrinter$.class.getName()).accept(node, 0);
-        return node;
-    }
-
-    private static Set<String> constants(ClassNode node, String methodName) {
-        Set<String> found = new TreeSet<>();
-        for (AbstractInsnNode instruction : instructions(node, methodName)) {
-            if (instruction instanceof LdcInsnNode && ((LdcInsnNode) instruction).cst instanceof String) {
-                found.add((String) ((LdcInsnNode) instruction).cst);
-            }
-        }
-        return found;
-    }
-
-    private static Set<Integer> intOperands(ClassNode node, String methodName) {
-        Set<Integer> found = new TreeSet<>();
-        for (AbstractInsnNode instruction : instructions(node, methodName)) {
-            if (instruction instanceof IntInsnNode) {
-                found.add(((IntInsnNode) instruction).operand);
-            } else if (instruction instanceof LdcInsnNode && ((LdcInsnNode) instruction).cst instanceof Integer) {
-                found.add((Integer) ((LdcInsnNode) instruction).cst);
-            }
-        }
-        return found;
-    }
-
-    private static void assertCall(ClassNode node, String methodName, String owner, String name) {
-        for (AbstractInsnNode instruction : instructions(node, methodName)) {
-            if (instruction instanceof MethodInsnNode) {
-                MethodInsnNode call = (MethodInsnNode) instruction;
-                if (call.owner.equals(owner) && call.name.equals(name)) return;
-            }
-        }
-        throw new AssertionError("Missing call " + owner + '.' + name + " in " + methodName);
-    }
-
-    private static AbstractInsnNode[] instructions(ClassNode node, String methodName) {
-        for (MethodNode method : node.methods) {
-            if (method.name.equals(methodName)) return method.instructions.toArray();
-        }
-        throw new AssertionError("Missing method " + methodName);
     }
 
     private static void assertField(String name, Class<?> type, int modifiers) throws Exception {

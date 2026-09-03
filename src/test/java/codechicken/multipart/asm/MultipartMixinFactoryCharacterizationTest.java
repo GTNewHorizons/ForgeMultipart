@@ -21,9 +21,8 @@ import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 /**
- * The companion's initializer reaches Forge through TileMultipart, so generation is exercised by the Forge suite:
- * generated tiles, pass-through delegation and the copied fields of Java traits. Surface and emission order are checked
- * here.
+ * Surface and bytecode smoke checks only. Generation reaches Forge through ObfMapping; the Forge suite checks copyFrom
+ * guards and emitted instructions, generated tiles and pass-through delegation.
  */
 class MultipartMixinFactoryCharacterizationTest {
 
@@ -81,18 +80,6 @@ class MultipartMixinFactoryCharacterizationTest {
         ClassNode node = companion();
         assertTrue(typeConstants(node, "<init>").contains("codechicken/multipart/TileMultipart"));
         assertCall(node, "onCompiled", "codechicken/multipart/MultipartGenerator$", "registerTileClass");
-    }
-
-    @Test
-    void completesJavaTraitsWithAGuardedCopyFrom() throws Exception {
-        ClassNode node = companion();
-        Set<String> constants = constants(node, "autoCompleteJavaTrait");
-        assertTrue(constants.contains("copyFrom"));
-        assertTrue(constants.contains("(Lcodechicken/multipart/TileMultipart;)V"));
-        assertTrue(constants.contains("codechicken/multipart/TileMultipart"));
-        // The existing-method guard runs before anything is emitted.
-        assertCall(node, "autoCompleteJavaTrait", "codechicken/lib/asm/ASMHelper", "findMethod");
-        assertCall(node, "autoCompleteJavaTrait", "org/objectweb/asm/MethodVisitor", "visitMaxs");
     }
 
     @Test

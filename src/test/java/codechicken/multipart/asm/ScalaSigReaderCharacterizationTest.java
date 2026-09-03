@@ -74,11 +74,11 @@ class ScalaSigReaderCharacterizationTest {
         assertEquals("", ScalaSigReader.encode(new byte[0]));
         assertArrayEquals(new byte[0], ScalaSigReader.decode(""));
 
-        // The dropped trailing group is empty for a short payload, but carries the high bits of a long one.
+        // The dropped group is zero for 42, but carries high bits for [0, 0xfe].
         byte[] single = { 42 };
         assertArrayEquals(single, ScalaSigReader.decode(ScalaSigReader.encode(single)));
         byte[] highBit = { 0, (byte) 0xfe };
-        assertFalse(Arrays.equals(highBit, ScalaSigReader.decode(ScalaSigReader.encode(highBit))));
+        assertArrayEquals(new byte[] { 0, 62 }, ScalaSigReader.decode(ScalaSigReader.encode(highBit)));
     }
 
     @Test

@@ -1349,8 +1349,8 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Backfilled, on request, the characterization tests the six ports from `b45527e` to `8581d30` had skipped. Six new
   suites in `src/test/java/codechicken/multipart/asm/` add 32 plain-JVM tests, taking that suite from 276 to 308.
   `ByteCodeReader` and the signature parser are covered by behavior; `ScalaSigReader` by round trips, annotation
-  lookup and its replaced-value result. `DebugPrinter`, `ASMMixinFactory` and `MultipartMixinFactory` initialize
-  through Forge, so those tests pin public surfaces, fields and bytecode constants and calls, leaving generated
+  lookup and its replaced-value result. Debug initialization and generator execution need Forge, so those tests
+  pin public surfaces, fields and bytecode constants and calls, leaving generated
   tiles, pass-through delegation and Java-trait `copyFrom` to the Forge suite.
 - Ran the backfill against `src/main` restored from `1faf0dd`: it compiles against the untouched Scala and 45 of 46
   tests pass. The only failure is `MultipartMixinFactory`'s facade method set, which is the four additive static
@@ -1359,3 +1359,22 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
 - Two behaviors were pinned that inspection had not recorded. `ScalaSigReader.encode` drops the final 7-bit group, so
   a decode round trip is exact only when that group is empty; a payload ending in a high-bit byte does not survive
   it. `ScalaSignature.evalS` throws `MatchError` on an unknown tag while `eval` returns the table entry unchanged.
+
+### 2026-09-03
+
+- Addressed the three backfill review findings without changing production code. The lossy signature round trip now
+  asserts the exact reference bytes `[0, 62]`, rather than accepting any result different from `[0, 0xfe]`.
+- Replaced the two presence-only `DebugPrinter` JVM checks with three Forge behavior tests for both config modes:
+  directory creation, immediate-child-only startup cleanup, dump gating/naming/content and cumulative 16,000-byte
+  logging boundaries (including an empty input and a single input crossing two boundaries). An isolated copy changes
+  only the hard-coded output path to `@TempDir`; config and logger state are restored and live dev dumps are untouched.
+  A temporary fault-injection run removing deletion and reversing dump/log guards failed all three new printer tests;
+  those production edits were then restored.
+- Replaced the `copyFrom` call-presence check with three Forge tests invoking the actual completer. They assert
+  byte-for-byte no-ops for empty/transient-only nodes and an existing method, then exact emitted super-call/guard/field
+  order, transient exclusion and idempotence for mixed fields. Corrected the coverage claims: singleton construction
+  is headless, but generation reaches Forge through `ObfMapping`; earlier dump comparisons were one-off checks.
+- Verification baseline is now 305 JVM / 122 Forge tests: three weak JVM checks moved to six focused Forge checks.
+  Formatting/checkstyle/build and the Forge suite pass; all 39 generated dump hashes and the dev config are unchanged.
+  No production ABI, source counts or next target changed. `multipart/asm/StackAnalyser.scala` remains next, using
+  explicit migration-test authorization and separate characterization and refactor commits.
