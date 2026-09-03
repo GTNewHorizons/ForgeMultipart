@@ -63,7 +63,8 @@ final class ScalaTraitRegistration {
 
     static MixinInfo registerScalaTrait(final ClassNode node, Map<String, MixinInfo> mixins,
             Function1<ClassInfo, ScalaSignature> signature, Function1<ClassInfo, Object> classSymbol) {
-        Option<MixinInfo> cached = ASMMixinCompiler$.MODULE$.getMixinInfo(node.name);
+        // Read and write the same map reference; getMixinInfo is that map's get, and one source keeps them in step.
+        Option<MixinInfo> cached = mixins.get(node.name);
         if (cached instanceof Some) return cached.get();
         if (cached != (Object) None$.MODULE$) throw new MatchError(cached);
 

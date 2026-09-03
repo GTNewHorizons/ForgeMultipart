@@ -434,6 +434,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
             throw new IllegalArgumentException("Tried to remove a non-existant part");
         }
 
+        // The reference read an unused removedLightValue here; the virtual call is observable, so keep it.
         part.getLightValue();
         part.preRemove();
         List<TMultiPart> current = mutablePartsSnapshot();
