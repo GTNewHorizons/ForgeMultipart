@@ -3,13 +3,18 @@ package codechicken.multipart.asm;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
+import org.objectweb.asm.Type;
 import org.objectweb.asm.tree.AnnotationNode;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 
 import codechicken.multipart.asm.ASMMixinCompiler.ClassInfo;
 import codechicken.multipart.asm.ASMMixinCompiler.ClassInfo$;
 import codechicken.multipart.asm.ASMMixinCompiler.MethodInfo;
+import codechicken.multipart.asm.StackAnalyser.Load;
+import codechicken.multipart.asm.StackAnalyser.StackEntry;
+import codechicken.multipart.asm.StackAnalyser.This;
 import scala.Array$;
 import scala.Function1;
 import scala.Function3;
@@ -172,5 +177,25 @@ final class ClassInfoLookup {
     @SuppressWarnings("unchecked")
     private static <R, E extends Throwable> R throwUnchecked(Throwable throwable) throws E {
         throw (E) throwable;
+    }
+
+    static Option<MethodInfo> getSuper(final MethodInsnNode call, StackAnalyser stack) {
+        if (Objects.equals(call.owner, stack.owner().getInternalName())) return Option.empty();
+
+        final String methodName = stack.m().name.replaceAll(".+\\Q$$super$\\E", "");
+        if (!Objects.equals(call.name, methodName)) return Option.empty();
+
+        // Preserve the compiler's argument-count indexing, including its behavior for wide stack values.
+        StackEntry receiver = stack.peek(Type.getType(call.desc).getArgumentTypes().length);
+        if (!(receiver instanceof Load) || !(((Load) receiver).e() instanceof This)) return Option.empty();
+
+        return ASMMixinCompiler$.MODULE$.getClassInfo(stack.owner().getInternalName()).superClass()
+                .flatMap(new AbstractFunction1<ClassInfo, Option<MethodInfo>>() {
+
+                    @Override
+                    public Option<MethodInfo> apply(ClassInfo parent) {
+                        return parent.findPublicImpl(methodName, call.desc);
+                    }
+                });
     }
 }

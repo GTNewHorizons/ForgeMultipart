@@ -1459,3 +1459,23 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   and the clean jar repeats the API/disassembly/dump matches above. The forced Scala-compilation version guard is
   retained; all five `@Mod` annotations match both packaged jar versions. External Scala-trait coverage remains green
   and the existing manual client checks and Java-source bridge limitations remain outstanding.
+- Added six Forge characterization cases for `ASMMixinCompiler.getSuper`, passing on untouched Scala and committed
+  separately as `c0df2e0`: owner/name filter short-circuiting, greedy Scala super-name stripping, exact inherited
+  signature selection and visibility, receiver recognition, argument indexing, failure paths, stack preservation,
+  virtual getter/callback order, returned option identity and descriptor rereads. Baseline: 326 JVM / 141 Forge.
+  The compiler singleton requires Forge initialization, so these behavior tests use its existing harness.
+- Moved only `getSuper` into the existing Java `ClassInfoLookup`, retaining the public Scala entry point and
+  `Option.flatMap` callback dispatch. The current argument-count/stack-slot mismatch for wide arguments remains,
+  as do the lack of invocation-opcode and `This.owner` validation and the limited target-owner check. The caller's
+  `INVOKESPECIAL` guard, all trait rewrites and metadata/model behavior remain unchanged; algorithm fixes are separate.
+- Saved reference source/jar, reports and 40 generated dumps in ignored `run/migration-super-reference/`. All 16 named
+  compiler APIs retain their names/descriptors/modifiers/generic signatures and private fields; 14 named classfiles
+  are byte-identical. All 218 other named compiler methods, 34 algorithm closures, 17 existing metadata-helper methods
+  and 143 other ASM/generator disassemblies match. All dump names/hashes match. One private Scala closure becomes a
+  Java callback, leaving 450 packaged classes and no new divergence entry. Sources total 209 Java files and 9 Scala
+  files / 1,675 nonblank Scala lines. Next: `ASMMixinCompiler.listSideOnly` annotation filtering, characterized first.
+- Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 326 JVM / 141 Forge,
+  zero failures/errors/skips. Characterization tests remain unchanged. The clean jar repeats the API/disassembly/dump
+  matches, the local dev config is unchanged, and all five `@Mod` versions match both packaged jar versions with the
+  forced Scala-compilation guard retained. External Scala-trait tests remain green; existing manual client checks and
+  Java-source model-bridge limitations remain outstanding.

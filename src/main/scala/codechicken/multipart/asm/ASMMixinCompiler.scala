@@ -435,25 +435,7 @@ object ASMMixinCompiler {
   def getSuper(
       minsn: MethodInsnNode,
       stack: StackAnalyser
-  ): Option[MethodInfo] = {
-    import StackAnalyser._
-
-    if (minsn.owner == stack.owner.getInternalName)
-      return None // not a super call
-
-    // super calls are either to methods with the same name or contain a pattern 'target$$super$name' from the scala compiler
-    val methodName = stack.m.name.replaceAll(".+\\Q$$super$\\E", "")
-    if (minsn.name != methodName)
-      return None
-
-    stack.peek(Type.getType(minsn.desc).getArgumentTypes.length) match {
-      case Load(This(o)) =>
-      case _             => return None // have to be invoked on this
-    }
-
-    getClassInfo(stack.owner.getInternalName).superClass
-      .flatMap(_.findPublicImpl(methodName, minsn.desc))
-  }
+  ): Option[MethodInfo] = ClassInfoLookup.getSuper(minsn, stack)
 
   def getAndRegisterParentTraits(cnode: ClassNode) =
     cnode.interfaces.map(getClassInfo).collect {
