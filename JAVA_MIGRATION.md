@@ -1479,3 +1479,23 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   matches, the local dev config is unchanged, and all five `@Mod` versions match both packaged jar versions with the
   forced Scala-compilation guard retained. External Scala-trait tests remain green; existing manual client checks and
   Java-source model-bridge limitations remain outstanding.
+- Reviewed the reported `TileMultipart` compatibility findings against `cacc9a3^`. Confirmed all three equality
+  changes and the dropped virtual light query. Restored null-safe Scala equality in change notifications and
+  replacement/removal filtering, removed all equal entries, and retained Scala `contains`/`indexOf` behavior.
+  Removal still reports the first matching index and invokes hooks/detaches only the requested part, as Scala did.
+- Restored `getLightValue()` before `preRemove()` and corrected the related early/stale snapshot reads: filtering
+  now sees list updates from those callbacks, while empty/ticking decisions see updates from removal callbacks.
+  Seven JVM regression tests cover these behaviors, including light-query exceptions and missing-part rejection.
+  Six failed against the unfixed Java port; all seven pass against the complete original Scala class and fixed Java.
+  The reference class needed only explicit Java getter/setter, singleton and boxed-function call syntax for migrated
+  dependencies. Sources, compilation/test logs and reports are saved in ignored `run/tile-compatibility-review/`.
+- Added brief comments explaining the profiled direct-list traversal and arbitrary-`Seq` fallback. No traversal or
+  compiler algorithm changed. The existing `NEWARRAY` limitation, forced Scala-compilation guard and manual client
+  checklist require no change in this review. All 450 class APIs match by names/descriptors/modifiers/generic signatures
+  and private fields. All 40 generated dumps retain the same instructions: 39 hashes are exact, with only debug line
+  numbers changed in the redstone helper by its added comment. These fixes restore the reference behavior and need
+  no divergence entry. The next migration target remains `ASMMixinCompiler.listSideOnly`.
+- Clean formatting/checkstyle/build and the full Forge suite pass after stopping Gradle: 333 JVM / 141 Forge tests,
+  zero failures/errors/skips. The clean jar repeats the API/generated-output checks above; all five `@Mod` annotations
+  match both packaged jar versions. The forced Scala-compilation guard is unchanged. Review corrections are isolated
+  on `codex/tile-compatibility-fixes`, based on `fa008b8`; no additional migration unit was started.

@@ -15,6 +15,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 Branch: `algent/java`. Base: `master`. 180 commits including the API-cleanup plan, divergence-log cleanup, ports
 through ASM super-call lookup, and the ASM characterization backfill and review fixes.
 
+Review corrections are on `codex/tile-compatibility-fixes`, based on `fa008b8`, in the separate review worktree.
+
 ## The one rule that matters
 
 **Check both consumer audits before changing a compatibility surface.** The ABI inventory is the authority on what
@@ -74,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **326 plain-JVM tests and 141 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 141 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -727,6 +729,24 @@ Formatting/checkstyle/build and Forge pass after stopping Gradle and building cl
 failures/errors/skips. Tests are unchanged after the port; clean APIs and dumps match the reference. The dev config
 and forced Scala-compilation guard remain unchanged, and all five `@Mod` annotations match both packaged jar versions.
 External Scala-trait tests stay green; existing Java-source model-bridge limitations and manual client checks remain.
+
+Review of `TileMultipart` confirmed unintentional drift from the pre-port Scala: three equality checks had become
+identity/single-index removal, and the virtual `getLightValue()` call before `preRemove()` had disappeared. Those
+behaviors are restored, including null-safe equality receiver direction and removal of every equal list entry while
+retaining the first matching packet/cache index and callbacks on the requested instance. Removal now also reads the
+published list after light/pre-remove callbacks, and again after removal callbacks for empty/ticking decisions,
+instead of overwriting or ignoring their list changes. Existing Scala `contains`/`indexOf` semantics are retained.
+
+Seven JVM regression tests cover equality, occlusion, callback order, published-list mutations and failures. Six
+failed on the unfixed port; all seven passed against the complete pre-port Scala class from `cacc9a3^`, with only
+call-syntax adaptations for already-ported dependency APIs, and pass on the fixed Java. Evidence is in ignored
+`run/tile-compatibility-review/`. All 450 class APIs match, including modifiers/generic signatures and private fields.
+All 40 generated dumps retain their instructions: 39 hashes match exactly, and the redstone helper differs only in
+line numbers from its new traversal comment. These restore legacy behavior, so no new divergence entry is needed.
+The allocation-conscious traversals, analyser `NEWARRAY` behavior, forced Scala compilation and existing manual
+client/release checks remain as documented. No additional migration target was ported during this review.
+Clean formatting/checkstyle/build and Forge pass at 333 JVM / 141 Forge tests, zero failures/errors/skips. The clean
+jar retains the API and generated-output matches above, and all five `@Mod` versions match both packaged jars.
 
 **Next: `multipart/asm/ASMMixinCompiler.listSideOnly`, bounded to annotation filtering.** Characterize annotation
 selection, enum-side comparison, owner-name collection/deduplication and malformed/missing annotation values before

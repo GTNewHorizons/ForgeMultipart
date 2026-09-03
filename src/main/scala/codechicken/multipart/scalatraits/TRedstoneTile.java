@@ -12,7 +12,10 @@ import codechicken.multipart.TileMultipart;
 import scala.collection.Iterator;
 import scala.collection.Seq;
 
-/** Mixin implementation for multipart redstone queries. */
+/**
+ * Mixin implementation for multipart redstone queries. Direct list walks avoid measured iterator/wrapper allocations;
+ * the public part-list setter also accepts other Seq types, which need the iterator fallback.
+ */
 public class TRedstoneTile extends TileMultipart implements IRedstoneTile {
 
     @Override

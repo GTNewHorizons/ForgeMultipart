@@ -92,6 +92,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         return doesTick;
     }
 
+    // Direct list traversal avoids measured iterator/wrapper allocations; the setter also accepts other Seq types.
     @SuppressWarnings("unchecked")
     public void operate(Function1<TMultiPart, BoxedUnit> f) {
         Seq<TMultiPart> current = partList;
@@ -184,7 +185,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     /** Notifies parts sharing this host of a change. */
     public void internalPartChange(TMultiPart part) {
         operate(action(p -> {
-            if (part != p) {
+            if (part == null ? p != null : !part.equals(p)) {
                 p.onPartChanged(part);
             }
         }));
@@ -328,15 +329,16 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         Iterator<TMultiPart> iterator = partList.iterator();
         while (iterator.hasNext()) {
             TMultiPart part = iterator.next();
-            if (part != opart) {
+            if (part == null ? opart != null : !part.equals(opart)) {
                 olist.add(part);
             }
         }
-        if (olist.contains(npart)) {
+        Seq<TMultiPart> others = toSeq(olist);
+        if (others.contains(npart)) {
             return false;
         }
 
-        return occlusionTest(toSeq(olist), npart);
+        return occlusionTest(others, npart);
     }
 
     /** Returns true if parts do not occlude npart. */
@@ -427,14 +429,15 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     }
 
     private int remPart_do(TMultiPart part, boolean sendPacket) {
-        List<TMultiPart> current = mutablePartsSnapshot();
-        int r = current.indexOf(part);
+        int r = partList.indexOf(part);
         if (r < 0) {
             throw new IllegalArgumentException("Tried to remove a non-existant part");
         }
 
+        part.getLightValue();
         part.preRemove();
-        current.remove(r);
+        List<TMultiPart> current = mutablePartsSnapshot();
+        current.removeIf(p -> p == null ? part == null : p.equals(part));
         partList = toSeq(current);
 
         if (sendPacket) {
@@ -445,12 +448,13 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         part.onRemoved();
         part.tile_$eq(null);
 
-        if (current.isEmpty()) {
+        if (partList.isEmpty()) {
             worldObj.setBlockToAir(xCoord, yCoord, zCoord);
         } else if (part.doesTick() && doesTick) {
             boolean ntick = false;
-            for (TMultiPart p : current) {
-                ntick |= p.doesTick();
+            Iterator<TMultiPart> iterator = partList.iterator();
+            while (iterator.hasNext()) {
+                ntick |= iterator.next().doesTick();
             }
             if (!ntick) {
                 setTicking(false);
