@@ -1437,3 +1437,25 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   files and 9 Scala files / 1,714 nonblank Scala lines. Next is the bounded descriptor/bridge-emission helper unit in
   `ASMMixinCompiler.scala`: `seperateDesc`, `staticDesc`, `finishBridgeCall`, `writeBridge` and `writeStaticBridge`, with
   fresh characterization and no composition/trait-rewriting algorithm changes.
+- Added eight Forge behavior tests for the descriptor/bridge helpers and committed them separately as `5d611e0`.
+  All pass against untouched Scala: descriptor splitting and receiver insertion, every argument/return category,
+  local-slot widths, invocation flags, instruction order, maxima, partial visitor failures, overridable metadata
+  getter order and descriptor rereads. Generated executable bridges verify virtual, special, interface and
+  Scala-style static-helper dispatch with mixed wide/reference arguments. The original compiler singleton requires
+  a Forge `LaunchClassLoader`; these tests therefore use the existing Forge harness. Baseline: 326 JVM / 135 Forge.
+- Extracted only `seperateDesc`, `staticDesc`, `finishBridgeCall`, `writeBridge` and `writeStaticBridge` into Java
+  `ASMBridgeEmitter`, retaining their Scala entry points and exact ABI. No composition, trait-rewriting, stack or
+  signature-decoding algorithm changed. Existing descriptor-validation gaps, malformed-input exception types,
+  unnormalized owner strings, independent bridge/callee descriptors and callback order are preserved.
+- Saved the pre-port jar/source, reports and 40 generated dumps under ignored `run/migration-bridge-reference/`.
+  All 16 named compiler APIs match by names/descriptors/modifiers/generic signatures and private fields; 14 named
+  classfiles are byte-identical. All 214 other named compiler methods, 35 algorithm closures and 143 ASM/generator
+  disassemblies outside the compiler match. All 40 dump names/hashes match and the dev configuration is unchanged.
+  One private bridge closure is replaced by the Java helper, keeping 450 packaged classes. No new ledger entry is
+  needed. Sources total 209 Java files and 9 Scala files / 1,689 nonblank Scala lines. Next: `ASMMixinCompiler.getSuper`
+  recognition/lookup, with fresh characterization and no algorithm fixes mixed into its port.
+- Formatting/checkstyle/build and the full Forge suite pass, including a clean build after stopping Gradle:
+  326 JVM / 135 Forge, zero failures/errors/skips. The eight characterization tests are unchanged after the port,
+  and the clean jar repeats the API/disassembly/dump matches above. The forced Scala-compilation version guard is
+  retained; all five `@Mod` annotations match both packaged jar versions. External Scala-trait coverage remains green
+  and the existing manual client checks and Java-source bridge limitations remain outstanding.

@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 176 commits including the API-cleanup plan, divergence-log cleanup, ports
-through the `ClassInfo` metadata lookup extraction, and the ASM characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 178 commits including the API-cleanup plan, divergence-log cleanup, ports
+through the ASM descriptor/bridge helper extraction, and the ASM characterization backfill and review fixes.
 
 ## The one rule that matters
 
@@ -74,7 +74,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **326 plain-JVM tests and 127 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **326 plain-JVM tests and 135 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -280,7 +280,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-208 Java files, 9 Scala files, 1,714 Scala lines left (non-blank; that is the metric this figure has always used).
+209 Java files, 9 Scala files, 1,689 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -682,12 +682,34 @@ dump is the new cache-invalidation fixture). Clean build and Forge pass at 326 J
 packaged class count falls from 451 to 450; no new ledger entry is needed. The forced Scala compilation guard remains,
 and all five `@Mod` annotations match both clean jar versions.
 
-**Next: `multipart/asm/ASMMixinCompiler.scala`, bounded to descriptor and bridge-emission helpers:** `seperateDesc`
-(keep its existing spelling), `staticDesc`, `finishBridgeCall`, `writeBridge`, and `writeStaticBridge`. Characterize
-descriptors, argument/local widths, emitted instruction order, return opcodes and max-stack/local values first, with
-Forge where singleton initialization requires it. Keep composition/trait-rewriting algorithms, external Scala-trait
-support, retained metadata/stack models and `ScalaSignature` primitive/erased bridges unchanged. Save a fresh reference
-and compare all generated dumps before expanding scope.
+The descriptor/bridge helpers `seperateDesc` (original spelling), `staticDesc`, `finishBridgeCall`, `writeBridge` and
+`writeStaticBridge` now delegate to package-private Java `ASMBridgeEmitter`. Eight Forge characterization cases passed
+against untouched Scala and were committed separately as `5d611e0`. The original singleton requires a
+`LaunchClassLoader`, so these behavior tests belong in Forge. They freeze descriptor splitting and receiver insertion,
+all argument/return categories and slot widths, instruction order, interface flags, maxima, partial visitor output
+on failure, overridable metadata getter order and descriptor rereads. Executable generated classes verify virtual,
+special, interface and Scala-style static-helper dispatch with wide arguments and reference returns.
+
+No compiler algorithm changed. Existing malformed-descriptor exceptions, unnormalized owner strings, independent
+bridge/callee descriptors and callback order remain. All 16 named compiler APIs retain their members, modifiers,
+generic signatures and private fields; 14 named classfiles are byte-identical. All 214 other named compiler methods,
+35 algorithm closures and 143 ASM/generator disassemblies outside the compiler match the reference. The one removed
+private bridge closure is replaced by the Java helper, keeping 450 packaged classes; no new divergence entry is needed.
+Sources now total 209 Java files and 9 Scala files / 1,689 nonblank Scala lines. Local reference source/jar, reports,
+40 generated dumps and comparison scripts are saved under ignored `run/migration-bridge-reference/`.
+
+Formatting/checkstyle/build and Forge pass after stopping Gradle and building clean: 326 JVM / 135 Forge, zero
+failures/errors/skips. The characterization tests are unchanged after the port and all 40 generated dump names/hashes
+match. The dev config and forced Scala-compilation version guard remain unchanged; all five `@Mod` annotations match
+both packaged jar versions. External Scala-trait tests stay green. Existing manual client checks and the documented
+Java-source limitations in the retained Scala model bridges are still outstanding.
+
+**Next: `multipart/asm/ASMMixinCompiler.getSuper`, bounded to super-call recognition and lookup.** Characterize the
+owner/name filters, Scala super-name pattern, stack receiver checks, argument indexing and inherited implementation
+selection before extracting it. Use Forge for compiler initialization and preserve the current algorithm, including
+any quirks exposed by tests. Keep composition/trait registration and rewriting separate, along with external Scala
+trait support, retained metadata/stack models and `ScalaSignature` primitive/erased bridges. Save a fresh reference
+and compare generated dumps before expanding scope.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

@@ -236,16 +236,7 @@ object ASMMixinCompiler {
       name: String,
       desc: String
   ) {
-    val args = getArgumentTypes(mvdesc)
-    val ret = getReturnType(mvdesc)
-    var localIndex = 1
-    args.foreach { arg =>
-      mv.visitVarInsn(arg.getOpcode(ILOAD), localIndex)
-      localIndex += width(arg)
-    }
-    mv.visitMethodInsn(opcode, owner, name, desc, opcode == INVOKEINTERFACE)
-    mv.visitInsn(ret.getOpcode(IRETURN))
-    mv.visitMaxs(Math.max(width(args) + 1, width(ret)), width(args) + 1)
+    ASMBridgeEmitter.finishBridgeCall(mv, mvdesc, opcode, owner, name, desc)
   }
 
   def writeBridge(
@@ -256,19 +247,11 @@ object ASMMixinCompiler {
       name: String,
       desc: String
   ) {
-    mv.visitVarInsn(ALOAD, 0)
-    finishBridgeCall(mv, mvdesc, opcode, owner, name, desc)
+    ASMBridgeEmitter.writeBridge(mv, mvdesc, opcode, owner, name, desc)
   }
 
   def writeStaticBridge(mv: MethodNode, mname: String, t: MixinInfo) =
-    writeBridge(
-      mv,
-      mv.desc,
-      INVOKESTATIC,
-      t.tname,
-      mname,
-      staticDesc(t.name, mv.desc)
-    )
+    ASMBridgeEmitter.writeStaticBridge(mv, mname, t)
 
   def mixinClasses(
       name: String,
@@ -444,18 +427,10 @@ object ASMMixinCompiler {
     c
   }
 
-  def seperateDesc(nameDesc: String) = {
-    val n = nameDesc.indexOf('(')
-    (nameDesc.substring(0, n), nameDesc.substring(n))
-  }
+  def seperateDesc(nameDesc: String) = ASMBridgeEmitter.seperateDesc(nameDesc)
 
-  def staticDesc(owner: String, desc: String) = {
-    val descT = getMethodType(desc)
-    getMethodDescriptor(
-      descT.getReturnType,
-      getType("L" + owner + ";") +: descT.getArgumentTypes: _*
-    )
-  }
+  def staticDesc(owner: String, desc: String) =
+    ASMBridgeEmitter.staticDesc(owner, desc)
 
   def getSuper(
       minsn: MethodInsnNode,
