@@ -929,3 +929,23 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
 - Consolidated the active plan/handoff after the reflective-definition port. The dated findings remain intact in
   this history, duplicated completed-port handoff summaries were removed, and current phase/status text was refreshed.
   The manual checklist now names verified consumer items, including the inverted ProjectRed lamp requirement.
+
+### 2026-09-03 — composite class generation
+
+- Added eight Forge characterization tests for `ASMMixinCompiler.mixinClasses`, passing on untouched Scala and
+  committed first as `1c9cd65`. They execute generated JVM classes and freeze empty selection, constructor forwarding,
+  diamond linearization, initialization, field storage and mangling, method/super dispatch, covariant bridges,
+  implemented-interface order and failures before or during definition. The reference also confirms the existing
+  verifier failure for generated `long` and `double` field getters whose maximum stack remains one.
+- Moved only composite generation into Java `MixinClassGenerator`, retaining the Scala entry point and the unusual
+  public compiler-local `allParents` helper descriptor. External Scala-trait registration, Java-trait rewriting and
+  compiler algorithms are unchanged. The 456-class reference becomes 442 classes: 16 unreferenced target closures
+  become the Java helper and one private callback. The shared classfile ledger covers this with no new effective
+  divergence.
+- Saved the pre-port source/jar, reports, 79 generated outputs and checks in ignored
+  `run/migration-composition-reference/`. Clean verification after stopping Gradle matches all 426 non-closure APIs,
+  3,628 non-target method bodies, 13 other compiler closures and every generated output name/hash. Formatting,
+  checkstyle, build and Forge pass: 333 JVM / 191 Forge, zero failures/errors/skips. All five packaged `@Mod` versions,
+  the forced Scala-compilation guard and dev config remain correct. Sources total 212 Java files and 9 Scala files /
+  1,444 nonblank Scala lines. Next: `ASMMixinCompiler.registerJavaTrait`, characterized before extraction; abstract
+  mixins, side-only filtering and the wide-field defect remain separate compiler changes.

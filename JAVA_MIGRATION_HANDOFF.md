@@ -16,18 +16,18 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**333 plain-JVM tests and 183 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **211 Java
-files and 9 Scala files / 1,583 nonblank Scala lines**. The packaged inventory has 456 classes.
+**333 plain-JVM tests and 191 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **212 Java
+files and 9 Scala files / 1,444 nonblank Scala lines**. The packaged inventory has 442 classes.
 
-Latest bounded port: `ASMMixinCompiler.define` delegates to Java `ClassBytes` (`cf8b2f9`), after ten characterization
-tests passed against untouched Scala (`4d59900`). Clean verification after stopping Gradle matched 426 non-closure
-APIs, all 30 compiler closures, 3,628 other method bodies and all 42 generated dump names/hashes. The five `@Mod`
-annotations match both packaged versions. Local reference jars, reports and scripts are in
-`run/migration-define-reference/`; `clean` preserves this ignored directory.
+Latest bounded port: `ASMMixinCompiler.mixinClasses` delegates to Java `MixinClassGenerator`, after eight
+characterization tests passed against untouched Scala (`1c9cd65`). Clean verification after stopping Gradle matched
+426 non-closure APIs, all 13 non-target compiler closures, 3,628 non-target method bodies and all 79 generated dump
+names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars, reports and scripts are
+in `run/migration-composition-reference/`; `clean` preserves this ignored directory.
 
-**Next: `ASMMixinCompiler.mixinClasses` composite generation.** Characterize constructor selection, trait
-linearization, field initialization, method/super dispatch, failure ordering and generated output before extraction.
-Preserve the existing algorithm. Keep Java-trait rewriting and startup initialization separate.
+**Next: `ASMMixinCompiler.registerJavaTrait` rewriting.** Characterize rejected shapes, cloning, initialization,
+field/method/super rewriting, publication and failure ordering before extraction. Preserve the existing algorithm;
+keep abstract-mixin support, side-only member filtering and other compiler changes separate.
 
 Remaining Scala units:
 

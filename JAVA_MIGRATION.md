@@ -25,9 +25,9 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
 placement/render helpers, both generators and all built-in tile traits are Java. Six generated microblock trait
-files and the compiler/signature/analyser compatibility shells remain Scala. The next bounded target is
-`ASMMixinCompiler.mixinClasses`; `define` was extracted into `ClassBytes` in `cf8b2f9` after the separate
-characterization commit `4d59900`.
+files and the compiler/signature/analyser compatibility shells remain Scala. Composite generation now delegates to
+Java `MixinClassGenerator`; the next bounded target is `ASMMixinCompiler.registerJavaTrait`, characterized before
+its mechanical extraction and kept separate from planned compiler algorithm changes.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
 Java-source limitations. Read both the [ABI inventory](JAVA_MIGRATION_ABI_INVENTORY.md) and
