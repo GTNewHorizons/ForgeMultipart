@@ -233,3 +233,19 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchange
 | `ReferencePostMicroblockBase` | `a6bed1c01fd74be061edfa287b724679c4cdbcb9c550cc3a3304ebda6973c7ac` |
 | `ReferenceScalaPostMicroblock` | `ceafadad14da1f749ec60af6609d1b2eb7afa0666425fff25271dee1e46a7bc2` |
 | `ReferencePostFace` | `066037dc6000fbcf2404583ff4ba8a9048b140beb0e1c27700564284bc4d8c06` |
+
+### `ReferenceScalaPostMicroblockClient`
+
+`scala/codechicken/multipart/compat/ReferenceScalaPostMicroblockClient.scala` freezes the client forwarders and
+lifecycle superclass predecessors. Tests observe render dispatch, material reuse, repeated virtual getters,
+equality receiver/order, collection `foreach`, split/reset behavior and super-call failure ordering.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the untouched dev jar at `1c7dd14`
+(SHA-256 `6c80983b6ba49bf7bc6c30248b9af4bdb0954bb1091ebd0e2ab4d823b994697b`). Source SHA-256 is
+`6a04c03977858ce01ebd4951d105dba8be926977d0c5892aeec469c17f89ac39`. Frozen class files under
+`src/test/resources/compat/` have these SHA-256s; do not regenerate against the port:
+
+| Class | SHA-256 |
+| --- | --- |
+| `ReferencePostClientBase` | `88a996255cae7f981f4386eba5bc1d4b5308c2eef900d120b105ec5727536342` |
+| `ReferenceScalaPostMicroblockClient` | `71afd739893a0cff7022c758cccff8a653a219c7937310df7b893b31f0ef82a4` |
