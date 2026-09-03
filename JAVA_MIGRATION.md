@@ -136,9 +136,12 @@ paths to effectively zero measured allocation; these remain focused measurements
 `ASMMixinCompiler` already supports two inputs:
 
 - `registerScalaTrait`, which reads Scala signature data and understands Scala trait output.
-- `registerJavaTrait`, which transforms a concrete Java mixin class into the interface/static-helper form used by the generator.
+- `registerJavaTrait`, which transforms a concrete or abstract Java mixin class into the interface/static-helper form used by the generator.
 
-The Java path rejects Java interfaces, inner classes, abstract classes, static initializers, and constructors with arguments. Those restrictions must be accounted for when converting built-in tile traits, but the path proves that Java implementations can participate in the current composition system.
+The Java path rejects Java interfaces, inner classes, static initializers, and constructors with arguments. Abstract
+inputs retain their abstract methods as interface contracts while later mixins provide the implementation. Those
+restrictions must be accounted for when converting built-in tile traits, but the path proves that Java implementations
+can participate in the current composition system.
 
 `MultipartGenerator.registerPassThroughInterface` also explicitly supports interfaces that generated tiles must expose. This is part of the compatibility surface and must not be lost in a static subclass rewrite.
 
@@ -378,7 +381,7 @@ Exit condition: normal runtime implementation is Java; any remaining Scala is is
 - [ ] Translate the existing compiler/generator into readable Java while preserving emitted class shapes and cache keys.
 - [ ] Evaluate GTNHLib ASM helpers where they reduce boilerplate without altering semantics.
 - [ ] Keep Scala-trait registration while deprecated bridges or supported external Scala traits require it.
-- [ ] Allow abstract Java mixins whose base type is abstract, skipping their abstract members instead of rejecting the
+- [x] Allow abstract Java mixins whose base type is abstract, skipping their abstract members instead of rejecting the
   class. Required before any Java mixin over `Microblock` is possible. See Phase 10.
 - [ ] Implement `@SideOnly` member stripping on the Java mixin path, matching what `listSideOnly` does for Scala
   signatures. Required before a client-only Java mixin method is safe on a dedicated server. See Phase 10.
@@ -530,13 +533,14 @@ reflection sits inside an empty `catch (Exception)`.
 ProjectRed's `LightMicroblock` is the audited external constraint on retiring runtime Scala-signature decoding.
 Its Java rewrite removes that external dependency only after the updated consumer is released into the pack;
 decoder removal also requires retiring internal Scala trait inputs and resolving retained model bridges.
-The rewrite still needs two Phase 7 prerequisites:
-1. **Abstract Java mixins over an abstract base.** `registerJavaTrait` rejects `ACC_ABSTRACT` classes
-   (`ASMMixinCompiler.scala`), but `Microblock` is abstract (`Microblock.java`) with abstract `microClass`,
-   `itemClassID`, and `render`. A Java mixin over it must therefore be abstract as well, so the check has to admit
-   abstract mixins and skip their abstract members rather than reject the class. The existing Java-mixin example,
-   `TPartialOcclusionTile`, avoids this only because its base `TileMultipart` is concrete.
-2. **`@SideOnly` stripping on the Java path.** Side stripping is implemented only for Scala traits, through
+The rewrite has two Phase 7 prerequisites:
+1. **Abstract Java mixins over an abstract base — complete.** `registerJavaTrait` now admits `ACC_ABSTRACT` classes,
+   retains declared abstract members on the generated interface, and omits them from the static helper and concrete
+   method metadata until a later mixin supplies an implementation. A no-argument mixin constructor may call an
+   argument-taking base constructor; that direct call is discarded because the generated composite invokes the real
+   base constructor before trait initialization.
+2. **`@SideOnly` stripping on the Java path — outstanding.** Side stripping is implemented only for Scala traits,
+   through
    `listSideOnly(sig: ScalaSignature)` reading the Scala signature annotation table inside `registerScalaTrait`.
    `LightMicroblock.renderDynamic` is `@SideOnly(Side.CLIENT)` and the trait is applied on both sides, because
    ProjectRed's `addTraits` ignores its `client` argument. Without an equivalent annotation-driven strip in

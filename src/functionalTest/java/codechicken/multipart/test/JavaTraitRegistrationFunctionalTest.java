@@ -27,7 +27,7 @@ class JavaTraitRegistrationFunctionalTest {
     private static final String ROOT = "codechicken/multipart/test/javatrait/";
 
     @Test
-    void rejectsInterfacesThenInnerClassesThenAbstractClassesWithoutPublishing() throws Exception {
+    void rejectsInterfacesThenInnerClassesWithoutPublishing() throws Exception {
         try (Scope scope = new Scope()) {
             ClassNode input = input("Rejected", "java/lang/Object");
             input.access |= ACC_INTERFACE | ACC_ABSTRACT;
@@ -40,8 +40,6 @@ class JavaTraitRegistrationFunctionalTest {
             assertFailure(
                     input,
                     "Inner classes are not permitted for " + input.name + " as a java mixin trait. Use scala");
-            input.innerClasses.clear();
-            assertFailure(input, "Cannot register abstract class " + input.name + " as a java mixin trait. Use scala");
             assertFalse(scope.bytes.contains(input.name));
             assertFalse(scope.bytes.contains(input.name + "$class"));
             assertFalse(scope.mixins.contains(input.name));

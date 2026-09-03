@@ -46,9 +46,6 @@ final class JavaTraitRegistration {
                         + " as a mixin trait. Try register passThroughInterface");
         if (!input.innerClasses.isEmpty()) throw new IllegalArgumentException(
                 "Inner classes are not permitted for " + input.name + " as a java mixin trait. Use scala");
-        if ((input.access & ACC_ABSTRACT) != 0) throw new IllegalArgumentException(
-                "Cannot register abstract class " + input.name + " as a java mixin trait. Use scala");
-
         ASMMixinCompiler$ compiler = ASMMixinCompiler$.MODULE$;
         Option<MixinInfo> parentTrait = compiler.getMixinInfo(input.superName);
         Buffer<FieldNode> sourceFields = JavaConversions.asScalaBuffer(input.fields);
@@ -210,8 +207,18 @@ final class JavaTraitRegistration {
                 if (!Objects.equals(source.desc, "()V")) throw new IllegalArgumentException(
                         "Constructor arguments are not permitted " + input.name + " as a mixin trait");
                 MethodNode result = staticClone(source, "$init$", ACC_PUBLIC);
-                removeSuperConstructor(result);
+                if ((input.access & ACC_ABSTRACT) != 0) removeAbstractSuperConstructor(result, source);
+                else removeSuperConstructor(result);
                 staticTransform(result, source);
+                return;
+            }
+            if ((source.access & ACC_ABSTRACT) != 0) {
+                contract.visitMethod(
+                        ACC_PUBLIC | ACC_ABSTRACT,
+                        source.name,
+                        source.desc,
+                        null,
+                        (String[]) source.exceptions.toArray(new String[0]));
                 return;
             }
             if ((source.access & ACC_PRIVATE) == 0) {
@@ -238,6 +245,32 @@ final class JavaTraitRegistration {
             found.trim(java.util.Collections.emptySet()).remove();
         }
 
+        void removeAbstractSuperConstructor(MethodNode constructor, MethodNode source) {
+            StackAnalyser stack = new StackAnalyser(Type.getObjectType(input.name), source);
+            AbstractInsnNode instruction = constructor.instructions.getFirst();
+            while (instruction != null) {
+                if (instruction.getOpcode() == INVOKESPECIAL && instruction instanceof MethodInsnNode) {
+                    MethodInsnNode call = (MethodInsnNode) instruction;
+                    if (Objects.equals(call.owner, input.superName) && Objects.equals(call.name, "<init>")) {
+                        int argumentWidth = 0;
+                        for (Type argument : Type.getArgumentTypes(call.desc)) argumentWidth += argument.getSize();
+                        StackAnalyser.StackEntry receiver = stack.peek(argumentWidth);
+                        if (receiver instanceof StackAnalyser.Load
+                                && ((StackAnalyser.Load) receiver).e() instanceof StackAnalyser.This) {
+                            removeRange(constructor.instructions, receiver.insn(), instruction);
+                            return;
+                        }
+                    }
+                }
+                stack.visitInsn(instruction);
+                instruction = instruction.getNext();
+            }
+            throw new IllegalArgumentException(
+                    "Invalid constructor insn sequence " + input.name
+                            + "\n"
+                            + new InsnListSection(constructor.instructions));
+        }
+
         boolean isGeneratedFieldAccessor(MethodNode method) {
             for (FieldMixin field : iterable(fields.values())) {
                 String name = field.accessName(input.name);
@@ -254,6 +287,16 @@ final class JavaTraitRegistration {
         instructions.insert(old, replacement);
         instructions.remove(old);
         return replacement;
+    }
+
+    private static void removeRange(InsnList instructions, AbstractInsnNode first, AbstractInsnNode last) {
+        AbstractInsnNode after = last.getNext();
+        AbstractInsnNode instruction = first;
+        while (instruction != after) {
+            AbstractInsnNode next = instruction.getNext();
+            instructions.remove(instruction);
+            instruction = next;
+        }
     }
 
     private static <A> java.lang.Iterable<A> iterable(scala.collection.Iterable<A> values) {

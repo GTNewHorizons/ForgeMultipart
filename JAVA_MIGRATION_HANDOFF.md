@@ -16,18 +16,20 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**333 plain-JVM tests and 207 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **214 Java
+**333 plain-JVM tests and 210 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **214 Java
 files and 9 Scala files / 1,188 nonblank Scala lines**. The packaged inventory has 437 classes.
 
-Latest bounded port: `ASMMixinCompiler` startup reflection, map construction and sanity warmup delegate to Java
-`CompilerBootstrap`, after seven characterization tests passed against untouched Scala (`e9d81d6`). Clean verification
-after stopping Gradle matched 431 non-target class APIs, all five compiler closures, 3,653 non-target method bodies and
-all 102 generated dump names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars,
-reports and scripts are in `run/migration-compiler-startup-reference/`; `clean` preserves this ignored directory.
+Latest bounded compiler change: abstract Java mixins can extend an abstract base and leave methods for a later mixin
+to implement. Two Forge tests first characterized the prior rejection and the already-working concrete/base dispatch
+(`3556725`). The generated interface retains abstract contracts, the helper omits their nonexistent bodies, and an
+abstract input's no-argument constructor may call an argument-taking superclass constructor. Clean verification after
+stopping Gradle matched 432 class APIs, all five compiler closures, 3,643 non-target method bodies and all 106 existing
+generated dump names/hashes; six feature-fixture dumps are new. Local evidence is in
+`run/migration-abstract-java-reference/`; `clean` preserves this ignored directory.
 
-**Next: allow abstract Java mixins as a separate compiler behavior target.** This is the first prerequisite for
-porting the remaining microblock traits. Characterize rejection, base selection and abstract-method handling first;
-keep Java-path side-only filtering as its own following target. The ScalaSignature path-dependent model bridges remain.
+**Next: add Java-path `@SideOnly` member filtering as a separate compiler behavior target.** This is the remaining
+compiler prerequisite for porting the microblock traits. Characterize visible/invisible annotations, side selection,
+fields, methods and constructors first. The ScalaSignature path-dependent model bridges remain.
 
 Remaining Scala units:
 
@@ -36,7 +38,7 @@ Remaining Scala units:
 | `multipart/asm/ASMMixinCompiler.scala` | Retained nested models, construction callbacks and Scala entry-point shell |
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
-| `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated traits; need abstract Java mixins and Java-path side-only member handling first |
+| `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated traits; need Java-path side-only member handling first |
 
 Both generators, both registries, core tile/part classes, ordinary microblock helpers/factories, handlers, networking,
 placement/render helpers and built-in tile traits are Java. The low-risk queue and immediate consumer gate are
@@ -99,7 +101,7 @@ Compilation against the migrated artifact would defeat the binary-compatibility 
 
 - **External Scala traits remain supported.** ProjectRed registers `LightMicroblock` through
   `MicroblockGenerator.registerTrait`; keep its ScalaSignature ingestion, `$class` helper and generated dispatch.
-  A Java rewrite needs both abstract-base mixin support and Java-path `@SideOnly` member handling, then a released
+  A Java rewrite still needs Java-path `@SideOnly` member handling, then a released
   consumer update. Do not flatten generated microblock inheritance to bypass those prerequisites.
 - **ScalaSignature models cannot be mechanically replaced.** Primitive literal `value()` methods coexist with
   erased `Object value()` bridges; Java source cannot declare both. Five generic inner constructors also need their
@@ -240,6 +242,12 @@ because `IRedstoneTile` is unrelated to `TileMultipart`, forcing a real `checkca
 **A Java mixin trait may not carry an inner class.** `registerJavaTrait` throws on a non-empty `InnerClasses`
 attribute. An anonymous `AbstractFunction1` for an `operate` callback, a lambda, or a string switch all trip it. Put
 the callback in the access shim as a named class, as `TTileChangeTileAccess.NeighborTileChanged` does.
+
+**Abstract Java mixins declare contracts without helper bodies.** Their abstract methods stay on the generated
+interface so concrete mixin methods can dispatch through them, but do not enter `MixinInfo.methods` until a later
+mixin implements them. Their source constructor must still be no-argument; it may directly call a superclass
+constructor with arguments. Registration removes that call and its argument evaluation because the generated
+composite has already invoked the real base constructor, then preserves the remaining field initialization.
 
 ## Release gaps and cleanup
 

@@ -990,3 +990,25 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   wide state fields and the Forge registration suite remains green. Wide getter maxima, primitive-array analysis and
   malformed inherited-call casts are real but dormant for current consumers. Abstract Java mixins and Java-path side
   filtering remain required before the microblock traits can move, and will be separate behavior targets.
+
+### 2026-09-03 — abstract Java mixins
+
+- Added two Forge characterizations before changing behavior and committed them as `3556725`. They freeze the old
+  abstract-input rejection before parent or method inspection and prove that concrete Java mixins already preserve
+  virtual dispatch when their base class is abstract.
+- `registerJavaTrait` now accepts abstract inputs. Declared abstract methods remain on the generated interface so
+  concrete methods can call them, but no static helper or `MixinInfo.methods` entry is emitted until a child mixin
+  supplies the implementation. The no-argument mixin constructor may directly call a superclass constructor with
+  arguments; registration removes that receiver/argument/call sequence while retaining subsequent state
+  initialization. Constructor parameters and missing direct superclass calls still fail before publication.
+- The feature fixture executes a two-layer generated composite over an abstract base with an `int` constructor. It
+  verifies base-argument forwarding, post-super field initialization, parent metadata, abstract-contract exceptions,
+  interface dispatch from the base and parent mixin, and final concrete instantiation. Existing Scala-trait
+  registration and all current Java mixin outputs are unchanged.
+- Saved the pre-change jar/source, reports, 106 generated outputs and checks in ignored
+  `run/migration-abstract-java-reference/`. Clean verification after stopping Gradle matches all 432 class APIs,
+  3,643 non-target method bodies and all five compiler closures. The 106 existing dump names/hashes match exactly;
+  the abstract-layer fixture adds six outputs. Formatting, checkstyle, build and Forge pass: 333 JVM / 210 Forge,
+  zero failures/errors/skips. All five packaged `@Mod` versions, the forced Scala-compilation guard and dev config
+  remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188 nonblank Scala lines. Next: Java-path
+  `@SideOnly` member filtering, characterized first as its own compiler behavior target.

@@ -19,6 +19,7 @@ and `JAVA_MIGRATION_CONSUMER_AUDIT.md` before extending this list.
 | `MultipartRenderer` dynamic-part guard | Uses short-circuit `\|\|` instead of `\|`; the second getter is no longer evaluated when the first operand succeeds. Ordinary getters give the same render decision. |
 | `ControlKeyModifer.map()` | The exposed Java map has no Scala default-value wrapper: an absent key returns null from `get`, not false from Scala `apply`. Use `isControlDown` for the unchanged absent-means-false behavior. |
 | Public companion constructors, including `ASMImplicits.ExtBitSet$` / `ExtClass$` | Explicit construction creates an independent instance instead of replacing `MODULE$`. Java initializes the retained final module field in its static initializer; use `MODULE$` for singleton identity. |
+| `registerJavaTrait` abstract inputs | Abstract Java classes are accepted instead of throwing `IllegalArgumentException`. Declared abstract methods become generated-interface contracts without helper bodies; a later mixin must implement them before those members can be invoked. A no-argument abstract-mixin constructor may call an argument-taking superclass constructor; registration discards that direct call and its argument evaluation because the composite invokes the real base constructor first. This enables Java microblock mixins without changing existing concrete registrations. |
 
 Concrete collection implementations also change without changing the declared `java.lang.Iterable`/`List` contracts:
 
