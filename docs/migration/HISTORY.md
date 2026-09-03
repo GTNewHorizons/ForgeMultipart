@@ -1058,3 +1058,25 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   `@Mod` versions remain verified. Sources total 215 Java files and 9 Scala files / 1,170 nonblank Scala lines.
   Next: `microblock/FaceMicroblockTraits.scala` implementation, with characterization before conversion. GPU rendering
   and full client selection remain on the manual checklist.
+
+### 2026-09-03 — Face microblock trait implementation
+
+- Committed five JVM and three Forge characterization tests first as `dc845bc`. The frozen Scala 2.11.5 face-client
+  consumer was compiled under Java 8 against the untouched jar. Tests verify actual emitted face indices, position,
+  pass and bounds for all six slots and 64 masks; negative-pass bypass; material caching and repeated virtual slot
+  evaluation between opaque draws; and null-material failure timing. Forge pins all 42 valid shape bounds, the
+  existing signed-byte indexing failures, null entries/live replacement of the public bounds array, singleton
+  identity and material solidity independent of the side argument.
+- Moved rendering, bounds lookup and solidity to package-private `FaceMicroblockTraitLogic.java`. The Scala
+  declarations, inheritance metadata, `$class` helpers and singleton accessor remain; Extra Utilities' runtime
+  face-client type check and the external Scala registration path are preserved. No compiler algorithm or existing
+  behavior was changed, and no new divergence entry is needed.
+- Saved the pre-port jar/source, reports and 116 generated dumps in ignored `run/migration-face-traits-reference/`.
+  Clean verification preserves all 438 original class/member APIs, all 17 ScalaSignature payloads and 3,688 non-target
+  method bodies. All 116 generated names and SHA-256 hashes match; only the new helper increases the jar inventory
+  to 439 classes. Formatting, checkstyle, build and Forge pass normally and after stopping Gradle for a clean rebuild:
+  345 JVM / 216 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged
+  `@Mod` versions remain verified. Sources total 216 Java files and 9 Scala files / 1,144 nonblank Scala lines.
+- Added a manual face-cover check using Stone, Glass and ProjectRed Inverted White Lamp materials. Headless tests
+  prove per-face dispatch, not GPU output. Next: `microblock/CornerMicroblockTraits.scala` implementation, characterized
+  before conversion.

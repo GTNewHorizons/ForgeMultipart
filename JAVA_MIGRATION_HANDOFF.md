@@ -16,23 +16,23 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**340 plain-JVM tests and 213 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **215 Java
-files and 9 Scala files / 1,170 nonblank Scala lines**. The packaged inventory has 438 classes.
+**345 plain-JVM tests and 216 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **216 Java
+files and 9 Scala files / 1,144 nonblank Scala lines**. The packaged inventory has 439 classes.
 
-Latest bounded target: `MicroblockTraits.scala` delegates its eight remaining implementation methods to
-`MicroblockTraitLogic.java`; its particle callbacks already delegated to Java. The three Scala trait declarations,
-inheritance metadata and `$class` bridges remain. Characterization was committed first as `d6eb56b`, including a
-frozen concrete Scala consumer compiled against the unchanged jar. It exercises initialization, slots, immutable
-partial-box views, virtual class/material/render dispatch and particle evaluation order. Forge covers generated common
-microblocks and the existing server-side failure when a client fallback reaches the stripped `Block.getIcon`.
-Clean verification after stopping Gradle matches all 437 original class/member APIs, all 17 ScalaSignature payloads,
-3,674 non-target method bodies and all 116 generated dump names/hashes. Only the package-private Java helper is added.
-Local evidence is in `run/migration-microblock-traits-reference/`; `clean` preserves this ignored directory.
+Latest bounded target: `FaceMicroblockTraits.scala` delegates rendering, bounds lookup and solidity to
+`FaceMicroblockTraitLogic.java`. The two Scala trait declarations, inheritance metadata, `$class` bridges and existing
+singleton accessor remain. Characterization was committed first as `dc845bc`, including a frozen Scala
+face-client consumer. It pins exact emitted faces for all six slots/64 masks, negative passes, repeated slot lookup,
+material caching and missing-material failure timing. Forge covers all 42 supported face shapes, signed-index errors,
+null/live-replaced bounds and solidity dispatch. Clean verification after stopping Gradle matches all 438 original
+class/member APIs, all 17 ScalaSignature payloads, 3,688 non-target method bodies and all 116 generated dump names/hashes.
+Only the package-private helper is added. Local evidence is in `run/migration-face-traits-reference/`; `clean`
+preserves this ignored directory.
 
-**Next: port the implementation in `microblock/FaceMicroblockTraits.scala`.** Characterize bounds/shape indexing,
-material solidity, negative-pass rendering, transparent/opaque face masks and generated dispatch before conversion.
-Retain the Scala declarations where inheritance metadata is still required. Keep the external ProjectRed Scala-trait
-fixture green and retain the ScalaSignature path-dependent model bridges; compiler changes stay separate.
+**Next: port the implementation in `microblock/CornerMicroblockTraits.scala`.** Characterize shape packing with the
+seven-slot offset, signed byte/index behavior, live bounds lookup, class identity and generated dispatch before
+conversion. Retain the Scala declarations where inheritance metadata is still required. Keep the external ProjectRed
+Scala-trait fixture green and retain the ScalaSignature path-dependent model bridges; compiler changes stay separate.
 
 Remaining Scala units:
 
@@ -42,7 +42,8 @@ Remaining Scala units:
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
 | `microblock/MicroblockTraits.scala` | Three retained inheritance/bridge shells over Java implementation |
-| `microblock/FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated trait implementations; port in dependency order while preserving inheritance metadata |
+| `microblock/FaceMicroblockTraits.scala` | Two retained inheritance/bridge shells over Java implementation |
+| `microblock/CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated trait implementations; port in dependency order while preserving inheritance metadata |
 
 Both generators, both registries, core tile/part classes, ordinary microblock helpers/factories, handlers, networking,
 placement/render helpers and built-in tile traits are Java. The low-risk queue and immediate consumer gate are
