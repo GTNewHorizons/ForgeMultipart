@@ -216,3 +216,20 @@ Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchange
 `6524a023b8015e6ecc75aaab9dafa09bb353e66ccdb72e7d76a3469288ba5952`; class-file SHA-256 is
 `2b51d17fb89999fd0324e4ea53843596539c5885c2b2eb0a476926e18446b587`, stored as
 `src/test/resources/compat/ReferenceScalaEdgeMicroblock.class.b64`. Do not regenerate it against the port.
+
+### `ReferenceScalaPostMicroblock`
+
+`scala/codechicken/multipart/compat/ReferenceScalaPostMicroblock.scala` freezes post forwarders with a real superclass
+predecessor and a face candidate. Tests observe special-case ordering, the synthetic super accessor, virtual shape,
+bounds and list dispatch, list mutation failures, and malformed-candidate errors.
+
+Compiled with Scala 2.11.5 under Java 8, `-target:jvm-1.8`, against the unchanged dev jar at `7c4c87e`
+(SHA-256 `c9fcc62deebf198f3aa1de1799d3a58a31cae9fa92f1b5dd129a84b93eaab73d`). Source SHA-256 is
+`d22d82ab5e53074022d305bb9537a5bae77804cdc28b0bf46f58686f47e2b62d`. Frozen class files under
+`src/test/resources/compat/` have these SHA-256s; do not regenerate them against the port:
+
+| Class | SHA-256 |
+| --- | --- |
+| `ReferencePostMicroblockBase` | `a6bed1c01fd74be061edfa287b724679c4cdbcb9c550cc3a3304ebda6973c7ac` |
+| `ReferenceScalaPostMicroblock` | `ceafadad14da1f749ec60af6609d1b2eb7afa0666425fff25271dee1e46a7bc2` |
+| `ReferencePostFace` | `066037dc6000fbcf2404583ff4ba8a9048b140beb0e1c27700564284bc4d8c06` |
