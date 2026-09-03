@@ -25,9 +25,9 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
 placement/render helpers, both generators and all built-in tile traits are Java. Six generated microblock trait
-files and the compiler/signature/analyser compatibility shells remain Scala. Composite generation and Java-trait
-rewriting now delegate to Java helpers. The next bounded target is an assessment of the remaining compiler
-startup/model shell; retain ScalaSignature path-dependent bridges and keep compiler behavior changes separate.
+files and the compiler/signature/analyser compatibility shells remain Scala. Composite generation, Java-trait
+rewriting and compiler startup now delegate to Java helpers. The next bounded target is abstract-Java-mixin support,
+separate from Java-path side-only filtering; retain the ScalaSignature path-dependent model bridges.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
 Java-source limitations. Read both the [ABI inventory](JAVA_MIGRATION_ABI_INVENTORY.md) and

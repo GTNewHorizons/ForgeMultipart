@@ -13,31 +13,23 @@ import net.minecraft.launchwrapper.LaunchClassLoader
 import ASMImplicits._
 
 object ASMMixinCompiler {
-  val cl = getClass.getClassLoader.asInstanceOf[LaunchClassLoader]
-  val m_defineClass = classOf[ClassLoader].getDeclaredMethod(
-    "defineClass",
-    classOf[Array[Byte]],
-    Integer.TYPE,
-    Integer.TYPE
-  )
-  val m_runTransformers = classOf[LaunchClassLoader].getDeclaredMethod(
-    "runTransformers",
-    classOf[String],
-    classOf[String],
-    classOf[Array[Byte]]
-  )
+  val cl = CompilerBootstrap.loader(getClass)
+  val m_defineClass = CompilerBootstrap.defineClassMethod()
+  val m_runTransformers = CompilerBootstrap.runTransformersMethod()
   val f_transformerExceptions =
-    classOf[LaunchClassLoader].getDeclaredField("transformerExceptions")
-  m_defineClass.setAccessible(true)
-  m_runTransformers.setAccessible(true)
-  f_transformerExceptions.setAccessible(true)
+    CompilerBootstrap.transformerExceptionsField()
+  CompilerBootstrap.open(
+    m_defineClass,
+    m_runTransformers,
+    f_transformerExceptions
+  )
 
-  private val traitByteMap = MMap[String, Array[Byte]]()
-  private val mixinMap = MMap[String, MixinInfo]()
+  private val traitByteMap = CompilerBootstrap.mutableMap[String, Array[Byte]]()
+  private val mixinMap = CompilerBootstrap.mutableMap[String, MixinInfo]()
 
   def define(name: String, bytes: Array[Byte]) = ClassBytes.define(name, bytes)
 
-  getBytes("cpw/mods/fml/common/asm/FMLSanityChecker")
+  CompilerBootstrap.warmupSanityChecker()
 
   def getBytes(name: String): Array[Byte] = ClassBytes.getBytes(name)
 
@@ -100,7 +92,7 @@ object ASMMixinCompiler {
     def moduleName = name
   }
 
-  private val infoCache = MMap[String, ClassInfo]()
+  private val infoCache = CompilerBootstrap.mutableMap[String, ClassInfo]()
 
   def remClassInfo(name: String) = infoCache.remove(name)
   implicit def getClassInfo(name: String) =

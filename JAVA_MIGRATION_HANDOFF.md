@@ -16,24 +16,24 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**333 plain-JVM tests and 200 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **213 Java
-files and 9 Scala files / 1,196 nonblank Scala lines**. The packaged inventory has 436 classes.
+**333 plain-JVM tests and 207 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **214 Java
+files and 9 Scala files / 1,188 nonblank Scala lines**. The packaged inventory has 437 classes.
 
-Latest bounded port: `ASMMixinCompiler.registerJavaTrait` delegates to Java `JavaTraitRegistration`, after nine
-characterization tests passed against untouched Scala (`85ad2e4`). Clean verification after stopping Gradle matched
-428 non-target class APIs, all five non-target compiler closures, 3,635 non-target method bodies and all 102 generated
-dump names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars, reports and scripts
-are in `run/migration-java-trait-reference/`; `clean` preserves this ignored directory.
+Latest bounded port: `ASMMixinCompiler` startup reflection, map construction and sanity warmup delegate to Java
+`CompilerBootstrap`, after seven characterization tests passed against untouched Scala (`e9d81d6`). Clean verification
+after stopping Gradle matched 431 non-target class APIs, all five compiler closures, 3,653 non-target method bodies and
+all 102 generated dump names/hashes. The five `@Mod` annotations match both packaged versions. Local reference jars,
+reports and scripts are in `run/migration-compiler-startup-reference/`; `clean` preserves this ignored directory.
 
-**Next: assess the remaining `ASMMixinCompiler` startup/model shell and select the next isolated extraction.** The
-ScalaSignature path-dependent model bridges must remain Scala-facing. Keep abstract-Java-mixin support, Java-path
-side-only filtering and other compiler changes as separate behavior targets with fresh characterization.
+**Next: allow abstract Java mixins as a separate compiler behavior target.** This is the first prerequisite for
+porting the remaining microblock traits. Characterize rejection, base selection and abstract-method handling first;
+keep Java-path side-only filtering as its own following target. The ScalaSignature path-dependent model bridges remain.
 
 Remaining Scala units:
 
 | Files under `src/main/scala/codechicken` | Why they remain |
 | --- | --- |
-| `multipart/asm/ASMMixinCompiler.scala` | Composition, Java-trait rewriting, startup and nested model bridges |
+| `multipart/asm/ASMMixinCompiler.scala` | Retained nested models, construction callbacks and Scala entry-point shell |
 | `multipart/asm/ScalaSignature.scala` | Named models, primitive/erased bridges and five generic inner-construction branches |
 | `multipart/asm/StackAnalyser.scala` | Class/companion/model shell over Java `StackAnalyserLogic` |
 | `microblock/MicroblockTraits.scala`, `FaceMicroblockTraits.scala`, `CornerMicroblockTraits.scala`, `EdgeMicroblockTraits.scala`, `HollowMicroblockTraits.scala`, `TMicroOcclusion.scala` | Generated traits; need abstract Java mixins and Java-path side-only member handling first |

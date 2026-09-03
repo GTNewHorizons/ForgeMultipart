@@ -969,3 +969,24 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   Scala-compilation guard and dev config remain correct. Sources total 213 Java files and 9 Scala files / 1,196
   nonblank Scala lines. Next: assess the remaining compiler startup/model shell before selecting another extraction;
   retained ScalaSignature model bridges remain the Java-source limit.
+
+### 2026-09-03 — compiler startup
+
+- Added seven Forge characterization tests for the `ASMMixinCompiler` singleton startup, passing against untouched
+  Scala and committed first as `e9d81d6`. They execute reflective definition and transformer invocation on isolated
+  launch loaders, verify the live transformer-exception set, exercise sanity-checker byte loading and freeze loader,
+  member-accessibility and independent mutable-map behavior.
+- Moved reflection lookup/access, map construction and sanity warmup into Java `CompilerBootstrap` while retaining the
+  singleton's field names, descriptors, modifiers, accessors and initialization order. The packaged inventory grows
+  from 436 to 437 only for the helper; the shared classfile ledger covers it and no effective divergence was added.
+- Saved the reference source/jar, reports, 102 generated outputs and checks in ignored
+  `run/migration-compiler-startup-reference/`. Clean verification after stopping Gradle matches 431 non-target class
+  APIs, 3,653 non-target method bodies, all five compiler closures and every output name/hash. Formatting, checkstyle,
+  build and Forge pass: 333 JVM / 207 Forge, zero failures/errors/skips. All five packaged `@Mod` versions, the forced
+  Scala-compilation guard and dev config remain correct. Sources total 214 Java files and 9 Scala files / 1,188
+  nonblank Scala lines.
+- Audited the preserved Java-rewriter defects against current registrations and supplied consumers. The ABI inventory
+  exposes only ProjectRed's external Scala-trait registration, which bypasses this path; current Java mixins have no
+  wide state fields and the Forge registration suite remains green. Wide getter maxima, primitive-array analysis and
+  malformed inherited-call casts are real but dormant for current consumers. Abstract Java mixins and Java-path side
+  filtering remain required before the microblock traits can move, and will be separate behavior targets.
