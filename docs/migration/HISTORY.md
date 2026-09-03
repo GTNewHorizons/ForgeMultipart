@@ -1099,3 +1099,23 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   remain verified. Sources total 217 Java files and 9 Scala files / 1,144 nonblank Scala lines.
 - Next: `EdgeMicroblock` in `microblock/EdgeMicroblockTraits.scala`; characterize and port the post traits separately.
   Client/GPU and full-pack validation remain on the existing manual checklist.
+
+### 2026-09-03 — Edge microblock trait implementation
+
+- Committed three JVM and three Forge characterization tests first as `5e020e5`. A frozen Scala 2.11.5 implementor,
+  compiled under Java 8 against the untouched jar, pins virtual shape access, byte truncation/integer overflow and the
+  fifteen-slot offset. Generated tests cover all 84 edge bounds and NBT/description round-trips, singleton/type
+  identity, inherited redstone non-conduction, signed-index failures and live/null/replaced bounds arrays.
+- Moved only `EdgeMicroblock` shape packing, bounds lookup and slot decoding to package-private
+  `EdgeMicroblockTraitLogic.java`. Retained the Scala declaration, inheritance metadata, `$class` bridge, singleton
+  accessor and `TEdgePart` default. Both post traits in the same file are untouched. No compiler algorithm or existing
+  behavior changed; no new divergence entry is needed.
+- Saved the reference jar/source, reports and 116 generated dumps in ignored `run/migration-edge-trait-reference/`.
+  Clean verification preserves all 440 original class/member APIs, all 17 ScalaSignature payloads and 3,696 non-target
+  method bodies. All 116 generated dump names and hashes match; only the helper raises the inventory to 441 classes.
+  Formatting, checkstyle, build and Forge pass normally and after stopping Gradle for a clean rebuild: 351 JVM /
+  222 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged `@Mod` versions
+  remain verified. Sources total 218 Java files and 9 Scala files / 1,144 nonblank Scala lines.
+- Next: `PostMicroblock` in the same file; characterize its occlusion ordering, axis bounds, item identity, torch
+  support and generated state before extraction. `PostMicroblockClient` follows separately. The existing manual
+  Stone Strip / ProjectRed Red Alloy Wire and illuminated-strip checks cover the remaining client/full-pack gate.

@@ -11,16 +11,16 @@ import codechicken.multipart.{
 }
 import scala.collection.JavaConversions._
 
+// Retain Scala inheritance metadata and helper bridges for generated and external mixins.
 trait EdgeMicroblock extends CommonMicroblock with TEdgePart {
-  override def setShape(size: Int, slot: Int) = shape_$eq(
-    (size << 4 | (slot - 15)).toByte
-  )
+  override def setShape(size: Int, slot: Int) =
+    EdgeMicroblockTraitLogic.setShape(this, size, slot)
 
   def microClass = EdgeMicroClass$.MODULE$
 
-  def getBounds = EdgeMicroClass.aBounds()(shape)
+  def getBounds = EdgeMicroblockTraitLogic.getBounds(this)
 
-  override def getSlot = getShape + 15
+  override def getSlot = EdgeMicroblockTraitLogic.getSlot(this)
 }
 
 trait PostMicroblockClient extends PostMicroblock with MicroblockClient {

@@ -26,10 +26,10 @@ No trustworthy tool will produce a maintainable Java port automatically. A decom
 Work continues on `algent/java`. The low-coupling queue, core part/tile types, registries, handlers, factories,
 placement/render helpers, both generators and all built-in tile traits are Java. Three files still contain generated
 microblock implementations in Scala, alongside the compiler/signature/analyser compatibility shells. The common,
-face and corner trait files retain inheritance/bridge declarations over Java behavior. Composite generation,
+face, corner and edge traits retain inheritance/bridge declarations over Java behavior. Composite generation,
 Java-trait rewriting and compiler startup also delegate to Java helpers. Abstract Java mixins and Java-path side-only
 filtering are complete; multiple Scala-trait inheritance still needs its metadata. The next bounded target is
-`EdgeMicroblock` in `microblock/EdgeMicroblockTraits.scala`, followed separately by the post traits. Retain the
+`PostMicroblock` in `microblock/EdgeMicroblockTraits.scala`, followed separately by its client trait. Retain the
 ScalaSignature path-dependent model bridges.
 
 Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
@@ -366,10 +366,11 @@ cache remain reference-identical; pass-through-interface coverage remains green.
 
 ### Phase 6 — Convert multipart core and microblocks
 
-Status: core code, factories, ordinary helpers and common/face/corner microblock trait behavior are Java. Three files
+Status: core code, factories, ordinary helpers and common/face/corner/edge microblock trait behavior are Java. Three files
 still contain generated trait implementations. Extract their behavior while retaining Scala declarations where
-multiple-trait inheritance still needs signature metadata; abstract Java mixins and side filtering alone do not replace that metadata. The
-following gates continue to apply to those remaining units; completed per-type evidence is in the history.
+multiple-trait inheritance still needs signature metadata; abstract Java mixins and side filtering alone do not
+replace that metadata. The following gates continue to apply to those remaining units; completed per-type evidence
+is in the history.
 
 - [ ] Add characterization coverage for each subsystem immediately before its conversion.
 - [ ] Convert the central tile, part, registry, placement, rendering, networking, scheduler, and microblock code in dependency order.
