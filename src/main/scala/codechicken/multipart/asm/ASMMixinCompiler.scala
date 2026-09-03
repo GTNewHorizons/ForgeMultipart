@@ -1,20 +1,17 @@
 package codechicken.multipart.asm
 
 import scala.collection.mutable.{Map => MMap, ListBuffer => MList, Set => MSet}
-import java.util.{Set => JSet}
 import scala.collection.JavaConversions._
 import org.objectweb.asm.tree._
 import org.objectweb.asm.Opcodes._
-import org.objectweb.asm.ClassReader
 import org.objectweb.asm.Type
 import org.objectweb.asm.MethodVisitor
 import Type._
 import codechicken.lib.asm.ASMHelper._
-import codechicken.lib.asm.{InsnListSection, InsnComparator, ObfMapping}
+import codechicken.lib.asm.{InsnListSection, InsnComparator}
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
 import net.minecraft.launchwrapper.LaunchClassLoader
-import cpw.mods.fml.common.asm.transformers.deobf.FMLDeobfuscatingRemapper
 import ASMImplicits._
 
 object ASMMixinCompiler {
@@ -59,44 +56,12 @@ object ASMMixinCompiler {
 
   getBytes("cpw/mods/fml/common/asm/FMLSanityChecker")
 
-  def getBytes(name: String): Array[Byte] = {
-    val jName = name.replace('/', '.')
-    if (jName == "java.lang.Object")
-      return null
+  def getBytes(name: String): Array[Byte] = ClassBytes.getBytes(name)
 
-    def useTransformers = f_transformerExceptions
-      .get(cl)
-      .asInstanceOf[JSet[String]]
-      .find(jName.startsWith)
-      .isEmpty
+  def internalDefine(name$ : String, bytes: Array[Byte]) =
+    ClassBytes.internalDefine(traitByteMap, name$, bytes)
 
-    val obfName =
-      if (ObfMapping.obfuscated)
-        FMLDeobfuscatingRemapper.INSTANCE.unmap(name).replace('/', '.')
-      else jName
-    val bytes = cl.getClassBytes(obfName)
-    if (bytes != null && useTransformers)
-      return m_runTransformers
-        .invoke(cl, jName, obfName, bytes)
-        .asInstanceOf[Array[Byte]]
-
-    return bytes
-  }
-
-  def internalDefine(name$ : String, bytes: Array[Byte]) {
-    val name = nodeName(name$)
-    traitByteMap.put(name, bytes)
-    remClassInfo(name)
-    DebugPrinter$.MODULE$.dump(name, bytes)
-  }
-
-  def classNode(name$ : String) = {
-    val name = nodeName(name$)
-    traitByteMap.getOrElseUpdate(name, getBytes(name)) match {
-      case null => null
-      case v    => createClassNode(v, ClassReader.EXPAND_FRAMES)
-    }
-  }
+  def classNode(name$ : String) = ClassBytes.classNode(traitByteMap, name$)
 
   def getMixinInfo(name: String) = mixinMap.get(name)
 

@@ -1571,4 +1571,31 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   No unsafe external calls/field accesses to the eight transformed Java tile inputs remain. All 40 generated outputs
   keep their instructions: 34 names/hashes are exact; six composites are renumbered by the new tests' earlier client
   tile construction. The dev config and forced Scala-compilation guard remain unchanged; all five `@Mod` versions
-  match both packaged jars. Full-client placement/rendering with the fixed jar still needs confirmation.
+  match both packaged jars. The user subsequently confirmed that placement with the supplied fix no longer crashes;
+  the broader static/dynamic drawing and part-update checklist remains open.
+- Added ten Forge characterization tests for `ASMMixinCompiler.getBytes`, `classNode` and `internalDefine`, passing
+  against untouched Scala and committed separately as `4928cdf`. A recording LaunchClassLoader exercises the real
+  reflective transformer chain; the real FML remapper is tested with a temporary mapping/environment flag. Fixtures
+  restore loader, caches and flags. They pin dotted/slash names, remapper input and transformer argument order,
+  exclusion short-circuiting, raw-array identity, nulls, reflection wrapping, expanded frames, fresh node parsing,
+  cached parse failures versus retried load failures, normalized metadata invalidation and publication before dump
+  failure. `internalDefine` still stores bytes without defining a JVM class. Baseline: 333 JVM / 173 Forge.
+- Extracted those three helpers into Java `ClassBytes`, retaining the Scala singleton, exact entry points and private
+  cache fields. Scala `find`/`getOrElseUpdate` dispatch remains, as do the load-before-exclusion and
+  publish/invalidate-before-dump ordering. The helper resolves the retained `MODULE$` internally: joint compilation
+  cannot expose the Scala-authored `ASMMixinCompiler$` as a Java parameter to a Scala caller. This follows the earlier
+  metadata helper pattern and changes no consumer API. Reflective class definition, startup initialization, trait
+  registration/rewriting, composition and compiler algorithms are unchanged.
+- Saved pre-port source/jar, reports, 41 generated dumps and reproducible checks in ignored
+  `run/migration-class-bytes-reference/`. All 423 non-closure class APIs match by names/descriptors/modifiers/generic
+  signatures and private fields, including all 16 named compiler APIs. All 3,615 other method bodies and 30 other
+  compiler closures match after normalizing private closure numbering. All 41 generated dump names/hashes match
+  exactly. Two private Scala closures become two Java callbacks plus their helper, taking the packaged inventory
+  from 455 to 456 classes. The shared compiler ledger entry covers this, with no new effective divergence. Sources
+  total 211 Java files and 9 Scala files / 1,597 nonblank Scala lines.
+- Formatting/checkstyle/build and Forge pass, including a clean build after stopping Gradle: 333 JVM / 173 Forge,
+  zero failures/errors/skips. All ten characterization tests remain unchanged. Clean APIs and dumps repeat the
+  matches above; the dev config and forced Scala-compilation guard are unchanged. All five `@Mod` versions match
+  both packaged jar versions. External Scala-trait tests remain green; existing manual client checks and Java-source
+  model/trait limitations remain. Next: `ASMMixinCompiler.define`, characterized first for publication/debug
+  accounting, reflective definition and failure ordering, without algorithm changes.

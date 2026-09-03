@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 187 commits including the API-cleanup plan, divergence-log cleanup, ports
-through Scala-trait registration metadata, the ASM characterization backfill, and review/client-rendering fixes.
+Branch: `algent/java`. Base: `master`. 189 commits including the API-cleanup plan, divergence-log cleanup, ports
+through class-byte loading/cache helpers, the ASM characterization backfill, and review/client-rendering fixes.
 
 The multipart review corrections (`5af333c`) are on `algent/java`; subsequent migration work continues in that branch.
 
@@ -76,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **333 plain-JVM tests and 163 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 173 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -826,13 +826,36 @@ All 455 class APIs match except the additive base hook; 3,713 other method bodie
 no remaining unsafe external calls/field accesses to the eight transformed Java tile inputs. All 40 generated outputs
 retain their instructions: 34 names/hashes match exactly, and six composite numbers move because the new tests create
 the client composite earlier. The dev config and forced Scala-compilation guard are unchanged, and all five `@Mod`
-versions match both packaged jar versions. The full client rendering check remains open until the fixed jar is tried
-in the pack; see the dated note in the manual checklist.
+versions match both packaged jar versions. The user has now retested placement with the supplied fix and confirmed
+that it no longer crashes. The broader static/dynamic rendering and part-update checks remain open; see the dated
+note in the manual checklist.
 
-**Next: `ASMMixinCompiler` class-byte loading/cache helpers: `getBytes`, `classNode` and `internalDefine`.**
-Characterize name normalization, cache identity/invalidation, transformer exclusions/remapping, nulls and failure
-ordering before extraction. Preserve the existing loader and cache algorithm. Keep reflective class definition,
-Java-trait rewriting and composition separate, and retain external Scala-trait support and the model bridges.
+`ASMMixinCompiler.getBytes`, `classNode` and `internalDefine` now delegate to Java `ClassBytes`. Ten Forge
+characterization tests passed against untouched Scala and were committed first as `4928cdf`; they are unchanged
+after extraction. The fixtures temporarily substitute a recording LaunchClassLoader and restore both caches and
+environment flags. They exercise the real FML remapper and reflective transformer chain, including original-name
+remapping, argument order, prefix short-circuiting, null results and reflective exception wrapping. They also pin
+normalized cache keys, raw-array identity, fresh nodes with expanded frames, null caching, load retries, cached parse
+failures, metadata invalidation, and publication before a failed debug dump. `internalDefine` still does not define
+a JVM class. The existing loader/cache algorithms and initialization order are unchanged.
+
+Reference source/jar, reports, 41 generated dumps and verification scripts are in ignored
+`run/migration-class-bytes-reference/`. All 423 non-closure class APIs match, including all 16 named compiler APIs,
+private fields and generic signatures. All 3,615 other method bodies and 30 other compiler closures match after
+normalizing private closure numbering. All 41 dump names/hashes match exactly. Two private Scala closures become
+two Java callbacks plus their helper, taking the packaged inventory from 455 to 456 classes; the shared compiler
+ledger entry covers this, with no new effective divergence. Sources total 211 Java files and 9 Scala files / 1,597
+nonblank Scala lines. The Scala singleton, external Scala-trait support and retained model bridges remain intact.
+
+Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 333 JVM / 173 Forge,
+zero failures/errors/skips. Clean APIs and dumps repeat the matches above; the dev config and forced Scala-compilation
+guard are unchanged. All five `@Mod` versions match both packaged jar versions. Manual client checks and the
+previously documented Java-source model/trait limitations remain outstanding.
+
+**Next: `ASMMixinCompiler.define` reflective class definition.** Characterize publication, debug accounting and
+definition/error ordering first, including duplicate definitions and reflection wrapping. Preserve its current
+algorithm and leave startup initialization, Java-trait rewriting and composition separate. Retain external
+Scala-trait support and the model bridges.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

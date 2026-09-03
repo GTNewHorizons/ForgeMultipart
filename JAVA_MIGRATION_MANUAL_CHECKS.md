@@ -38,8 +38,9 @@ below its table.
 `MultipartRenderer$.renderTileEntityAt`: its class call to `TileMultipartClient.hasDynamicParts()` encountered the
 transformed runtime interface. The renderer now calls the generated getter through a stable `TileMultipart` base
 hook. Four headless Forge cases cover the actual renderer bytecode's guards and dispatch; both nonempty cases
-reproduced the original crash. Re-test placement, static/dynamic drawing and part updates in the full client with the
-fixed jar before marking the rendering entries complete.
+reproduced the original crash. The user retested with the supplied fix and confirmed that placement no longer
+crashes. Static/dynamic drawing and part updates still need their full client checks before marking the rendering
+entries complete.
 
 ## Placement and interaction
 
