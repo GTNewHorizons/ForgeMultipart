@@ -66,13 +66,6 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
   /** Implicit java conversion of part list
     */
   def jPartList(): List[TMultiPart] = partList
-
-  /**
-   * Java refuses to use jPartList. This is a workaround.
-   */
-  def getPart(index: Int): TMultiPart = partList(index)
-
-  def testJavaAccess(): Int = 123
   
   override def canUpdate = doesTick
 

@@ -84,7 +84,7 @@ public class MixinRenderGlobal
                 if (index < 0 || index >= multipart.jPartList().size()) {
                     return block;
                 }
-                TMultiPart part = multipart.getPart(index);
+                TMultiPart part = multipart.jPartList().get(index);
 
                 if (part instanceof JsonModeledPart) {
                     JsonModeledPart jsonPart = (JsonModeledPart) part;

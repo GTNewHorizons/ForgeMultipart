@@ -14,7 +14,6 @@ import net.minecraftforge.client.MinecraftForgeClient
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import codechicken.lib.raytracer.ExtendedMOP
-import com.gtnewhorizon.gtnhlib.client.model.{BreakingTextureSetter, CrackTextureHolder, ModelISBRH}
 
 /** Internal class for rendering callbacks. Should be moved to the handler
   * package
