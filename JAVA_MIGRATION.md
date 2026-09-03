@@ -1405,3 +1405,35 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   Java files and 9 Scala files / 1,726 nonblank Scala lines. No new compatibility divergence is introduced. Next is
   `ASMMixinCompiler.scala`, bounded to `ClassInfo`/`MethodInfo` metadata lookup and traversal, with fresh characterization
   before touching its Forge-initialized state and no trait-rewriting algorithm changes.
+- Characterized the compiler metadata unit before modification in `abdf0b0`: six JVM cases cover hierarchy order and
+  diamond duplicates, parent-view capture/laziness, strict/view concatenation, virtual selection and short-circuiting,
+  mutable node metadata, reflection order/descriptors/exceptions and case-class outer owners. Five Forge cases cover
+  bytecode versus reflection roots, exact string-key caching and name-only node overloads, null/failure caching,
+  `internalDefine` invalidation and Scala trait/companion metadata. Untouched Scala passes 326 JVM / 127 Forge tests.
+- Extracted metadata lookup, cache population, parent flattening, method concatenation/selection, interface/method
+  mapping and exception-name copying into package-private Java `ClassInfoLookup`. The same Scala collection operations
+  and builders preserve result representations, laziness, traversal order and virtual dispatch. The nested model,
+  scalar accessors, state, implicit overloads and construction callbacks remain in Scala; no compiler composition,
+  trait registration/rewriting, stack-analysis or signature-decoding algorithm changed.
+- Found and retained two necessary source bridges. javac cannot name the concrete metadata classes nested under
+  `ClassInfo$`: it expects an extra `$` absent from their existing binary names. Scala's `IterableLike.view()` also
+  has an `Object` generic return signature but an `IterableView` descriptor; calling it from Java emits a nonexistent
+  `Object`-returning method. Construction and the initial `.view` call stay Scala. Path-dependent `ClassSymbolRef`
+  travels through an `Object` parameter and is cast back only at its retained Scala construction boundary.
+- Preserved existing quirks exposed by characterization: dotted/slashed keys have independent metadata cache entries,
+  `internalDefine` invalidates only the normalized key, null names are cached as null while load failures are not,
+  bytecode roots can return `Some(null)`, and the `StackAnalyser$` companion's superclass/interface queries throw
+  `ClassCastException` in the current signature model. These are unchanged behavior and do not add divergence entries.
+- Saved the pre-port source/jar, reports and 40 generated dumps in ignored `run/migration-class-info-reference/`.
+  All 16 named compiler APIs match by public/protected member names/descriptors/modifiers/generic declarations and
+  private fields. All four metadata case-class/companion serialization IDs match. All 205 other named compiler
+  methods and 36 algorithm closures match after normalizing private closure and captured-variable numbering; 137
+  ASM/generator classes outside the compiler have identical disassembly. All 40 dump names/hashes match, including
+  the new deterministic cache-invalidation fixture; the local dev configuration is unchanged.
+- Formatting/checkstyle/build and Forge pass, including a clean build after stopping Gradle: 326 JVM / 127 Forge,
+  zero failures/errors/skips, with the characterization tests unchanged after the port. The forced Scala compilation
+  guard is retained and all five `@Mod` annotations match both clean packaged jar versions. Private implementation
+  closures become the helper/callbacks and the packaged inventory falls from 451 to 450. Sources now total 208 Java
+  files and 9 Scala files / 1,714 nonblank Scala lines. Next is the bounded descriptor/bridge-emission helper unit in
+  `ASMMixinCompiler.scala`: `seperateDesc`, `staticDesc`, `finishBridgeCall`, `writeBridge` and `writeStaticBridge`, with
+  fresh characterization and no composition/trait-rewriting algorithm changes.

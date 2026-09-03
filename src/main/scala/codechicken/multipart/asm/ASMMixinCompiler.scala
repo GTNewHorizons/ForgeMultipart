@@ -140,11 +140,12 @@ object ASMMixinCompiler {
     override def toString =
       getClass.getName.replaceAll(".+[\\$\\.]", "") + "(" + name + ")"
 
-    def parentMethods = (superClass ++ interfaces).view.flatMap(_.allMethods)
-    def allMethods: Iterable[MethodInfo] = methods ++ parentMethods
-    def findPublicImpl(name: String, desc: String) = allMethods.find(m =>
-      m.name == name && m.desc == desc && !m.isAbstract && !m.isPrivate
-    )
+    // javac reads view()'s generic return as Object instead of its IterableView descriptor.
+    def parentMethods =
+      ClassInfoLookup.parentMethods((superClass ++ interfaces).view)
+    def allMethods: Iterable[MethodInfo] = ClassInfoLookup.allMethods(this)
+    def findPublicImpl(name: String, desc: String) =
+      ClassInfoLookup.findPublicImpl(this, name, desc)
 
     def isScala = false
     def isTrait = false
@@ -156,7 +157,7 @@ object ASMMixinCompiler {
 
   def remClassInfo(name: String) = infoCache.remove(name)
   implicit def getClassInfo(name: String) =
-    infoCache.getOrElseUpdate(name, ClassInfo.obtainInfo(name))
+    ClassInfoLookup.getClassInfo(infoCache, name)
   implicit def getClassInfo(cnode: ClassNode): ClassInfo = getClassInfo(
     cnode.name
   )
@@ -169,15 +170,16 @@ object ASMMixinCompiler {
         def owner = ReflectionClassInfo.this
         def name = method.getName
         def desc = getType(method).getDescriptor
-        def exceptions = method.getExceptionTypes.map(c => nodeName(c.getName))
+        def exceptions = ClassInfoLookup.exceptionNames(method)
         def isPrivate = Modifier.isPrivate(method.getModifiers)
         def isAbstract = Modifier.isAbstract(method.getModifiers)
       }
 
       def name = nodeName(clazz.getName)
       def superClass = Option(clazz.getSuperclass)
-      def interfaces = clazz.getInterfaces.map(getClassInfo)
-      def methods = clazz.getMethods.map(ReflectionMethodInfo(_))
+      def interfaces = ClassInfoLookup.reflectionInterfaces(clazz)
+      def methods =
+        ClassInfoLookup.reflectionMethods(clazz, ReflectionMethodInfo(_))
     }
 
     class ClassNodeInfo(val cnode: ClassNode) extends ClassInfo {
@@ -185,15 +187,16 @@ object ASMMixinCompiler {
         def owner = ClassNodeInfo.this
         def name = mnode.name
         def desc = mnode.desc
-        def exceptions = Array(mnode.exceptions: _*)
+        def exceptions = ClassInfoLookup.exceptionNames(mnode.exceptions)
         def isPrivate = (mnode.access & ACC_PRIVATE) != 0
         def isAbstract = (mnode.access & ACC_ABSTRACT) != 0
       }
 
       def name = cnode.name
       def superClass = Some(cnode.superName)
-      def interfaces: Seq[ClassInfo] = cnode.interfaces.map(getClassInfo)
-      def methods = cnode.methods.map(MethodNodeInfoSource)
+      def interfaces: Seq[ClassInfo] = ClassInfoLookup.nodeInterfaces(cnode)
+      def methods =
+        ClassInfoLookup.nodeMethods(cnode.methods, MethodNodeInfoSource)
     }
 
     class ScalaClassInfo(
@@ -202,43 +205,25 @@ object ASMMixinCompiler {
         val csym: ScalaSignature#ClassSymbolRef
     ) extends ClassNodeInfo(cnode$) {
       override def superClass = Some(csym.jParent)
-      override def interfaces = csym.jInterfaces.map(getClassInfo)
+      override def interfaces = ClassInfoLookup.scalaInterfaces(csym)
       override def isScala = true
 
       override def isTrait = csym.isTrait
       override def isObject = csym.isObject
     }
 
-    private[ASMMixinCompiler] def obtainInfo(name: String): ClassInfo = {
-      if (name == null) return null
-
-      def scalaInfo(cnode: ClassNode, obj: Boolean) =
-        ScalaSigReader$.MODULE$.ann(cnode).flatMap { ann =>
-          val sig = ScalaSigReader$.MODULE$.read(ann)
-          val name = cnode.name.replace('/', '.')
-          (if (obj) sig.findObject(name) else sig.findClass(name))
-            .map(csym => new ScalaClassInfo(cnode, sig, csym))
-        }
-
-      if (name.endsWith("$")) { // find scala object
-        val baseName = name.substring(0, name.length - 1)
-        val baseNode = classNode(baseName)
-        if (baseNode != null) scalaInfo(baseNode, true) match {
-          case Some(info) => return info
-          case None       =>
-        }
-      }
-
-      classNode(name) match {
-        case null =>
-          cl.findClass(name.replace('/', '.')) match {
-            case null => null
-            case c    => new ReflectionClassInfo(c)
-          }
-        case cnode =>
-          scalaInfo(cnode, false).getOrElse(new ClassNodeInfo(cnode))
-      }
-    }
+    private[ASMMixinCompiler] def obtainInfo(name: String): ClassInfo =
+      ClassInfoLookup.obtainInfo(
+        name,
+        (node, sig, symbol) =>
+          new ScalaClassInfo(
+            node,
+            sig,
+            symbol.asInstanceOf[ScalaSignature#ClassSymbolRef]
+          ),
+        node => new ClassNodeInfo(node),
+        clazz => new ReflectionClassInfo(clazz)
+      )
   }
 
   import StackAnalyser.width

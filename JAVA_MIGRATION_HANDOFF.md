@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 174 commits including the API-cleanup plan, divergence-log cleanup, ports
-through the `StackAnalyser` control-flow extraction, and the ASM characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 176 commits including the API-cleanup plan, divergence-log cleanup, ports
+through the `ClassInfo` metadata lookup extraction, and the ASM characterization backfill and review fixes.
 
 ## The one rule that matters
 
@@ -74,7 +74,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **320 plain-JVM tests and 122 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **326 plain-JVM tests and 127 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -280,7 +280,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-207 Java files, 9 Scala files, 1,726 Scala lines left (non-blank; that is the metric this figure has always used).
+208 Java files, 9 Scala files, 1,714 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -654,11 +654,40 @@ replaced by the Java helper, taking the packaged inventory from 452 to 451. The 
 unchanged; both clean jars have all five `@Mod` annotations matching their packaged version. No new divergence entry
 is needed.
 
-**Next: `multipart/asm/ASMMixinCompiler.scala`, bounded to `ClassInfo`/`MethodInfo` metadata lookup and traversal.**
-Characterize hierarchy order, lazy traversal, public implementation selection and lookup/cache behavior first, using
-Forge where the compiler's `LaunchClassLoader` initialization requires it. Keep trait registration/rewriting algorithms,
-external Scala-trait support, retained `StackAnalyser` model and `ScalaSignature` primitive/erased bridges unchanged.
-Save a fresh reference and compare generated dumps again before expanding the compiler scope.
+`ClassInfo` metadata lookup and traversal now use package-private Java `ClassInfoLookup`. Six JVM and five Forge
+characterization cases passed against untouched Scala and were committed separately as `abdf0b0`. They freeze own/
+superclass/interface order with diamond duplicates, lazy parent-method reads versus captured parent identities,
+strict versus view-backed concatenation, overridable method selection and predicate short-circuiting, mutable node
+wrappers, reflection order/descriptors/exceptions, case-class outer owners, exact cache keys, null/failure caching,
+`internalDefine` invalidation, and external Scala-trait/companion metadata selection. They pass unchanged after the port.
+
+The nested model, fields, scalar accessors, implicit overloads, constructor callbacks and initial `.view` expression
+remain Scala. Two concrete Java-source limitations require those bridges: `ClassInfo$`'s nested classes have binary
+names missing the additional `$` javac expects, and Scala's `IterableLike.view()` generic signature says `Object`
+while its descriptor returns `IterableView`, causing Java source calls to emit a missing `Object`-returning descriptor.
+The Java helper keeps path-dependent `ClassSymbolRef` out of its signatures, as the existing signature parser does.
+Its traversal calls retain Scala's collection builders and virtual dispatch; it does not make lazy inputs eager.
+
+The existing metadata quirks remain: dotted/slashed strings are separate cache keys, `internalDefine` invalidates
+only the normalized key, a bytecode root can report `Some(null)`, and the `StackAnalyser$` companion's superclass/
+interface queries throw `ClassCastException` in the current signature model. These are characterized existing
+behaviors, not new divergences. No trait registration, rewriting or signature-decoder algorithm changed.
+
+Local evidence is under ignored `run/migration-class-info-reference/`: pre-port source/jar, test reports, generated
+dumps, clean logs and comparison scripts. All 16 named compiler APIs retain public/protected members, flags, generic
+signatures and private fields; all four metadata case-class/companion serialization IDs match. The 205 other named
+compiler methods and 36 algorithm closures have identical disassembly after normalizing private closure/capture
+numbering, as do 137 ASM/generator classes outside the compiler. All 40 generated dump names/hashes match (the extra
+dump is the new cache-invalidation fixture). Clean build and Forge pass at 326 JVM / 127 Forge, zero skips. The
+packaged class count falls from 451 to 450; no new ledger entry is needed. The forced Scala compilation guard remains,
+and all five `@Mod` annotations match both clean jar versions.
+
+**Next: `multipart/asm/ASMMixinCompiler.scala`, bounded to descriptor and bridge-emission helpers:** `seperateDesc`
+(keep its existing spelling), `staticDesc`, `finishBridgeCall`, `writeBridge`, and `writeStaticBridge`. Characterize
+descriptors, argument/local widths, emitted instruction order, return opcodes and max-stack/local values first, with
+Forge where singleton initialization requires it. Keep composition/trait-rewriting algorithms, external Scala-trait
+support, retained metadata/stack models and `ScalaSignature` primitive/erased bridges unchanged. Save a fresh reference
+and compare all generated dumps before expanding scope.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 
