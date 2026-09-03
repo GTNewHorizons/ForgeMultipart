@@ -1141,3 +1141,25 @@ differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.m
   versions remain verified. Sources total 219 Java files and 9 Scala files / 1,140 nonblank Scala lines.
 - Next: `PostMicroblockClient`; characterize render dispatch, lifecycle super ordering, shrink/split/reset behavior
   and size/transparency/axis tie-breaks before conversion. Client/GPU and full-pack checks remain manual.
+
+### 2026-09-03 — Post microblock client implementation
+
+- Committed eight JVM characterization tests and one Forge test first as `47885d1`. Frozen Scala 2.11.5 client forwarders
+  and lifecycle predecessors pin the exact `-1` render branch, material reuse, live second-segment changes, repeated
+  virtual size/transparency/axis reads, superclass ordering/exceptions and equality receiver dispatch (even on the
+  same reference). Tests also pin collection `foreach`, neighbour order, fresh bounds copies, split reuse/reset and
+  malformed face failures. Forge exercises real cover/post geometry across all three axes through the client helper.
+- Extracted five behavior methods to `PostMicroblockClientLogic.java`; retained Scala state/inheritance metadata,
+  accessors and lifecycle/super forwarders. The named Java callback preserves `foreach` and replaces the internal
+  Scala anonymous callback under the existing shared classfile policy. No algorithm fix or new effective divergence
+  was introduced. In particular, the second split segment still copies physical bounds rather than the already
+  face-clipped first segment; the new Forge check records that reference behavior.
+- Saved source/jar, reports and 116 generated dumps in ignored `run/migration-post-client-reference/`. Clean checks
+  preserve all 441 retained class/member APIs, all 17 ScalaSignature payloads, 3,703 non-target method bodies and all
+  116 generated names/hashes. Two Java classes replace one Scala callback, bringing the jar inventory to 443 classes.
+  Formatting, checkstyle, build and Forge pass normally and after stopping Gradle for a clean rebuild: 365 JVM /
+  227 Forge tests, zero failures/errors/skips. The forced Scala-compilation guard and all five packaged `@Mod` versions
+  remain verified. Sources total 220 Java files and 9 Scala files / 1,104 nonblank Scala lines.
+- Expanded the existing manual post check with Stone, Glass and ProjectRed Inverted White Lamp examples. The
+  dedicated server strips the client factory entry point; helper/geometry coverage does not establish actual client
+  generation or GPU output. Next: `HollowMicroblock`, followed separately by `HollowMicroblockClient`.

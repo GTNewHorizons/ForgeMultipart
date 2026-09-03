@@ -518,6 +518,8 @@ opaque draws. Its Forge companion pins generated face bounds and solidity. The `
 tested by Extra Utilities' connected-texture renderer remains intact. Corner, edge and post tests freeze virtual
 access, every supported geometry, packed shape/material NBT and descriptions, edge conduction and post occlusion
 ordering. The post's frozen Scala superclass also pins its synthetic super dispatch, including short-circuiting.
+Post-client fixtures additionally exercise render/lifecycle dispatch, equality receivers, repeated virtual reads and
+ordered neighbour shrinking; Forge uses real cover/post geometry while client generation and GPU output remain manual.
 Full downstream mixed tiles and client-side selection remain Phase 7 integration cases.
 
 With these gates, the source audit is actionable: the port can simplify internals freely where no listed observation
