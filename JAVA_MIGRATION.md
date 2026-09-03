@@ -1522,3 +1522,31 @@ generated-trait compatibility work. Scala-runtime removal remains a later projec
   versions match both packaged jar versions. External Scala-trait tests remain green; existing manual client checks
   and Java-source model-bridge limitations remain outstanding. Next: Scala-trait registration metadata,
   `getAndRegisterParentTraits` and `registerScalaTrait`, characterized first with no registration algorithm changes.
+- Added twelve Forge characterization tests for Scala-trait registration, passing against untouched Scala and
+  committed separately as `d2276c4`. Real compiled Scala traits exercise parent/field/method/super metadata and side
+  selection; synthetic signatures pin cached identity/nulls, lookup-before-registration ordering, duplicate parents,
+  partial caches after failure, owner value equality, filtering precedence, first exact method identity, preceding
+  accessor selection and mutation of the publication key by a metadata callback. Baseline: 333 JVM / 159 Forge.
+- Extracted `getAndRegisterParentTraits` and `registerScalaTrait` into Java `ScalaTraitRegistration`, retaining their
+  exact Scala entry points and four small callbacks for nested metadata type tests/casts and accessors. A javac probe
+  confirms it expects `ASMMixinCompiler$ClassInfo$$ScalaClassInfo` for the existing nested model, whose binary name has
+  only one `$` between `ClassInfo` and `ScalaClassInfo`. The model stays in Scala. The class-symbol callback uses
+  `Object` at the joint-compilation boundary and the retained `ClassSymbolRef` inside Java. No named model or bridge
+  is removed; collection dispatch/builders, cache publication and registration algorithms are unchanged.
+- The compiled fixtures exposed the existing Scala `String` alias limitation: its parameter descriptor becomes
+  `Lscala/Predef/String;`, which cannot match the classfile method. A dedicated test freezes the exact registration
+  failure, while the successful fixture spells the type `java.lang.String`. Missing accessors/methods and partial
+  parent registration on failure remain unchanged. These are reference behaviors, not new divergences or fixes.
+- Saved pre-port source/jar, reports and 40 generated dumps in ignored `run/migration-scala-trait-reference/`. All 16
+  named compiler APIs match by member names/descriptors/modifiers/generic signatures and private fields; 14 named
+  classfiles are byte-identical. All 217 other named compiler methods, 28 other algorithm closures, 19 existing
+  metadata-helper methods and 147 other ASM/generator disassemblies match. All 40 dump names/hashes match exactly.
+  The Java helper/callbacks and retained Scala type bridges change the packaged inventory from 450 to 455 classes;
+  private artifacts are covered by the shared compiler entry, so no new ledger entry is needed. Sources total 210
+  Java files and 9 Scala files / 1,629 nonblank Scala lines.
+- Formatting/checkstyle/build and Forge pass, including clean verification after stopping Gradle: 333 JVM / 159 Forge,
+  zero failures/errors/skips. The twelve characterization tests are unchanged after extraction. The clean jar repeats
+  the API/disassembly/dump comparisons; the local dev config and forced Scala-compilation guard are unchanged. All
+  five `@Mod` versions match both packaged jar versions. External Scala-trait tests remain green; existing manual
+  client checks and Java-source model-bridge limitations remain. Next: `getBytes`, `classNode` and `internalDefine`
+  class-byte loading/cache helpers, characterized first and without loader/cache algorithm changes.

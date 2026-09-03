@@ -12,8 +12,8 @@ what breaks, and what is left. The other documents hold the reasoning.
 | `JAVA_MIGRATION_MANUAL_CHECKS.md` | What no automated test can cover, and must be checked by hand in a client |
 | `JAVA_MIGRATION_PROFILE.md` | The focused baseline, first measured result, findings, and exact rerun command |
 
-Branch: `algent/java`. Base: `master`. 183 commits including the API-cleanup plan, divergence-log cleanup, ports
-through side-only annotation filtering, and the ASM characterization backfill and review fixes.
+Branch: `algent/java`. Base: `master`. 185 commits including the API-cleanup plan, divergence-log cleanup, ports
+through Scala-trait registration metadata, and the ASM characterization backfill and review fixes.
 
 The multipart review corrections (`5af333c`) are on `algent/java`; subsequent migration work continues in that branch.
 
@@ -76,7 +76,7 @@ awk -F'"' '/<testsuite /{t+=$4;f+=$8;e+=$10} END{print "tests="t" failures="f" e
 grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' run/server/junit-out/TEST-*.xml
 ```
 
-Current baseline: **333 plain-JVM tests and 147 Java 8 Forge dedicated-server tests passing.** The ignored local server
+Current baseline: **333 plain-JVM tests and 159 Java 8 Forge dedicated-server tests passing.** The ignored local server
 EULA is accepted in this checkout. GitHub Actions runs the same self-validating Forge suite in a dependent job after
 the shared GTNH build; keep both jobs required.
 
@@ -282,7 +282,7 @@ across the port. It is also where the two shim constraints in the gotchas list w
 `rayTraceAll`'s index production is now characterized, closing the gap the read-path cleanup left: the index written
 into `ExtendedMOP.data` is what `reduceMOP` hands back to every click, activate, harvest and pick block.
 
-209 Java files, 9 Scala files, 1,664 Scala lines left (non-blank; that is the metric this figure has always used).
+210 Java files, 9 Scala files, 1,629 Scala lines left (non-blank; that is the metric this figure has always used).
 
 ## What is left, and in what order
 
@@ -773,11 +773,43 @@ repeat the matches above; the dev config and forced Scala-compilation guard are 
 match both packaged jar versions. External Scala-trait tests remain green; manual client checks and Java-source
 model-bridge limitations remain outstanding.
 
-**Next: Scala-trait registration metadata in `ASMMixinCompiler`: `getAndRegisterParentTraits` and
-`registerScalaTrait`.** Characterize parent traversal/registration order, cached registration, side filtering,
-field/method/super metadata and failures before extraction. Preserve the existing registration algorithm, Scala
-collection behavior, external Scala-trait support and retained model/`ScalaSignature` bridges. Keep Java-trait
-rewriting and composition separate. Save a fresh reference and compare generated dumps before expanding scope.
+`ASMMixinCompiler.getAndRegisterParentTraits` and `registerScalaTrait` now delegate to Java `ScalaTraitRegistration`.
+Twelve Forge characterization tests passed against untouched Scala and were committed separately as `d2276c4`.
+Compiled Scala traits freeze real parent/field/method/super metadata and side selection. Synthetic signatures cover
+cached identity/nulls, parent lookup before registration, duplicate/order preservation, partial parent-cache state on
+failure, owner value equality, filter precedence, exact first-method identity, accessor ordering and callback-driven
+publication-key changes. The original singleton requires Forge initialization, so the existing harness is used.
+
+Four small Scala callbacks retain nested metadata type tests/casts and accessors. A javac probe confirms that
+`ClassInfo$.ScalaClassInfo` is looked up as `ASMMixinCompiler$ClassInfo$$ScalaClassInfo`, while its retained binary name
+contains only one `$` between `ClassInfo` and `ScalaClassInfo`. Renaming that model would break compatibility; its
+Scala bridge remains. Joint compilation also needs the class-symbol callback to return `Object`, with the existing
+`ScalaSignature.ClassSymbolRef` cast inside Java. The named model classes, primitive/erased ScalaSignature bridges,
+Scala collection dispatch/builders and registration algorithm remain unchanged.
+
+The compiled fixtures exposed a pre-existing decoder limitation: an unqualified Scala `String` parameter is decoded
+as `Lscala/Predef/String;` and registration fails to find its classfile method. A dedicated regression test preserves
+that exact failure; the successful fixture uses `java.lang.String`. Missing accessors/methods still fail rather than
+being silently repaired, and failed child registration keeps already-completed parent registrations.
+
+Reference source/jar, reports, dumps, logs and comparisons are under ignored `run/migration-scala-trait-reference/`.
+All 16 named compiler APIs retain names/descriptors/modifiers/generic signatures and private fields; 14 named
+classfiles are byte-identical. All 217 other named compiler methods, 28 other algorithm closures, 19 existing
+metadata-helper methods and 147 other ASM/generator disassemblies match. All 40 generated dump names/hashes match
+exactly. The new Java helper/callbacks and retained Scala type bridges bring the inventory from 450 to 455 classes;
+the shared compiler entry covers the private artifacts, with no new effective divergence. Sources total 210 Java
+files and 9 Scala files / 1,629 nonblank Scala lines.
+
+Formatting/checkstyle/build and Forge pass, including a clean build after stopping Gradle: 333 JVM / 159 Forge,
+zero failures/errors/skips. All twelve characterization tests remain unchanged after the port. Clean APIs and dumps
+repeat the matches above; the dev config and forced Scala-compilation guard are unchanged. All five `@Mod` versions
+match both packaged jar versions. External Scala-trait tests remain green; manual client checks and Java-source
+model-bridge limitations remain outstanding.
+
+**Next: `ASMMixinCompiler` class-byte loading/cache helpers: `getBytes`, `classNode` and `internalDefine`.**
+Characterize name normalization, cache identity/invalidation, transformer exclusions/remapping, nulls and failure
+ordering before extraction. Preserve the existing loader and cache algorithm. Keep reflective class definition,
+Java-trait rewriting and composition separate, and retain external Scala-trait support and the model bridges.
 The remaining generated microblock traits still need the Phase 7 abstract-Java-mixin and side-only-member support
 before their Java mixin inputs are safe; do not bypass those prerequisites by flattening their inheritance.
 

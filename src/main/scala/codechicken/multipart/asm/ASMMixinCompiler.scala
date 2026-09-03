@@ -436,11 +436,17 @@ object ASMMixinCompiler {
       stack: StackAnalyser
   ): Option[MethodInfo] = ClassInfoLookup.getSuper(minsn, stack)
 
+  // javac expects an extra '$' in the retained ClassInfo$ nested binary names.
   def getAndRegisterParentTraits(cnode: ClassNode) =
-    cnode.interfaces.map(getClassInfo).collect {
-      case i: ClassInfo.ScalaClassInfo if i.isTrait && !i.csym.isInterface =>
-        registerScalaTrait(i.cnode)
-    }
+    ScalaTraitRegistration.getAndRegisterParentTraits(
+      cnode,
+      info =>
+        info match {
+          case i: ClassInfo.ScalaClassInfo => i.isTrait && !i.csym.isInterface
+          case _                           => false
+        },
+      info => info.asInstanceOf[ClassInfo.ScalaClassInfo].cnode
+    )
 
   def registerJavaTrait(cnode: ClassNode) {
     if ((cnode.access & ACC_INTERFACE) != 0)
@@ -714,56 +720,11 @@ object ASMMixinCompiler {
 
   def listSideOnly(sig: ScalaSignature) = ClassInfoLookup.listSideOnly(sig)
 
-  def registerScalaTrait(cnode: ClassNode): MixinInfo = {
-    getMixinInfo(cnode.name) match {
-      case Some(info) => return info
-      case None       =>
-    }
-
-    val info = getClassInfo(cnode).asInstanceOf[ClassInfo.ScalaClassInfo]
-    val sig = info.sig
-    val sideOnly = listSideOnly(sig)
-
-    val parentTraits = getAndRegisterParentTraits(cnode)
-    val fieldAccessors = MMap[String, sig.MethodSymbol]()
-    val fields = MList[FieldMixin]()
-    val methods = MList[MethodNode]()
-    val supers = MList[String]()
-
-    val csym = info.csym
-    for (sym <- sig.collect[sig.MethodSymbol](8)) {
-      if (sym.isParam || sym.owner != csym) {} else if (
-        sideOnly(sym.full)
-      ) {} else if (sym.isAccessor) {
-        fieldAccessors.put(sym.name, sym)
-      } else if (sym.isMethod) {
-        val desc = sym.jDesc
-        if (sym.name.startsWith("super$"))
-          supers += sym.name.substring(6) + desc
-        else if (!sym.isPrivate && !sym.isDeferred && sym.name != "$init$")
-          methods += (cnode.methods.find(m =>
-            m.name == sym.name && m.desc == desc
-          ) match {
-            case Some(m) => m
-            case None =>
-              throw new IllegalArgumentException(
-                "Unable to add mixin trait " + cnode.name + ": " +
-                  sym.name + desc + " found in scala signature but not in class file. Most likely an obfuscation issue."
-              )
-          })
-      } else {
-        fields += FieldMixin(
-          sym.name.trim,
-          sym.jDesc,
-          if (fieldAccessors(sym.name.trim).isPrivate) ACC_PRIVATE
-          else ACC_PUBLIC
-        )
-      }
-    }
-
-    val mixin =
-      MixinInfo(cnode.name, csym.jParent, parentTraits, fields, methods, supers)
-    mixinMap.put(cnode.name, mixin)
-    mixin
-  }
+  def registerScalaTrait(cnode: ClassNode): MixinInfo =
+    ScalaTraitRegistration.registerScalaTrait(
+      cnode,
+      mixinMap,
+      info => info.asInstanceOf[ClassInfo.ScalaClassInfo].sig,
+      info => info.asInstanceOf[ClassInfo.ScalaClassInfo].csym
+    )
 }
