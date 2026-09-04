@@ -10,7 +10,11 @@ import net.minecraft.world.{IBlockAccess, World}
 import java.util.List
 import net.minecraft.nbt.NBTTagCompound
 import codechicken.lib.data.MCDataOutput
-import codechicken.multipart.handler.{MultipartCompatiblity, MultipartProxy, MultipartSPH}
+import codechicken.multipart.handler.{
+  MultipartCompatiblity,
+  MultipartProxy,
+  MultipartSPH
+}
 import net.minecraft.item.ItemStack
 import net.minecraft.nbt.NBTTagList
 
@@ -67,7 +71,7 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
   /** Implicit java conversion of part list
     */
   def jPartList(): List[TMultiPart] = partList
-  
+
   override def canUpdate = doesTick
 
   def operate(f: (TMultiPart) => Unit) {
@@ -531,15 +535,19 @@ trait TileMultipartClient extends TileMultipart {
 
       part match {
         case jsonModeledPart: JsonModeledPart =>
-          if (ModelISBRH.INSTANCE.get().renderWorldBlock(
-              jsonModeledPart.getRenderWorld,
-              vec.x.toInt,
-              vec.y.toInt,
-              vec.z.toInt,
-              jsonModeledPart.getBlock,
-              ModelISBRH.JSON_ISBRH_ID,
-              renderer)) 
-          {
+          if (
+            ModelISBRH.INSTANCE
+              .get()
+              .renderWorldBlock(
+                jsonModeledPart.getRenderWorld,
+                vec.x.toInt,
+                vec.y.toInt,
+                vec.z.toInt,
+                jsonModeledPart.getBlock,
+                ModelISBRH.JSON_ISBRH_ID,
+                renderer
+              )
+          ) {
             rendered = true
           }
         case isbrh: ISBRHPart =>
