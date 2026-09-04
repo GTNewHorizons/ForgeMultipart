@@ -10,8 +10,8 @@ public enum Mixins implements IMixins
 {
     RENDER_GLOBAL_MIXIN(new MixinBuilder("Redirects part block break renders to ISBRHModel")
             .addClientMixins("MixinRenderGlobal")
-            .setPhase(Phase.EARLY)
-            .setApplyIf(() -> Loader.isModLoaded("gtnhlib")));
+            .addRequiredMod(TargetedMod.GTNHLIB)
+            .setPhase(Phase.EARLY));
 
     private final MixinBuilder builder;
 

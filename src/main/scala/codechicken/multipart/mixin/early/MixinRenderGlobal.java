@@ -11,8 +11,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.client.renderer.RenderBlocks;
 import net.minecraft.client.renderer.RenderGlobal;
-import net.minecraft.client.renderer.Tessellator;
-import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MovingObjectPosition;
@@ -23,22 +21,20 @@ import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 import com.gtnewhorizon.gtnhlib.client.model.ModelISBRH;
 
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import scala.Tuple2;
 
 @Mixin(RenderGlobal.class)
 public class MixinRenderGlobal 
 {
     @Unique
-    private Block forgemultipart$breakingBlock;
+    private JsonModeledPart forgemultipart$breakingPart;
 
     @Redirect(
-            method = "drawBlockDamageTexture",
+            method = "drawBlockDamageTexture(Lnet/minecraft/client/renderer/Tessellator;Lnet/minecraft/entity/EntityLivingBase;F)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/multiplayer/WorldClient;getBlock(III)Lnet/minecraft/block/Block;",
@@ -54,7 +50,7 @@ public class MixinRenderGlobal
 
         Block block = world.getBlock(x, y, z);
 
-        forgemultipart$breakingBlock = null;
+        forgemultipart$breakingPart = null;
 
         TileEntity tile = world.getTileEntity(x, y, z);
         if (!(tile instanceof TileMultipartClient )) {
@@ -88,8 +84,8 @@ public class MixinRenderGlobal
 
                 if (part instanceof JsonModeledPart) {
                     JsonModeledPart jsonPart = (JsonModeledPart) part;
-                    forgemultipart$breakingBlock = jsonPart.getBlock();
-                    return forgemultipart$breakingBlock;
+                    forgemultipart$breakingPart = jsonPart;
+                    return forgemultipart$breakingPart.getBlock();
                 }
             }
         }
@@ -98,7 +94,7 @@ public class MixinRenderGlobal
     }
 
     @WrapOperation(
-            method = "drawBlockDamageTexture",
+            method = "drawBlockDamageTexture(Lnet/minecraft/client/renderer/Tessellator;Lnet/minecraft/entity/EntityLivingBase;F)V",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/RenderBlocks;renderBlockUsingTexture(Lnet/minecraft/block/Block;IIILnet/minecraft/util/IIcon;)V",
@@ -109,18 +105,23 @@ public class MixinRenderGlobal
     private void forgemultipart$redirectBreakingModeledPartDraw(RenderBlocks instance, 
         Block block, int x, int y, int z, IIcon overrideTexture, Operation<Void> original)
     {
-        if (forgemultipart$breakingBlock != null) {
-            Block renderBlock = forgemultipart$breakingBlock;
-            forgemultipart$breakingBlock = null;
-
+        if (forgemultipart$breakingPart != null) {
+            JsonModeledPart renderPart = forgemultipart$breakingPart;
+            forgemultipart$breakingPart = null;
+            
+            instance.setOverrideBlockTexture(overrideTexture);
             ModelISBRH.INSTANCE.get().renderWorldBlock(
-                    instance.blockAccess,
+                    renderPart.getRenderWorld(),
                     x, y, z,
-                    renderBlock,
+                    renderPart.getBlock(),
                     ModelISBRH.JSON_ISBRH_ID,
                     instance
             );
+            instance.clearOverrideBlockTexture();
         }
-        original.call(instance, block, x, y, z, overrideTexture);
+        else
+        {
+            original.call(instance, block, x, y, z, overrideTexture);
+        }
     }
 }
