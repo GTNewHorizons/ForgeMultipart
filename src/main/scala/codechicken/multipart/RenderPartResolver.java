@@ -5,6 +5,7 @@ import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.util.MovingObjectPosition;
 
 import codechicken.lib.raytracer.ExtendedMOP;
+import net.minecraft.world.IBlockAccess;
 import scala.Tuple2;
 
 /**
@@ -15,7 +16,7 @@ public final class RenderPartResolver {
     private static TMultiPart cachedPart;
     private static boolean attemptedResolution;
 
-    public static TMultiPart resolve(WorldClient world, int x, int y, int z) {
+    public static TMultiPart resolve(IBlockAccess world, int x, int y, int z) {
         if (attemptedResolution) {
             return cachedPart;
         }
@@ -61,7 +62,7 @@ public final class RenderPartResolver {
         return cachedPart;
     }
 
-    private static TileMultipartClient getMultipartTile(WorldClient world, int x, int y, int z) {
+    private static TileMultipartClient getMultipartTile(IBlockAccess world, int x, int y, int z) {
         if (world.getTileEntity(x, y, z) instanceof TileMultipartClient) {
             return (TileMultipartClient) world.getTileEntity(x, y, z);
         }

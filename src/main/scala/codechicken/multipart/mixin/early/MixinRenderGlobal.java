@@ -55,15 +55,21 @@ public class MixinRenderGlobal {
         if (part instanceof JsonModeledPart) {
             JsonModeledPart jsonModeledPart = (JsonModeledPart) part;
             instance.setOverrideBlockTexture(overrideTexture);
-            ModelISBRH.INSTANCE.get().renderWorldBlock(
-                    jsonModeledPart.getRenderWorld(),
-                    x,
-                    y,
-                    z,
-                    jsonModeledPart.getBlock(),
-                    ModelISBRH.JSON_ISBRH_ID,
-                    instance);
-            instance.clearOverrideBlockTexture();
+            try
+            {
+                ModelISBRH.INSTANCE.get().renderWorldBlock(
+                        jsonModeledPart.getRenderWorld(),
+                        x,
+                        y,
+                        z,
+                        jsonModeledPart.getBlock(),
+                        ModelISBRH.JSON_ISBRH_ID,
+                        instance);
+            }
+            finally
+            {
+                instance.clearOverrideBlockTexture();
+            }
         } else {
             original.call(instance, block, x, y, z, overrideTexture);
         }

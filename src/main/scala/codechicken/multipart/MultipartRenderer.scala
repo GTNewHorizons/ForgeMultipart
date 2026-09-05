@@ -65,15 +65,22 @@ object MultipartRenderer
       return false
 
     if (renderer.hasOverrideBlockTexture) {
-      val part =
-        RenderPartResolver.resolve(world.asInstanceOf[WorldClient], x, y, z)
-      if (part != null) {
-        part match {
-          case isbrh: ISBRHPart =>
-            isbrh.renderWorldBlock(world, x, y, z, renderer)
-          case _ =>
-            part.drawBreaking(renderer)
+      // In case anyone is doing anything naughty in the isbrh or the breaking draw we try finally to make sure
+      // the breaking target resolver is never stuck in a resolved state.
+      try {
+        val part =
+          RenderPartResolver.resolve(world, x, y, z)
+        if (part != null) {
+          part match {
+            case isbrh: ISBRHPart =>
+              isbrh.renderWorldBlock(world, x, y, z, renderer)
+            case _ =>
+              part.drawBreaking(renderer)
+          }
         }
+      }
+      finally
+      {
         RenderPartResolver.clear()
       }
       return false
