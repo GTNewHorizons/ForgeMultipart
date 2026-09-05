@@ -1,11 +1,10 @@
 package codechicken.multipart;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.world.IBlockAccess;
 
 import codechicken.lib.raytracer.ExtendedMOP;
-import net.minecraft.world.IBlockAccess;
 import scala.Tuple2;
 
 /**

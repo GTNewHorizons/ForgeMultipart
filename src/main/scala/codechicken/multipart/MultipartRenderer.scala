@@ -78,9 +78,7 @@ object MultipartRenderer
               part.drawBreaking(renderer)
           }
         }
-      }
-      finally
-      {
+      } finally {
         RenderPartResolver.clear()
       }
       return false
