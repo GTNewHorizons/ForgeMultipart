@@ -14,6 +14,7 @@ import net.minecraftforge.client.MinecraftForgeClient
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import codechicken.lib.raytracer.ExtendedMOP
+import net.minecraft.client.multiplayer.WorldClient
 
 /** Internal class for rendering callbacks. Should be moved to the handler
   * package
@@ -64,27 +65,16 @@ object MultipartRenderer
       return false
 
     if (renderer.hasOverrideBlockTexture) {
-      val hit = Minecraft.getMinecraft.objectMouseOver
-      if (
-        hit != null && hit.blockX == x && hit.blockY == y && hit.blockZ == z && ExtendedMOP
-          .getData(hit)
-          .isInstanceOf[(_, _)]
-      ) {
-        val hitInfo: (Int, _) = ExtendedMOP.getData(hit)
-        if (
-          hitInfo._1.isInstanceOf[
-            Int
-          ] && hitInfo._1 >= 0 && hitInfo._1 < tmpart.partList.size
-        )
-          {
-            val part = tmpart.partList(hitInfo._1)
-            part match {
-              case isbrh: ISBRHPart =>
-                isbrh.renderWorldBlock(world, x, y, z, renderer)
-              case _ =>
-                part.drawBreaking(renderer)
-            }
-          }
+      val part =
+        RenderPartResolver.resolve(world.asInstanceOf[WorldClient], x, y, z)
+      if (part != null) {
+        part match {
+          case isbrh: ISBRHPart =>
+            isbrh.renderWorldBlock(world, x, y, z, renderer)
+          case _ =>
+            part.drawBreaking(renderer)
+        }
+        RenderPartResolver.clear()
       }
       return false
     }
