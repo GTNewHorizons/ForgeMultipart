@@ -9,12 +9,10 @@ import net.minecraft.client.renderer.{RenderBlocks, Tessellator}
 import net.minecraft.client.renderer.tileentity.TileEntitySpecialRenderer
 import net.minecraft.tileentity.TileEntity
 import net.minecraft.world.IBlockAccess
-import net.minecraft.client.Minecraft
 import net.minecraftforge.client.MinecraftForgeClient
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
-import codechicken.lib.raytracer.ExtendedMOP
-import net.minecraft.client.multiplayer.WorldClient
+import codechicken.multipart.RenderPartResolver
 
 /** Internal class for rendering callbacks. Should be moved to the handler
   * package
@@ -65,21 +63,15 @@ object MultipartRenderer
       return false
 
     if (renderer.hasOverrideBlockTexture) {
-      // In case anyone is doing anything naughty in the isbrh or the breaking draw we try finally to make sure
-      // the breaking target resolver is never stuck in a resolved state.
-      try {
-        val part =
-          RenderPartResolver.resolve(world, x, y, z)
-        if (part != null) {
-          part match {
-            case isbrh: ISBRHPart =>
-              isbrh.renderWorldBlock(world, x, y, z, renderer)
-            case _ =>
-              part.drawBreaking(renderer)
-          }
+      val part =
+        RenderPartResolver.resolve(world, x, y, z)
+      if (part != null) {
+        part match {
+          case isbrh: ISBRHPart =>
+            isbrh.renderWorldBlock(world, x, y, z, renderer)
+          case _ =>
+            part.drawBreaking(renderer)
         }
-      } finally {
-        RenderPartResolver.clear()
       }
       return false
     }

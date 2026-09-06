@@ -8,6 +8,7 @@ import net.minecraft.util.IIcon;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -25,20 +26,22 @@ public class MixinRenderGlobal {
     @Shadow
     private WorldClient theWorld;
 
+    @Unique
+    private JsonModeledPart forgemultipart$resolvedPart;
+
     @Redirect(
             method = "drawBlockDamageTexture(Lnet/minecraft/client/renderer/Tessellator;Lnet/minecraft/entity/EntityLivingBase;F)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/multiplayer/WorldClient;getBlock(III)Lnet/minecraft/block/Block;",
-                    remap = false),
-            remap = false)
+                    target = "Lnet/minecraft/client/multiplayer/WorldClient;getBlock(III)Lnet/minecraft/block/Block;"))
     private Block forgemultipart$redirectDamageBlock(WorldClient world, int x, int y, int z) {
         Block block = world.getBlock(x, y, z);
         TMultiPart part = RenderPartResolver.resolve(world, x, y, z);
         if (part instanceof JsonModeledPart) {
-            JsonModeledPart jsonPart = (JsonModeledPart) part;
-            return jsonPart.getBlock();
+            forgemultipart$resolvedPart = (JsonModeledPart) part;
+            return forgemultipart$resolvedPart.getBlock();
         }
+        forgemultipart$resolvedPart = null;
         return block;
     }
 
@@ -46,30 +49,23 @@ public class MixinRenderGlobal {
             method = "drawBlockDamageTexture(Lnet/minecraft/client/renderer/Tessellator;Lnet/minecraft/entity/EntityLivingBase;F)V",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/RenderBlocks;renderBlockUsingTexture(Lnet/minecraft/block/Block;IIILnet/minecraft/util/IIcon;)V",
-                    remap = false),
-            remap = false)
+                    target = "Lnet/minecraft/client/renderer/RenderBlocks;renderBlockUsingTexture(Lnet/minecraft/block/Block;IIILnet/minecraft/util/IIcon;)V"))
     private void forgemultipart$redirectBreakingModeledPartDraw(RenderBlocks instance, Block block, int x, int y, int z,
             IIcon overrideTexture, Operation<Void> original) {
-        TMultiPart part = RenderPartResolver.resolve(theWorld, x, y, z);
-        if (part instanceof JsonModeledPart) {
-            JsonModeledPart jsonModeledPart = (JsonModeledPart) part;
+
+        if (forgemultipart$resolvedPart != null) {
             instance.setOverrideBlockTexture(overrideTexture);
-            try {
-                ModelISBRH.INSTANCE.get().renderWorldBlock(
-                        jsonModeledPart.getRenderWorld(),
-                        x,
-                        y,
-                        z,
-                        jsonModeledPart.getBlock(),
-                        ModelISBRH.JSON_ISBRH_ID,
-                        instance);
-            } finally {
-                instance.clearOverrideBlockTexture();
-            }
+            ModelISBRH.INSTANCE.get().renderWorldBlock(
+                    forgemultipart$resolvedPart.getRenderWorld(),
+                    x,
+                    y,
+                    z,
+                    forgemultipart$resolvedPart.getBlock(),
+                    ModelISBRH.JSON_ISBRH_ID,
+                    instance);
+            instance.clearOverrideBlockTexture();
         } else {
             original.call(instance, block, x, y, z, overrideTexture);
         }
-        RenderPartResolver.clear();
     }
 }
