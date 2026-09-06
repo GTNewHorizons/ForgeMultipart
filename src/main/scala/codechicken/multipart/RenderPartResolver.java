@@ -10,22 +10,20 @@ import scala.Tuple2;
 /**
  * A helper class for resolving parts so we don't do a double look up
  */
-public final class RenderPartResolver 
-{
-    private static final ThreadLocal<ResolverState> STATE =
-            ThreadLocal.withInitial(ResolverState::new);
+public final class RenderPartResolver {
 
-    private static class ResolverState
-    {
+    private static final ThreadLocal<ResolverState> STATE = ThreadLocal.withInitial(ResolverState::new);
+
+    private static class ResolverState {
+
         TMultiPart part;
         boolean resolved;
     }
-    
+
     public static TMultiPart resolve(IBlockAccess world, int x, int y, int z) {
         ResolverState state = STATE.get();
 
-        if (state.resolved)
-        {
+        if (state.resolved) {
             return state.part;
         }
 
@@ -76,8 +74,7 @@ public final class RenderPartResolver
         return null;
     }
 
-    public static void clear()
-    {
+    public static void clear() {
         ResolverState state = STATE.get();
         state.part = null;
         state.resolved = false;
