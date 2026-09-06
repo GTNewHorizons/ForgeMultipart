@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "minVersion": "0.8.5-GTNH",
+  "package": "codechicken.multipart.mixin.early",
+  "refmap": "mixins.ForgeMultipart.refmap.json",
+  "target": "@env(DEFAULT)",
+  "mixinextras": {
+    "minVersion": "0.5.0"
+  },
+  "compatibilityLevel": "JAVA_8"
+}

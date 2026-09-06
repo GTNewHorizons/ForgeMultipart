@@ -30,7 +30,7 @@ import net.minecraft.util.{AxisAlignedBB, Vec3}
 
 import java.lang.Iterable
 import codechicken.lib.world.IChunkLoadTile
-import net.minecraft.block.Block
+import com.gtnewhorizon.gtnhlib.client.model.ModelISBRH
 import net.minecraft.client.renderer.RenderBlocks
 import net.minecraftforge.client.ForgeHooksClient
 
@@ -534,6 +534,22 @@ trait TileMultipartClient extends TileMultipart {
         return
 
       part match {
+        case jsonModeledPart: JsonModeledPart =>
+          if (
+            ModelISBRH.INSTANCE
+              .get()
+              .renderWorldBlock(
+                jsonModeledPart.getRenderWorld,
+                vec.x.toInt,
+                vec.y.toInt,
+                vec.z.toInt,
+                jsonModeledPart.getBlock,
+                ModelISBRH.JSON_ISBRH_ID,
+                renderer
+              )
+          ) {
+            rendered = true
+          }
         case isbrh: ISBRHPart =>
           if (
             isbrh.renderWorldBlock(
