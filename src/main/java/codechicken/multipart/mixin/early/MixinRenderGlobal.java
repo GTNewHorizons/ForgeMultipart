@@ -8,7 +8,6 @@ import net.minecraft.util.IIcon;
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -23,8 +22,8 @@ import codechicken.multipart.TMultiPart;
 @Mixin(RenderGlobal.class)
 public class MixinRenderGlobal {
 
-    @Unique
-    private JsonModeledPart forgemultipart$resolvedPart;
+    @Shadow
+    private WorldClient theWorld;
 
     @Redirect(
             method = "drawBlockDamageTexture(Lnet/minecraft/client/renderer/Tessellator;Lnet/minecraft/entity/EntityLivingBase;F)V",
@@ -35,10 +34,8 @@ public class MixinRenderGlobal {
         Block block = world.getBlock(x, y, z);
         TMultiPart part = RenderPartResolver.resolve(world, x, y, z);
         if (part instanceof JsonModeledPart) {
-            forgemultipart$resolvedPart = (JsonModeledPart) part;
-            return forgemultipart$resolvedPart.getBlock();
+            return ((JsonModeledPart) part).getBlock();
         }
-        forgemultipart$resolvedPart = null;
         return block;
     }
 
@@ -49,11 +46,12 @@ public class MixinRenderGlobal {
                     target = "Lnet/minecraft/client/renderer/RenderBlocks;renderBlockUsingTexture(Lnet/minecraft/block/Block;IIILnet/minecraft/util/IIcon;)V"))
     private void forgemultipart$redirectBreakingModeledPartDraw(RenderBlocks instance, Block block, int x, int y, int z,
             IIcon overrideTexture, Operation<Void> original) {
-        JsonModeledPart part = forgemultipart$resolvedPart;
-        try {
-            if (part != null) {
-                instance.setOverrideBlockTexture(overrideTexture);
+        TMultiPart candidatePart = RenderPartResolver.resolve(theWorld, x, y, z);
+        if (candidatePart instanceof JsonModeledPart) {
+            JsonModeledPart part = (JsonModeledPart) candidatePart;
 
+            instance.setOverrideBlockTexture(overrideTexture);
+            try {
                 ModelISBRH.INSTANCE.get().renderWorldBlock(
                         part.getRenderWorld(),
                         x,
@@ -62,12 +60,11 @@ public class MixinRenderGlobal {
                         part.getBlock(),
                         ModelISBRH.JSON_ISBRH_ID,
                         instance);
-            } else {
-                original.call(instance, block, x, y, z, overrideTexture);
+            } finally {
+                instance.clearOverrideBlockTexture();
             }
-        } finally {
-            instance.clearOverrideBlockTexture();
-            forgemultipart$resolvedPart = null;
+        } else {
+            original.call(instance, block, x, y, z, overrideTexture);
         }
     }
 }
