@@ -23,9 +23,6 @@ import codechicken.multipart.TMultiPart;
 @Mixin(RenderGlobal.class)
 public class MixinRenderGlobal {
 
-    @Shadow
-    private WorldClient theWorld;
-
     @Unique
     private JsonModeledPart forgemultipart$resolvedPart;
 
@@ -52,20 +49,25 @@ public class MixinRenderGlobal {
                     target = "Lnet/minecraft/client/renderer/RenderBlocks;renderBlockUsingTexture(Lnet/minecraft/block/Block;IIILnet/minecraft/util/IIcon;)V"))
     private void forgemultipart$redirectBreakingModeledPartDraw(RenderBlocks instance, Block block, int x, int y, int z,
             IIcon overrideTexture, Operation<Void> original) {
+        JsonModeledPart part = forgemultipart$resolvedPart;
+        try {
+            if (part != null) {
+                instance.setOverrideBlockTexture(overrideTexture);
 
-        if (forgemultipart$resolvedPart != null) {
-            instance.setOverrideBlockTexture(overrideTexture);
-            ModelISBRH.INSTANCE.get().renderWorldBlock(
-                    forgemultipart$resolvedPart.getRenderWorld(),
-                    x,
-                    y,
-                    z,
-                    forgemultipart$resolvedPart.getBlock(),
-                    ModelISBRH.JSON_ISBRH_ID,
-                    instance);
+                ModelISBRH.INSTANCE.get().renderWorldBlock(
+                        part.getRenderWorld(),
+                        x,
+                        y,
+                        z,
+                        part.getBlock(),
+                        ModelISBRH.JSON_ISBRH_ID,
+                        instance);
+            } else {
+                original.call(instance, block, x, y, z, overrideTexture);
+            }
+        } finally {
             instance.clearOverrideBlockTexture();
-        } else {
-            original.call(instance, block, x, y, z, overrideTexture);
+            forgemultipart$resolvedPart = null;
         }
     }
 }
