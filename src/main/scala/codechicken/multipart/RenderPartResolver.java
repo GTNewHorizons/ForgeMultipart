@@ -1,7 +1,6 @@
 package codechicken.multipart;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.multiplayer.WorldClient;
 import net.minecraft.util.MovingObjectPosition;
 
 import codechicken.lib.raytracer.ExtendedMOP;
@@ -11,18 +10,27 @@ import scala.Tuple2;
 /**
  * A helper class for resolving parts so we don't do a double look up
  */
-public final class RenderPartResolver {
+public final class RenderPartResolver 
+{
+    private static final ThreadLocal<ResolverState> STATE =
+            ThreadLocal.withInitial(ResolverState::new);
 
-    private static TMultiPart cachedPart;
-    private static boolean attemptedResolution;
-
+    private static class ResolverState
+    {
+        TMultiPart part;
+        boolean resolved;
+    }
+    
     public static TMultiPart resolve(IBlockAccess world, int x, int y, int z) {
-        if (attemptedResolution) {
-            return cachedPart;
+        ResolverState state = STATE.get();
+
+        if (state.resolved)
+        {
+            return state.part;
         }
 
-        attemptedResolution = true;
-        cachedPart = null;
+        state.resolved = true;
+        state.part = null;
 
         if (world == null) {
             return null;
@@ -57,9 +65,8 @@ public final class RenderPartResolver {
         if (index < 0 || index >= multipart.jPartList().size()) {
             return null;
         }
-        cachedPart = multipart.jPartList().get(index);
-
-        return cachedPart;
+        state.part = multipart.jPartList().get(index);
+        return state.part;
     }
 
     private static TileMultipartClient getMultipartTile(IBlockAccess world, int x, int y, int z) {
@@ -69,8 +76,10 @@ public final class RenderPartResolver {
         return null;
     }
 
-    public static void clear() {
-        cachedPart = null;
-        attemptedResolution = false;
+    public static void clear()
+    {
+        ResolverState state = STATE.get();
+        state.part = null;
+        state.resolved = false;
     }
 }
