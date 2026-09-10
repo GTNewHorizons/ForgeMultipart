@@ -123,6 +123,7 @@ class BlockMicroMaterialCharacterizationTest {
             "canRenderInPass(I)Z",
             "codechicken$microblock$BlockMicroMaterial$$safeIcon$1(Lnet/minecraft/block/Block;I)Lnet/minecraft/util/IIcon;",
             "explosionResistance(Lnet/minecraft/entity/Entity;)F",
+            "getBreakingColour(ILnet/minecraft/world/IBlockAccess;III)I",
             "getBreakingIcon(I)Lnet/minecraft/util/IIcon;",
             "getColour(I)I",
             "getCutterStrength()I",
@@ -175,7 +176,8 @@ class BlockMicroMaterialCharacterizationTest {
     void keepsTheExactClientOnlyBoundary() throws Exception {
         for (Method method : BlockMicroMaterial.class.getDeclaredMethods()) {
             SideOnly annotation = method.getAnnotation(SideOnly.class);
-            if (method.getName().equals("loadIcons") || method.getName().equals("getBreakingIcon")) {
+            if (method.getName().equals("loadIcons") || method.getName().equals("getBreakingIcon")
+                    || method.getName().equals("getBreakingColour")) {
                 assertSideOnly(annotation);
             } else {
                 assertNull(annotation, method.toString());

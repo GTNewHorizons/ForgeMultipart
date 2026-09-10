@@ -76,7 +76,7 @@ class MicroblockModCharacterizationTest {
         assertEquals("ForgeMicroblock", mod.modid());
         assertEquals("Forge Microblocks", mod.name());
         assertEquals("[1.7.10]", mod.acceptedMinecraftVersions());
-        assertEquals("required-after:CodeChickenCore@[1.4.3,);required-after:ForgeMultipart", mod.dependencies());
+        assertEquals("required-after:CodeChickenCore@[1.4.20,);required-after:ForgeMultipart", mod.dependencies());
         assertEquals(Tags.VERSION, mod.version());
         assertEquals("scala", mod.modLanguage());
 

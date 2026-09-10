@@ -14,10 +14,12 @@ import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.world.IBlockAccess;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import codechicken.lib.packet.PacketCustom;
+import codechicken.lib.render.EntityDigIconFX;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Vector3;
 import codechicken.microblock.handler.MicroblockProxy;
@@ -35,6 +37,18 @@ public final class MicroMaterialRegistry {
         /** The icon to be used for breaking particles on side. */
         @SideOnly(Side.CLIENT)
         IIcon getBreakingIcon(int side);
+
+        /**
+         * The 0xRRGGBB tint to multiply breaking particles on side by, {@link EntityDigIconFX#NO_TINT} for none.
+         * <p>
+         * A material whose icon for side is greyscale and gets its colour at render time (leaves, grass tops) must
+         * override this, or it breaks into grey particles. Defaults to no tint, which is correct for any material whose
+         * texture is already coloured.
+         */
+        @SideOnly(Side.CLIENT)
+        default int getBreakingColour(int side, IBlockAccess world, int x, int y, int z) {
+            return EntityDigIconFX.NO_TINT;
+        }
 
         /**
          * Supported material extension callback to load icons from the underlying block/etc., invoked by FMP on the

@@ -56,6 +56,7 @@ class MicroblockCharacterizationTest {
             "explosionResistance(Lnet/minecraft/entity/Entity;)F",
             "getCollisionBoxes()Ljava/lang/Iterable;",
             "getDrops()Ljava/lang/Iterable;",
+            "getBrokenColour(ILnet/minecraft/world/IBlockAccess;III)I",
             "getDrops()Ljava/util/List;",
             "getIMaterial()Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;",
             "getLightValue()I",

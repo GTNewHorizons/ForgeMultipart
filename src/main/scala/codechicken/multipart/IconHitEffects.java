@@ -3,6 +3,7 @@ package codechicken.multipart;
 import net.minecraft.client.particle.EffectRenderer;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.world.World;
 
 import codechicken.lib.raytracer.ExtendedMOP;
 import codechicken.lib.render.EntityDigIconFX;
@@ -23,11 +24,19 @@ public final class IconHitEffects {
 
     public static void addHitEffects(JIconHitEffects part, MovingObjectPosition hit, EffectRenderer effectRenderer) {
         TileMultipart tile = ((TMultiPart) part).tile();
+        World world = tile.getWorldObj();
         EntityDigIconFX.addBlockHitEffects(
-                tile.getWorldObj(),
+                world,
                 part.getBounds().copy().add(Vector3.fromTileEntity(tile)),
                 hit.sideHit,
                 part.getBreakingIcon(ExtendedMOP.getData(hit), hit.sideHit),
+                part.getBreakingColour(
+                        ExtendedMOP.getData(hit),
+                        hit.sideHit,
+                        world,
+                        tile.xCoord,
+                        tile.yCoord,
+                        tile.zCoord),
                 effectRenderer);
     }
 
@@ -43,10 +52,16 @@ public final class IconHitEffects {
         Cuboid6 bounds = scaleDensity ? part.getBounds().copy() : Cuboid6.full.copy();
         // The tile is read only here, after the icons and bounds, matching the reference evaluation order.
         TileMultipart tile = ((TMultiPart) part).tile();
+        World world = tile.getWorldObj();
+        int[] colours = new int[6];
+        for (int i = 0; i < 6; i++) {
+            colours[i] = part.getBrokenColour(i, world, tile.xCoord, tile.yCoord, tile.zCoord);
+        }
         EntityDigIconFX.addBlockDestroyEffects(
-                tile.getWorldObj(),
+                world,
                 bounds.add(Vector3.fromTileEntity(tile)),
                 icons,
+                colours,
                 effectRenderer);
     }
 }

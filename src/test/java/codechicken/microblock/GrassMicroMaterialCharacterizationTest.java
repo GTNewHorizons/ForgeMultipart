@@ -33,12 +33,14 @@ import codechicken.lib.render.uv.UVTransformationList;
 import codechicken.lib.render.uv.UVTranslation;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Vector3;
+import cpw.mods.fml.relauncher.Side;
 import cpw.mods.fml.relauncher.SideOnly;
 
 class GrassMicroMaterialCharacterizationTest {
 
     private static final Set<String> GRASS_METHODS = new TreeSet<>(
             Arrays.asList(
+                    "getBreakingColour(ILnet/minecraft/world/IBlockAccess;III)I",
                     "loadIcons()V",
                     "renderMicroFace(Lcodechicken/lib/vec/Vector3;ILcodechicken/lib/vec/Cuboid6;)V",
                     "sideIconT()Lcodechicken/lib/render/uv/IconTransformation;",
@@ -105,7 +107,11 @@ class GrassMicroMaterialCharacterizationTest {
     void keepsRenderingMethodsAndOverlayAccessorsOnTheCommonSide() {
         for (Class<?> type : Arrays.asList(GrassMicroMaterial.class, TopMicroMaterial.class)) {
             for (Method method : type.getDeclaredMethods()) {
-                assertNull(method.getAnnotation(SideOnly.class), method.toString());
+                if (method.getName().equals("getBreakingColour")) {
+                    assertEquals(Side.CLIENT, method.getAnnotation(SideOnly.class).value());
+                } else {
+                    assertNull(method.getAnnotation(SideOnly.class), method.toString());
+                }
             }
         }
         assertNull(GrassMicroMaterial.class.getDeclaredFields()[0].getAnnotation(SideOnly.class));

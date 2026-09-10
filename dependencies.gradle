@@ -13,7 +13,7 @@ dependencies {
     functionalTestImplementation("org.junit.platform:junit-platform-launcher")
     functionalTestImplementation("org.junit.platform:junit-platform-reporting")
 
-    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.19:dev")
+    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.20:dev")
     compileOnly("com.github.GTNewHorizons:Angelica:2.1.19:dev")
     compileOnly("com.github.GTNewHorizons:Postea:1.2.5:dev") {transitive = false}
     devOnlyNonPublishable("com.github.GTNewHorizons:NotEnoughItems:2.8.93-GTNH:dev") {

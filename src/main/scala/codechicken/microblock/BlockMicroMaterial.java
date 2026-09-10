@@ -7,6 +7,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
+import net.minecraft.world.IBlockAccess;
 
 import codechicken.lib.render.CCRenderState;
 import codechicken.lib.render.uv.MultiIconTransformation;
@@ -161,6 +162,17 @@ public class BlockMicroMaterial implements IMicroMaterial {
     @SideOnly(Side.CLIENT)
     public IIcon getBreakingIcon(int side) {
         return block().getIcon(side, meta());
+    }
+
+    /**
+     * Resolves the block tint with this material's block and metadata at the particle origin. Neighbor and biome
+     * lookups still use the supplied world; the multipart host's metadata must not select the material's colour.
+     */
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getBreakingColour(int side, IBlockAccess world, int x, int y, int z) {
+        Block materialBlock = block();
+        return materialBlock.colorMultiplier(new MaterialBlockAccess(world, materialBlock, meta(), x, y, z), x, y, z);
     }
 
     @Override

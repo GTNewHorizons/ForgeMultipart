@@ -19,6 +19,7 @@ import net.minecraft.util.Vec3;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.render.EntityDigIconFX;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.lib.vec.Vector3;
 import codechicken.microblock.MicroMaterialRegistry.IMicroMaterial;
@@ -149,6 +150,10 @@ class MicroblockTraitsCharacterizationTest {
     void particleForwardersReachIconEffectsAndPreserveEvaluationOrder() throws Exception {
         Fixture fixture = new Fixture();
         fixture.material((method, args) -> {
+            if (method.equals("getBreakingColour")) {
+                fixture.events.add("colour:" + args[0]);
+                return EntityDigIconFX.NO_TINT;
+            }
             assertEquals("getBreakingIcon", method);
             fixture.events.add("icon:" + args[0]);
             return null;
@@ -174,7 +179,8 @@ class MicroblockTraitsCharacterizationTest {
         fixture.events.clear();
         MovingObjectPosition hit = new MovingObjectPosition(0, 0, 0, 3, Vec3.createVectorHelper(0, 0, 0));
         assertThrows(NullPointerException.class, () -> fixture.part.addHitEffects(hit, null));
-        assertEquals(Arrays.asList("bounds", "material", "icon:3"), fixture.events);
+        // The colour is resolved from the material right after the icon, for the same side.
+        assertEquals(Arrays.asList("bounds", "material", "icon:3", "material", "colour:3"), fixture.events);
     }
 
     private static void assertFaces(List<Object[]> faces, int count, Vector3 position, int pass, Cuboid6 bounds) {

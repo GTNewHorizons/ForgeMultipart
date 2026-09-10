@@ -9,14 +9,18 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.world.IBlockAccess;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.data.MCDataOutput;
 import codechicken.lib.raytracer.IndexedCuboid6;
+import codechicken.lib.render.EntityDigIconFX;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.multipart.JCuboidPart;
 import codechicken.multipart.TCuboidPart;
 import codechicken.multipart.TMultiPart;
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
 
 public abstract class Microblock extends TMultiPart implements TCuboidPart {
 
@@ -98,6 +102,20 @@ public abstract class Microblock extends TMultiPart implements TCuboidPart {
 
     public MicroMaterialRegistry.IMicroMaterial getIMaterial() {
         return MicroMaterialRegistry.getMaterial(material());
+    }
+
+    /**
+     * Satisfies {@link codechicken.multipart.JIconHitEffects#getBrokenColour} for every microblock, pairing with the
+     * icon {@link MicroblockClient} resolves for the same side.
+     * <p>
+     * Declared on this class rather than on the MicroblockClient trait on purpose: a new Scala trait member is abstract
+     * on the compiled interface, so mixins built against older FMP would fail with AbstractMethodError. A concrete
+     * method here is inherited by those classes instead.
+     */
+    @SideOnly(Side.CLIENT)
+    public int getBrokenColour(int side, IBlockAccess world, int x, int y, int z) {
+        MicroMaterialRegistry.IMicroMaterial material = getIMaterial();
+        return material == null ? EntityDigIconFX.NO_TINT : material.getBreakingColour(side, world, x, y, z);
     }
 
     public abstract int itemClassID();

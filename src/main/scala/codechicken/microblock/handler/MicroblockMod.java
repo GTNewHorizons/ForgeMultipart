@@ -13,7 +13,7 @@ import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
         modid = "ForgeMicroblock",
         name = "Forge Microblocks",
         acceptedMinecraftVersions = "[1.7.10]",
-        dependencies = "required-after:CodeChickenCore@[1.4.3,);required-after:ForgeMultipart",
+        dependencies = "required-after:CodeChickenCore@[1.4.20,);required-after:ForgeMultipart",
         version = Tags.VERSION,
         modLanguage = "scala")
 public final class MicroblockMod {
