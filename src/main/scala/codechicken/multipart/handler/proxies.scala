@@ -29,7 +29,7 @@ class MultipartProxy_serverImpl {
       .setComment("Multipart API config file")
 
     GameRegistry.registerBlock(
-      new BlockMultipart().setBlockName("multipart"),
+      new BlockMultipart().setBlockName("codechicken/multipart"),
       null,
       "block"
     )
