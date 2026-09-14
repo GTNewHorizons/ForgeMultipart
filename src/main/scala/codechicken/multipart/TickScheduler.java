@@ -292,11 +292,10 @@ public final class TickScheduler {
                 BlockCoord pos = MultipartProxy.indexInChunk(cc, tag.getShort("pos"));
                 Object tile = chunk.chunkTileEntityMap.get(new ChunkPosition(pos.x, pos.y, pos.z));
                 if (tile instanceof TileMultipart) {
-                    tickList.add(
-                            new PartTickEntry(
-                                    ((TileMultipart) tile).partList().apply(tag.getByte("i")),
-                                    tag.getLong("time"),
-                                    false));
+                    TMultiPart part = ((TileMultipart) tile).partFromSavedIndex(tag.getByte("i") & 0xFF);
+                    if (part != null) {
+                        tickList.add(new PartTickEntry(part, tag.getLong("time"), false));
+                    }
                 }
             }
             if (!tickList.isEmpty()) {

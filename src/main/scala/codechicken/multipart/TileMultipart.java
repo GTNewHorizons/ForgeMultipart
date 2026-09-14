@@ -44,6 +44,17 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
 
     private boolean doesTick = false;
 
+    // Original NBT indices are needed until chunk tick data has been restored.
+    private int[] loadedPartIndices;
+
+    TMultiPart partFromSavedIndex(int index) {
+        if (loadedPartIndices != null) {
+            if (index < 0 || index >= loadedPartIndices.length) return null;
+            index = loadedPartIndices[index];
+        }
+        return index >= 0 && index < partList().size() ? partList().apply(index) : null;
+    }
+
     /**
      * @deprecated Use {@link #jPartList()} for Java collection access. Retained as the virtual storage accessor for
      *             existing subclasses and binaries.
@@ -205,6 +216,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
 
     @Override
     public void onChunkLoad() {
+        loadedPartIndices = null;
         operate(action(TMultiPart::onChunkLoad));
     }
 
@@ -987,11 +999,13 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     public static TileMultipart createFromNBT(NBTTagCompound tag) {
         NBTTagList partList = tag.getTagList("parts", 10);
         List<TMultiPart> parts = new ArrayList<>();
+        int[] loadedIndices = new int[partList.tagCount()];
 
         for (int i = 0; i < partList.tagCount(); i++) {
             NBTTagCompound partTag = partList.getCompoundTagAt(i);
             String partID = partTag.getString("id");
             TMultiPart part = MultiPartRegistry.loadPart(partID, partTag);
+            loadedIndices[i] = part == null ? -1 : parts.size();
             if (part != null) {
                 part.load(partTag);
                 parts.add(part);
@@ -1005,6 +1019,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         TileMultipart tmb = MultipartGenerator$.MODULE$.generateCompositeTile(null, toSeq(parts), false);
         tmb.readFromNBT(tag);
         tmb.loadParts(toSeq(parts));
+        tmb.loadedPartIndices = loadedIndices;
         return tmb;
     }
 
