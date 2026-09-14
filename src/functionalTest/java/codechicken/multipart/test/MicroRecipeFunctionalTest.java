@@ -30,6 +30,18 @@ import scala.Tuple3;
 class MicroRecipeFunctionalTest {
 
     @Test
+    void cuttingStoneUsesTheRealMaterialInsteadOfTheMissingPlaceholder() {
+        int material = MicroMaterialRegistry.materialID("minecraft:stone");
+        InventoryCrafting crafting = grid();
+        crafting.setInventorySlotContents(0, new ItemStack(new TestSaw(100)));
+        crafting.setInventorySlotContents(3, new ItemStack(Blocks.stone));
+        assertEquals(material, MicroRecipe.findMaterial(crafting.getStackInSlot(3)));
+        assertMicro(MicroRecipe.getCraftingResult(crafting), 2, 0, 4, material);
+        crafting.setInventorySlotContents(3, MicroRecipe.getCraftingResult(crafting));
+        assertMicro(MicroRecipe.getCraftingResult(crafting), 2, 0, 2, material);
+    }
+
+    @Test
     void recipeMetadataMaterialLookupAndCreationRoundTrip() {
         int material = glassMaterial();
         ItemStack recipeOutput = MicroRecipe.getRecipeOutput();

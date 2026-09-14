@@ -220,6 +220,10 @@ public final class MicroRecipe$ implements IRecipe {
 
     public int findMaterial(ItemStack item) {
         for (Tuple2<String, IMicroMaterial> entry : MicroMaterialRegistry.getIdMap()) {
+            // The recovery placeholder exposes stone, but must never win a raw-material recipe lookup.
+            if (entry._2() == MissingMicroMaterial$.MODULE$) {
+                continue;
+            }
             ItemStack materialItem = entry._2().getItem();
             if (Objects.equals(item.getItem(), materialItem.getItem())
                     && item.getItemDamage() == materialItem.getItemDamage()
