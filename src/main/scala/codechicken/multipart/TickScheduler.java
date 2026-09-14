@@ -146,15 +146,12 @@ public final class TickScheduler {
 
         @Override
         public void load() {
-            try {
-                FileInputStream in = new FileInputStream(saveFile());
+            try (FileInputStream in = new FileInputStream(saveFile())) {
                 loadTag(CompressedStreamTools.readCompressed(in));
-                in.close();
             } catch (Exception e) {
-                // Matches the reference, which swallows any failure to read the saved schedule.
+                // Keep the world-time fallback for missing or unreadable saved schedules.
+                loadTag(new NBTTagCompound());
             }
-
-            loadTag(new NBTTagCompound());
         }
 
         void loadTag(NBTTagCompound tag) {
