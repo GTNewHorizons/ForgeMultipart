@@ -12,6 +12,11 @@ audit, before extending this list.
 
 ## Runtime and error behavior
 
+The multipart block intentionally retains the pre-PR #54 unlocalized name `tile.multipart`.
+PR #54 (`2d050bd`) renamed it to `tile.codechicken/multipart`; `cb3bef7` reverted that part to preserve
+the established name. The block registry ID remains `ForgeMultipart:block`. This is an intentional rollback
+of the later upstream rename, not a divergence from the `1.7.12` reference.
+
 | Area | Difference and consequence |
 | --- | --- |
 | Raw microblock recipe material lookup | Skips `MissingMicroMaterial`, whose recovery item is stone, so sawing stone selects the real stone material. Existing missing-material microblocks retain their recovery behavior. This fixes a pre-existing Scala bug. |

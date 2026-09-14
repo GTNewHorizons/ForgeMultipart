@@ -30,6 +30,7 @@ class MultipartProxyFunctionalTest {
         assertSame(MultipartProxy_serverImpl.class, MultipartProxy$.class.getMethod("init").getDeclaringClass());
 
         assertNotNull(MultipartProxy.block());
+        assertEquals("tile.multipart", MultipartProxy.block().getUnlocalizedName());
         assertNotNull(MultipartProxy.config());
         assertNotNull(MultipartProxy.logger());
         assertSame(MultipartProxy.block(), MultipartProxy$.MODULE$.block());
