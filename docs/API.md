@@ -17,7 +17,8 @@ FMP still needs Scala at runtime, and generated-trait behavior remains covered s
 
 **Rebuilding an existing mod against this branch? Read the [release notes](RELEASE_NOTES.md) first.** Shipped binaries
 keep working, but recompiling has three classes of break, and the trait-composition one compiles cleanly and changes
-behavior at runtime.
+behavior at runtime. Use the [consumer migration checklist](api/MIGRATION_CHECKLIST.md) to carry a source change through
+runtime validation, release and target-pack adoption.
 
 ## Direct calls and optional integration
 

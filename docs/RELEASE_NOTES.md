@@ -7,7 +7,8 @@ descriptor and reflective name the audited consumers use was preserved deliberat
 still link. The compatibility ledger for what did change is [JAVA_MIGRATION_DIVERGENCES.md](../JAVA_MIGRATION_DIVERGENCES.md).
 
 **If you rebuild against the new dev jar, read on.** Recompiling is the case that breaks, and one class of break is
-silent. There are three kinds, in descending order of how badly they fail.
+silent. There are three kinds, in descending order of how badly they fail. The [consumer migration checklist](api/MIGRATION_CHECKLIST.md)
+turns the cases below into concrete compile, runtime, release and pack-adoption gates.
 
 ## 1. Linkage errors: the generated tile traits
 
