@@ -31,6 +31,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 
 | Task | API and guide |
 | --- | --- |
+| Define, place, persist, synchronize and remove a custom part | `TMultiPart`, `canPlacePart`, `addPart`, `remPart` — [end-to-end custom-part lifecycle](api/CUSTOM_PARTS.md) |
 | Register block converters | `registerConverter(IPartConverter)` — [registration, state ownership and committed lifecycle](api/BLOCK_CONVERTERS.md) |
 | Register part factories during mod initialization | `registerPartFactory(IPartFactory2, String...)` — [factory timing, payload ownership and migration](api/PART_REGISTRATION.md) |
 | Find the factory registered for a part type | `getPartFactory(String)` — [lookup ownership and Schematica reflection migration](api/FACTORY_LOOKUP.md) |
@@ -65,8 +66,6 @@ compile classpath for overload resolution, as the [loading guide](api/PART_LOADI
 
 | Area | Starting points |
 | --- | --- |
-| Define a custom part | Extend [TMultiPart](../src/main/scala/codechicken/multipart/TMultiPart.java); implement the required capability interfaces. The [built-in parts](../src/main/scala/codechicken/multipart/minecraft) show Java implementations |
-| Find, place and remove parts | [TileMultipart](../src/main/scala/codechicken/multipart/TileMultipart.java): `getTile`, `canPlacePart`, `addPart`, `remPart`. Retain the tile returned by changes because generated capabilities can replace the instance |
 | Construct a server composite tile from parts, or restore saved multipart NBT | [MultipartHelper](../src/main/scala/codechicken/multipart/MultipartHelper.java): `createTileFromParts(Iterable)`, `createTileFromNBT(World, NBTTagCompound)` |
 | Register microblock materials | [MicroMaterialRegistry](../src/main/scala/codechicken/microblock/MicroMaterialRegistry.java) and [BlockMicroMaterial](../src/main/scala/codechicken/microblock/BlockMicroMaterial.java) |
 | Register generated tile traits or pass-through interfaces | [MultipartGenerator](../src/main/scala/codechicken/multipart/MultipartGenerator.java); see [custom tile-trait authoring](api/CUSTOM_TILE_TRAITS.md) and [safe capability access](api/TILE_TRAIT_ACCESS.md) |

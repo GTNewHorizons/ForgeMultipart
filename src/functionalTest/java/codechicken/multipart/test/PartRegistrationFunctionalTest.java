@@ -2,6 +2,7 @@ package codechicken.multipart.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -14,17 +15,22 @@ import java.util.NoSuchElementException;
 import java.util.function.BiConsumer;
 
 import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.World;
 
 import org.junit.jupiter.api.Test;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.packet.PacketCustom;
+import codechicken.lib.vec.BlockCoord;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultiPartRegistry$;
 import codechicken.multipart.MultiPartRegistry.IPartFactory;
 import codechicken.multipart.MultiPartRegistry.IPartFactory2;
 import codechicken.multipart.TMultiPart;
+import codechicken.multipart.TileMultipart;
 import codechicken.multipart.examples.PartRegistrationExample;
+import codechicken.multipart.examples.PartRegistrationExample.ExamplePart;
 import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.ModContainer;
 import scala.collection.JavaConversions;
@@ -32,6 +38,8 @@ import scala.collection.Seq;
 import scala.runtime.AbstractFunction2;
 
 class PartRegistrationFunctionalTest {
+
+    private static final BlockCoord EXAMPLE_POS = new BlockCoord(42, 200, 32);
 
     private static final List<BiConsumer<IPartFactory2, String[]>> ENTRIES = Arrays.asList(
             (factory, types) -> MultiPartRegistry.registerParts(factory, types),
@@ -107,6 +115,43 @@ class PartRegistrationFunctionalTest {
         assertNull(client.tile());
         assertSame(owner, MultiPartRegistry.getModContainer(server.getType()));
         assertEquals(17, packet.readUByte(), "This example has no constructor discriminator");
+    }
+
+    @Test
+    void javaExamplePlacesPersistsSynchronizesAndRemovesState() {
+        World world = MinecraftServer.getServer().worldServers[0];
+        world.getChunkFromBlockCoords(EXAMPLE_POS.x, EXAMPLE_POS.z);
+        world.setBlockToAir(EXAMPLE_POS.x, EXAMPLE_POS.y, EXAMPLE_POS.z);
+        try {
+            TileMultipart tile = PartRegistrationExample.place(world, EXAMPLE_POS, 7);
+            assertNotNull(tile);
+            ExamplePart part = (ExamplePart) tile.jPartList().get(0);
+            assertSame(tile, part.tile());
+            assertEquals(7, part.value());
+            assertFalse(part.doesTick());
+
+            part.setValue(23);
+            assertEquals(23, part.value());
+
+            NBTTagCompound saved = new NBTTagCompound();
+            tile.writeToNBT(saved);
+            TileMultipart loaded = TileMultipart.createFromNBT(saved);
+            assertNotNull(loaded);
+            assertEquals(23, ((ExamplePart) loaded.jPartList().get(0)).value());
+
+            PacketCustom description = new PacketCustom("test", 1);
+            part.writeDesc(description);
+            ExamplePart client = new ExamplePart();
+            client.readDesc(new PacketCustom(description.getByteBuf().copy()));
+            assertEquals(23, client.value());
+
+            TileMultipart current = part.tile();
+            assertNull(current.remPart(part), "Removing the last part leaves no replacement tile");
+            assertNull(part.tile());
+            assertTrue(world.isAirBlock(EXAMPLE_POS.x, EXAMPLE_POS.y, EXAMPLE_POS.z));
+        } finally {
+            world.setBlockToAir(EXAMPLE_POS.x, EXAMPLE_POS.y, EXAMPLE_POS.z);
+        }
     }
 
     @Test
