@@ -6,6 +6,23 @@ plugins {
 
 tasks.test {
     useJUnitPlatform()
+    testLogging {
+        events("failed")
+        exceptionFormat = "full"
+    }
+    // Gradle prints nothing on success, so a green run never says how much ran.
+    afterSuite { desc, result ->
+        if (desc.parent != null) {
+            return
+        }
+        def summary = "Unit tests: ${result.testCount} tests, ${result.successfulTestCount} passed, " +
+            "${result.failedTestCount} failed, ${result.skippedTestCount} skipped"
+        logger.lifecycle(summary)
+        def stepSummary = System.getenv("GITHUB_STEP_SUMMARY")
+        if (stepSummary) {
+            new File(stepSummary) << "### ${summary}\n"
+        }
+    }
 }
 
 // Scope modern syntax to these helpers; retained Scala and joint Java stay on Java 8.

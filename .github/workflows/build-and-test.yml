@@ -46,3 +46,16 @@ jobs:
 
       - name: Run Forge functional tests
         run: ./gradlew --build-cache --stacktrace runFunctionalTestServer
+
+      # The server runs out of process; without this a failure leaves only the counts.
+      - name: Upload functional test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: forge-functional-test-reports
+          path: |
+            run/server/junit-out/
+            run/server/logs/
+            run/server/crash-reports/
+          if-no-files-found: warn
+          retention-days: 14

@@ -16,8 +16,8 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 ## Current state and next target
 
-**577 plain-JVM tests and 290 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **230 Java
-files and 9 Scala files / 747 nonblank Scala lines**. The packaged inventory has 451 classes.
+**581 plain-JVM tests and 291 Java 8 Forge tests pass, with zero failures/errors/skips.** Sources total **231 Java
+files and 9 Scala files / 747 nonblank Scala lines**. The packaged inventory has 452 classes.
 
 The agreed milestone order is the documented consumer-facing Java API, then consumer release and adoption, then final
 Scala removal; see the plan's API migration design and Phases 8-10. Per-change fixes, their regression cases and their

@@ -26,8 +26,25 @@ configurations {
     }
 }
 
+// FML scans classpath jars for @Mod with an ASM that predates Java 9, so every JUnit jar logs a LoaderException
+// stack trace for its module-info. Repackage them into the test mod jar and keep the originals off the classpath.
+def junitArtifactPrefixes = ["junit-jupiter", "junit-platform", "opentest4j", "apiguardian"]
+def isJunitArtifact = { File f -> junitArtifactPrefixes.any { f.name.startsWith(it) } }
+def functionalTestRuntime = configurations.named(functionalTestSet.runtimeClasspathConfigurationName)
+
 tasks.register(functionalTestSet.jarTaskName, Jar) {
     from(functionalTestSet.output)
+    from(functionalTestRuntime.map { cfg -> cfg.files.findAll(isJunitArtifact).collect { zipTree(it) } }) {
+        // META-INF/versions is the Java 9+ half of the multi-release jars, never loaded on this Java 8 server.
+        // Signatures do not survive repackaging; the engine is still found through META-INF/services.
+        exclude(
+            "module-info.class",
+            "META-INF/versions/**",
+            "META-INF/*.SF",
+            "META-INF/*.DSA",
+            "META-INF/*.RSA")
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveClassifier.set("functionalTests")
     archiveVersion.set("1.0")
     destinationDirectory.set(layout.buildDirectory.dir("tmp"))
@@ -64,7 +81,8 @@ def functionalTestProfileResults = layout.projectDirectory.file("run/server/forg
 def addFunctionalTestsToRun = { JavaExec task ->
     task.dependsOn(functionalTestSet.jarTaskName)
     task.classpath(
-        configurations.named(functionalTestSet.runtimeClasspathConfigurationName),
+        // JUnit is repackaged into the test mod jar above.
+        functionalTestRuntime.map { cfg -> cfg.files.findAll { !isJunitArtifact(it) } },
         tasks.named(functionalTestSet.jarTaskName))
 }
 
@@ -92,15 +110,33 @@ tasks.register("runFunctionalTestServer", GradleBuild) {
         int tests = 0
         int failures = 0
         int errors = 0
+        int skipped = 0
+        def failed = []
         reports.each { report ->
             def suite = new XmlSlurper(false, false).parse(report)
             tests += suite.@tests.toInteger()
             failures += suite.@failures.toInteger()
             errors += suite.@errors.toInteger()
+            skipped += suite.@skipped.toString().isEmpty() ? 0 : suite.@skipped.toInteger()
+            suite.testcase.each { testcase ->
+                if (!testcase.failure.isEmpty() || !testcase.error.isEmpty()) {
+                    failed << "${testcase.@classname}.${testcase.@name}"
+                }
+            }
         }
+
+        def summary = "Forge functional tests: ${tests} tests, ${tests - failures - errors - skipped} passed, " +
+            "${failures} failures, ${errors} errors, ${skipped} skipped"
+        logger.lifecycle(summary)
+        failed.each { logger.lifecycle("  FAILED ${it}") }
+
+        def stepSummary = System.getenv("GITHUB_STEP_SUMMARY")
+        if (stepSummary) {
+            new File(stepSummary) << "### ${summary}\n" + failed.collect { "- FAILED `${it}`\n" }.join()
+        }
+
         if (tests == 0 || failures > 0 || errors > 0) {
-            throw new GradleException(
-                "ForgeMultipart functional tests failed: ${tests} tests, ${failures} failures, ${errors} errors")
+            throw new GradleException("ForgeMultipart functional tests failed: ${summary}")
         }
         if (profileFunctionalTests
             && (!functionalTestProfileRecording.asFile.isFile() || !functionalTestProfileResults.asFile.isFile())) {

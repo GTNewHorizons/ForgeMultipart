@@ -59,7 +59,8 @@ public class MultipartGeneratorFunctionalTest {
                 server,
                 generator.codechicken$multipart$MultipartGenerator$$traitsForPart(new HierarchyPart(), false));
 
-        MultipartGenerator.registerTrait(root, slotted, redstone);
+        // Deliberate duplicate: both sides log at ERROR and keep the first registration.
+        ExpectedErrorLog.silence(() -> MultipartGenerator.registerTrait(root, slotted, redstone));
         assertEquals(slotted.replace('.', '/'), map(false).apply(root.replace('.', '/')));
         assertEquals(redstone.replace('.', '/'), map(true).apply(root.replace('.', '/')));
         MultipartGenerator.registerTrait(LateMarker.class.getName(), tileChange, null);

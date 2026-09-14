@@ -4,6 +4,23 @@ Status: living document
 Initial audit: 2026-08-14  
 Audited revision: `f10595d` (`master`)
 
+## Document disposition
+
+`docs/migration/` is working material for the port, not permanent documentation. Phase language here describes the
+migration in progress; do not read it as the current state of the mod. These files are deleted once the migration
+closes:
+
+| File | Disposition |
+| --- | --- |
+| `README.md` (this file) | Delete. Phase gates stop meaning anything once the phases close. |
+| `HANDOFF.md` | Delete. Working handoff, including branch and checkout instructions. |
+| `HISTORY.md` | Delete. Dated port diary; the narrative stays in git history. |
+| `COMPATIBILITY.md` | **Keep.** ABI inventory and consumer audit; `DIVERGENCES.md` requires checking it. |
+| `DIVERGENCES.md` | **Keep.** The durable compatibility ledger. |
+| `MANUAL_CHECKS.md` | **Keep.** Becomes the recurring client release checklist. |
+
+`docs/api/`, `docs/API.md` and `docs/RELEASE_NOTES.md` are consumer-facing and unaffected.
+
 ## Decision summary
 
 Converting ForgeMultipart to Java is realistic. It should be treated as a staged compatibility migration, not as an automatic source conversion or a ground-up rewrite.

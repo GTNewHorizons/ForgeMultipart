@@ -43,7 +43,8 @@ class MultipartCompatiblityFunctionalTest {
         Function4<World, Object, Object, Object, Object> replacement = new DenyPlacement();
         try {
             MultipartCompatiblity.canAddPart_$eq(replacement);
-            assertDoesNotThrow(MCPCCompatModule::load);
+            // The absent hook is reported at ERROR; that is the behaviour under test.
+            ExpectedErrorLog.silence(() -> assertDoesNotThrow(MCPCCompatModule::load));
             assertSame(replacement, MultipartCompatiblity.canAddPart());
         } finally {
             MultipartCompatiblity.canAddPart_$eq(original);
