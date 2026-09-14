@@ -42,6 +42,7 @@ class TickSchedulerPersistenceRegressionTest {
         scheduler.saveData(saved);
         assertEquals(1, saved.getTagList("multipartTicks", 10).tagCount());
         scheduler.unload();
+        world = new TickScheduler.WorldTickScheduler(null);
         TickScheduler.ChunkTickScheduler restored = new TickScheduler.ChunkTickScheduler(chunk, world);
         restored.loadData(saved);
         restored.scheduleTick(part, 0, false);
