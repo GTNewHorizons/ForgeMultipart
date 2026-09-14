@@ -33,6 +33,27 @@ tasks.register(functionalTestSet.jarTaskName, Jar) {
     destinationDirectory.set(layout.buildDirectory.dir("tmp"))
 }
 
+// Compile the documented consumer surface against the packaged dev jar, not main/test class directories.
+def compileJavaApiExamples = tasks.register("compileJavaApiExamples", JavaCompile) {
+    group = "verification"
+    description = "Compiles the Java API examples against the dev jar without Scala libraries"
+    source(fileTree("src/test/java") { include("codechicken/**/examples/*.java") })
+    source(fileTree("src/functionalTest/java") { include("codechicken/**/examples/*.java") })
+    classpath = files(tasks.named("jar")) + sourceSets.main.compileClasspath.filter {
+        !it.name.startsWith("scala-")
+    }
+    destinationDirectory = layout.buildDirectory.dir("classes/java/apiExamples")
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(8) }
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+    options.encoding = "UTF-8"
+    options.annotationProcessorPath = files()
+    options.sourcepath = files()
+    options.compilerArgs.add("-proc:none")
+}
+
+tasks.named("check") { dependsOn(compileJavaApiExamples) }
+
 def functionalTestRunProperty = "forgemultipart.withFunctionalTests"
 def withFunctionalTests = providers.gradleProperty(functionalTestRunProperty).map { it.toBoolean() }.orElse(false).get()
 def profileRunProperty = "forgemultipart.profileFunctionalTests"

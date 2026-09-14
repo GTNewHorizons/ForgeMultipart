@@ -8,6 +8,13 @@ Consumers can use the Java surface without importing Scala types. FMP still reta
 compatibility bridges, and some extension contracts still need migration. A Scala-authored mod can adopt the Java API
 without converting the rest of its code to Java.
 
+Run `./gradlew compileJavaApiExamples` (or `gradlew.bat compileJavaApiExamples` on Windows) to compile the existing
+Java examples with a Java 8 compiler against the packaged dev jar and dependencies excluding `scala-*` libraries.
+This also runs through `check`. It covers every Java file in the test and functional-test `examples` packages,
+including their supporting types; add new documented examples there to extend coverage. Main/test class outputs,
+annotation processors and source lookup are not used to supply FMP classes. This is a compile-time API check only:
+FMP still needs Scala at runtime, and generated-trait behavior remains covered separately by Forge functional tests.
+
 **Rebuilding an existing mod against this branch? Read the [release notes](RELEASE_NOTES.md) first.** Shipped binaries
 keep working, but recompiling has three classes of break, and the trait-composition one compiles cleanly and changes
 behavior at runtime.
