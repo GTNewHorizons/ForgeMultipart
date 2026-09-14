@@ -47,7 +47,7 @@ The existing transformer cannot safely handle all inherited field/method accesse
 therefore delegate to an ordinary helper using an **Object parameter**, then cast to `Microblock` in that helper.
 This forces the required runtime cast and keeps loops, allocation and callbacks outside the transformed input.
 The three example files compile with Scala excluded from the Java classpath; they use Java 8 syntax because that is
-the verified joint-compilation/test boundary. See the [compiler constraints](../migration/HANDOFF.md#retained-compiler-constraints).
+the verified joint-compilation/test boundary. See the [compiler constraints](../migration/MAINTAINERS.md#retained-compiler-constraints).
 
 ## Behavioral contract
 

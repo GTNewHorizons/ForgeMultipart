@@ -1,9 +1,9 @@
 # Java migration divergences
 
 Current intentional differences from the `1.7.12` reference. This is a compatibility ledger, not a port diary.
-An unchanged implementation needs no entry. Results and port history belong in `docs/migration/README.md` and
-`docs/migration/HANDOFF.md`; client gaps in `docs/migration/MANUAL_CHECKS.md`; measurements in
-`docs/migration/README.md#phase-4b--measured-performance-pass`. Superseded decisions and the original per-port narrative remain in git history.
+An unchanged implementation needs no entry. Track remaining work in [migration status](README.md), client gaps in
+[manual release checks](MANUAL_CHECKS.md), and use the [performance protocol](MAINTAINERS.md#performance-validation)
+for measurements. Superseded decisions and per-port narratives remain in git history.
 
 “No audited consumer” means the frozen GTNH binary inventory and consumer-source audit, not every possible
 third-party mod. Removed members can still break unaudited consumers. Check

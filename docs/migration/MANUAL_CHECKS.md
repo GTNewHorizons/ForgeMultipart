@@ -91,7 +91,7 @@ its callback-side input tests nor its retained client-body probe validates actua
 
 ## Not yet covered anywhere
 
-- [ ] A focused pre-optimization CPU/allocation baseline now exists in `docs/migration/README.md#phase-4b--measured-performance-pass`. A representative
+- [ ] Follow the [performance protocol](MAINTAINERS.md#performance-validation); historical focused measurements are not full-pack evidence. A representative
   full-pack capture and the matching post-optimization comparison still need to be performed. Example setup: a loaded
   chunk containing many AE2 cables, ProjectRed wires/lamps and assorted Forge Multipart microblocks.
 - [ ] Shape-specific microblock NBT and packet payloads. Core `Microblock` shape/material NBT, description bytes and

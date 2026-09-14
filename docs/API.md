@@ -91,7 +91,7 @@ behavior and do not deprecate or authorize removing a method. Trait callbacks an
 | `MicroMaterialRegistry.loadIcons` | FMP dispatches client texture callbacks; override the supported `IMicroMaterial.loadIcons()` material callback |
 | `MicroMaterialRegistry.writeIDMap`, `readIDMap` | FMP's whole-map handshake; part packets use `writeMaterialID` / `readMaterialID` for individual IDs |
 
-The registry's matching companion methods carry the same internal marker. This is the bounded Phase 9.2 audit,
+The registry's matching companion methods carry the same internal marker. This is a bounded consumer audit,
 not a claim that every other public member is a supported API. See [TileMultipart's Javadocs](../src/main/scala/codechicken/multipart/TileMultipart.java)
 and [registry Javadocs](../src/main/scala/codechicken/microblock/MicroMaterialRegistry.java) for method-specific details.
 
@@ -133,16 +133,16 @@ stable capabilities, lifecycle/state rules and transformer constraints with gene
 [saw-strength mutation](api/SAW_STRENGTH.md) replaces Iguana's private-field access. ProjectRed's existing Scala
 traits remain supported until adoption.
 
-All ten entries in the plan's Phase 9.1 API table have Java replacements. That table is a bounded list of signatures;
-the broader API, extension and consumer adoption work above remains open.
+The audited Scala-typed API gaps have Java replacements linked above; broader extension validation and
+consumer adoption remain open in the [migration status](migration/README.md).
 
 FMP-side implementation is separate from consumer releases and target-pack adoption. Retiring legacy bridges or the
 Scala dependency requires those gates and removal of FMP's remaining internal Scala users.
 
 | Need | Document |
 | --- | --- |
-| What is complete and what comes next? | [Working handoff](migration/HANDOFF.md), [migration plan](migration/README.md) |
+| What is complete and what comes next? | [Migration status](migration/README.md) |
 | Which consumers need changes, releases and pack adoption? | [Consumer adoption ledger](migration/COMPATIBILITY.md#java-api-adoption-ledger) |
 | Which binary names, reflective lookups and runtime contracts must survive? | [ABI inventory and consumer audit](migration/COMPATIBILITY.md) |
-| What has been tested and what still needs a client/pack run? | [Migration history](migration/HISTORY.md), [manual release checks](migration/MANUAL_CHECKS.md) |
-| Why is some Scala or older Java syntax retained? | [Modern Java policy](migration/README.md#modern-java-readability-policy), [compiler/toolchain handoff](migration/README.md#modern-java-readability-policy) |
+| What has been tested and what still needs a client/pack run? | [Migration status](migration/README.md), [manual release checks](migration/MANUAL_CHECKS.md) |
+| Why is some Scala or older Java syntax retained? | [Build boundaries](migration/MAINTAINERS.md#build-and-runtime-boundaries), [compiler constraints](migration/MAINTAINERS.md#retained-compiler-constraints) |
