@@ -302,6 +302,9 @@ public final class TickScheduler {
                                     false));
                 }
             }
+            if (!tickList.isEmpty()) {
+                scheduler().tickChunks.add(this);
+            }
         }
 
         @Override
