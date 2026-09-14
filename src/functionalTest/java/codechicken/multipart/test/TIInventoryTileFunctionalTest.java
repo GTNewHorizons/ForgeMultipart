@@ -170,7 +170,7 @@ class TIInventoryTileFunctionalTest {
     }
 
     @Test
-    void accessibleSlotsIncludeOnlySidedInventoriesWithGlobalOffsets() {
+    void accessibleSlotsIncludePlainInventoriesAndRespectSidedRestrictionsWithGlobalOffsets() {
         TileMultipart tile = newInventoryTile();
         InventoryPart plainFirst = new InventoryPart("plain_first", 2);
         SidedInventoryPart sidedFirst = new SidedInventoryPart("sided_first", 1, new int[] { 0 });
@@ -181,7 +181,7 @@ class TIInventoryTileFunctionalTest {
         tile.bindPart(plainSecond);
         tile.bindPart(sidedSecond);
 
-        assertArrayEquals(new int[] { 2, 6, 4 }, inventory(tile).getAccessibleSlotsFromSide(5));
+        assertArrayEquals(new int[] { 0, 1, 2, 3, 6, 4 }, inventory(tile).getAccessibleSlotsFromSide(5));
         assertEquals(5, sidedFirst.lastAccessibleSide);
         assertEquals(5, sidedSecond.lastAccessibleSide);
     }

@@ -186,6 +186,10 @@ public class JInventoryTile extends TileMultipart implements TIInventoryTile {
                 for (int localSlot : localSlots) {
                     accessibleSlots.add(Integer.valueOf(localSlot + base));
                 }
+            } else {
+                for (int localSlot = 0; localSlot < inventory.getSizeInventory(); localSlot++) {
+                    accessibleSlots.add(Integer.valueOf(localSlot + base));
+                }
             }
             base += inventory.getSizeInventory();
         }
