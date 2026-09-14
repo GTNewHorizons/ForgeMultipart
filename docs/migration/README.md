@@ -152,8 +152,17 @@ dumps. The arrangement, eligibility rules and limits are below; per-batch verifi
 - When the old Scala parser, circular compilation, a later compilation stage, or downgrader/runtime support blocks
   a change, keep the readable working form and defer that specific modernization. Record the concrete blocker and
   what would unblock it in the handoff; do not introduce fragile compilation workarounds solely to change syntax.
-- Keep `enableModernJavaSyntax = false` while global mode moves Scala 2.11.5 onto an incompatible toolchain. Expand
-  the explicit modern source set only after declaration visibility, compile order and downgraded output are verified.
+- Keep `enableModernJavaSyntax = false`. The convention plugin's `jvmDowngrader` mode forces a project-wide Java 25
+  toolchain (`JVMDowngraderModule.computeEffectiveToolchainVersion`), and Scala 2.11.5 cannot run above Java 8:
+  `compileScala` then fails with `MissingRequirementError: object java.lang.Object in compiler mirror not found`.
+  `forceToolchainVersion = 8` does not rescue it. The mode rejects any toolchain below the maximum of
+  `jvmDowngraderMultiReleaseVersions`, and that list rejects entries below 9, so no configuration reaches a Java 8
+  toolchain. The two settings are mutually exclusive rather than merely awkward. Measured 2026-09-14 against
+  gtnhgradle 2.0.29. Removing the last retained Scala is the only unblock; the scoped arrangement below then deletes
+  in favour of the plugin's supported path, which needs a `jvmDowngraderStubsProvider` decision (`gtnhlib` makes
+  GTNHLib a runtime dependency, and [DIVERGENCES.md](DIVERGENCES.md) already rejects `shade`).
+- Expand the explicit modern source set only after declaration visibility, compile order and downgraded output are
+  verified.
 
 For a new modern source unit or syntax feature, use the existing characterization/compatibility checks and verify
 the clean compilation path, packaged Java 8 output and relevant Forge behavior. This is a readability preference
@@ -163,7 +172,10 @@ with a compatibility gate, not an obligation to modernize every file immediately
 
 1. Normal Java and joint Scala/Java compilation remain on Java 8. `compileScala` excludes the modern helpers from
    javac's inputs, while scalac resolves their declarations through `-sourcepath`. This handles the circular Scala
-   references without asking Java 8 javac to compile the modern method bodies.
+   references without asking Java 8 javac to compile the modern method bodies. Moving the helpers to `src/main/java`
+   is not an alternative: `StackAnalyserLogic`, `ClassInfoLookup`, `JavaTraitRegistration` and `ScalaSignatureParser`
+   import types from `StackAnalyser.scala`, `ASMMixinCompiler.scala` and `ScalaSignature.scala`, so they must compile
+   after `compileScala`, not before it like `compileJava` does.
 2. `compileModernJava` uses JDK 25 with `--release 21`, against the fresh Java and Scala output directories.
 3. `downgradeModernJava` converts the helpers to Java 8. Only the downgraded directory joins the main class outputs,
    so tests, Forge, dev/reobfuscated jars and downstream compilation receive Java 8 bytecode.
