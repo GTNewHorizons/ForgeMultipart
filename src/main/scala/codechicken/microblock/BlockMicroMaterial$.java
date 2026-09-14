@@ -53,7 +53,7 @@ public final class BlockMicroMaterial$ {
     }
 
     public void createAndRegister(Block block, Seq<Object> meta, String oldName) {
-        createAndRegister(block, 0, materialKey(block), oldName);
+        createAndRegister(block, meta, materialKey(block), oldName);
     }
 
     public void createAndRegister(Block block, Seq<Object> meta, String name, String oldName) {

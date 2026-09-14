@@ -360,9 +360,9 @@ class DefaultContentFunctionalTest {
         add(expectedNames, expectedRemaps, Blocks.cobblestone, "minecraft:cobblestone", 0);
         add(expectedNames, expectedRemaps, Blocks.planks, "minecraft:planks", 5);
         add(expectedNames, expectedRemaps, Blocks.log, "minecraft:log", 3);
-        add(expectedNames, expectedRemaps, Blocks.log2, "minecraft:log2", 0, "tile.log2");
+        add(expectedNames, expectedRemaps, Blocks.log2, "minecraft:log2", 1, "tile.log2");
         add(expectedNames, expectedRemaps, Blocks.leaves, "minecraft:leaves", 3);
-        add(expectedNames, expectedRemaps, Blocks.leaves2, "minecraft:leaves2", 0, "tile.leaves2");
+        add(expectedNames, expectedRemaps, Blocks.leaves2, "minecraft:leaves2", 1, "tile.leaves2");
         add(expectedNames, expectedRemaps, Blocks.sponge, "minecraft:sponge", 0);
         add(expectedNames, expectedRemaps, Blocks.glass, "minecraft:glass", 0);
         add(expectedNames, expectedRemaps, Blocks.lapis_block, "minecraft:lapis_block", 0);
@@ -419,7 +419,7 @@ class DefaultContentFunctionalTest {
             }
         }
 
-        assertEquals(119, expectedNames.size());
+        assertEquals(121, expectedNames.size());
         assertEquals(expectedNames, actualNames);
         assertEquals(expectedRemaps, materialRemaps());
     }

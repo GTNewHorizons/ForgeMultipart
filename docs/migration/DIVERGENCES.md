@@ -15,6 +15,7 @@ audit, before extending this list.
 | Area | Difference and consequence |
 | --- | --- |
 | Raw microblock recipe material lookup | Skips `MissingMicroMaterial`, whose recovery item is stone, so sawing stone selects the real stone material. Existing missing-material microblocks retain their recovery behavior. This fixes a pre-existing Scala bug. |
+| `BlockMicroMaterial.createAndRegister(Block, Seq, String)` | Registers every supplied metadata value instead of only zero, including dark-oak logs and leaves and their legacy-name remaps. This fixes a pre-existing Scala bug; material IDs are rebuilt through the existing registry mapping. |
 | `IDWriter` before `setMax` | `read`/`write` throw `IllegalStateException` instead of `NullPointerException`. Uninitialized use is unsupported. |
 | `PacketScheduler` invalid `maskWidth` | Throws `IllegalArgumentException` instead of `scala.MatchError`. Valid widths remain 1, 2, 4 and 8. |
 | `NormalOcclusionTest.apply(Traversable, Traversable)` | Materializes both inputs into Java lists before testing instead of nested Scala `forall`. Finite, side-effect-free collections give the same result; eager traversal can change side effects, failure timing and termination for unusual inputs. |

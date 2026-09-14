@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import net.minecraft.block.Block;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.init.Blocks;
 import net.minecraft.inventory.Container;
@@ -17,6 +18,7 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.microblock.BlockMicroMaterial;
 import codechicken.microblock.ItemMicroPart;
 import codechicken.microblock.MicroMaterialRegistry;
 import codechicken.microblock.MicroRecipe;
@@ -39,6 +41,22 @@ class MicroRecipeFunctionalTest {
         assertMicro(MicroRecipe.getCraftingResult(crafting), 2, 0, 4, material);
         crafting.setInventorySlotContents(3, MicroRecipe.getCraftingResult(crafting));
         assertMicro(MicroRecipe.getCraftingResult(crafting), 2, 0, 2, material);
+    }
+
+    @Test
+    void cuttingDarkOakLogsAndLeavesRetainsTheirMetadata() {
+        for (Block block : new Block[] { Blocks.log2, Blocks.leaves2 }) {
+            String name = BlockMicroMaterial.materialKey(block, 1);
+            assertTrue(MicroMaterialRegistry.getMaterial(name) instanceof BlockMicroMaterial);
+            int material = MicroMaterialRegistry.materialID(name);
+            InventoryCrafting crafting = grid();
+            crafting.setInventorySlotContents(0, new ItemStack(new TestSaw(100)));
+            crafting.setInventorySlotContents(3, new ItemStack(block, 1, 1));
+            assertMicro(MicroRecipe.getCraftingResult(crafting), 2, 0, 4, material);
+            ItemStack restored = MicroRecipe.create(1, 0, 8, material);
+            assertSame(Item.getItemFromBlock(block), restored.getItem());
+            assertEquals(1, restored.getItemDamage());
+        }
     }
 
     @Test
