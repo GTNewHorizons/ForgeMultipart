@@ -183,7 +183,7 @@ public final class TickScheduler {
                 CompressedStreamTools.writeCompressed(saveTag(), dout);
                 dout.close();
             } catch (java.io.IOException e) {
-                throw new RuntimeException(e);
+                throw TickScheduler.<RuntimeException>rethrow(e);
             }
         }
 
@@ -314,6 +314,11 @@ public final class TickScheduler {
 
     public static WorldExtension createWorldExtension(World world) {
         return new WorldTickScheduler(world);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Throwable> RuntimeException rethrow(Throwable throwable) throws T {
+        throw (T) throwable;
     }
 
     public static ChunkExtension createChunkExtension(Chunk chunk, WorldExtension world) {
