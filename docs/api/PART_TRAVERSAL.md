@@ -20,7 +20,7 @@ public static List<String> partTypes(TileMultipart tile) {
 }
 ```
 
-To visit only parts that still have a tile binding:
+To visit only parts that are still bound to this tile:
 
 ```java
 public static List<String> boundPartTypes(TileMultipart tile) {
@@ -57,13 +57,14 @@ Use the game thread. The default `forEachPart` traversal has the same behavior a
 
 - Capture the current sequence once and visit it in order. Normal additions during a callback publish a new sequence,
   so the current traversal does not visit the added parts.
-- Check `part.tile() != null` immediately before each callback. A part detached by an earlier callback is skipped;
-  a part rebound to another tile is still visited. This check is not an ownership test against the original tile.
+- Check `part.tile() == this` immediately before each callback. Parts detached or rebound to another tile are skipped,
+  including when an earlier callback replaces the tile and transfers its parts.
 - A nested traversal captures the sequence anew and can observe the updated list. Each call has its own traversal state.
 - Propagate the original callback exception immediately and stop that traversal. Side effects already performed remain.
 - Preserve the iterator behavior of legacy mutable sequences. Do not structurally mutate such a sequence during traversal.
 - Pass a non-null callback. For compatibility, there is no eager null check: with the default hook, null throws
-  `NullPointerException` only when a bound part reaches the callback. Empty/all-detached sequences invoke nothing.
+  `NullPointerException` only when a part still bound to this tile reaches the callback. Empty sequences or sequences
+  containing only detached/transferred parts invoke nothing.
 
 `tile.jPartList().forEach(action)` visits every entry, including detached parts. It is not equivalent to
 `tile.forEachPart(action)`. Preserve the consumer's original filtering and callback behavior when migrating.

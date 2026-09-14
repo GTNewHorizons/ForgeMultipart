@@ -140,10 +140,9 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
      *
      * <p>
      * The default hook captures {@link #partList()} once. Normal additions publish a new sequence and are not visited
-     * by the current call; parts detached by an earlier callback are skipped. A part rebound to another tile is still
-     * visited. Legacy mutable sequences retain their own iterator behavior and must not be structurally edited during
-     * traversal. Each nested call captures its own sequence. Callback exceptions propagate immediately, stopping the
-     * current traversal.
+     * by the current call; parts detached or rebound to another tile by an earlier callback are skipped. Legacy mutable
+     * sequences retain their own iterator behavior and must not be structurally edited during traversal. Each nested
+     * call captures its own sequence. Callback exceptions propagate immediately, stopping the current traversal.
      *
      * <p>
      * Call on the game thread. Lifecycle callbacks continue to dispatch through {@code operate}, not through overrides
@@ -187,8 +186,9 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
         }
     }
 
-    private static void applyIfBound(Function1<TMultiPart, BoxedUnit> f, TMultiPart p) {
-        if (p.tile() != null) {
+    private void applyIfBound(Function1<TMultiPart, BoxedUnit> f, TMultiPart p) {
+        // A replaced tile can still receive queued callbacks after its parts have moved.
+        if (p.tile() == this) {
             f.apply(p);
         }
     }
@@ -261,9 +261,9 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     /**
      * Supported consumer API for local part-change notifications, used by ProjectRed. Calls
      * {@link TMultiPart#onPartChanged(TMultiPart)} through the retained {@link #operate(Function1)} hook. Its base
-     * traversal captures the current list/order and skips parts whose tile binding is null at callback time; a non-null
-     * binding to another tile still qualifies. Parts equal to {@code part} (using {@code part.equals(p)}) are excluded;
-     * null broadcasts to all eligible parts. Callback failures propagate and stop traversal.
+     * traversal captures the current list/order and visits only parts still bound to this tile at callback time. Parts
+     * equal to {@code part} (using {@code part.equals(p)}) are excluded; null broadcasts to all eligible parts.
+     * Callback failures propagate and stop traversal.
      *
      * This method does not mark the tile dirty, send updates or notify neighboring blocks/lighting. Keep the caller's
      * synchronization and external-notification policy, or use {@link #notifyPartChange(TMultiPart)} when world

@@ -47,7 +47,7 @@ class TileMultipartEqualityRegressionTest {
         added.bind(tile);
 
         assertSame(failure, assertThrows(RuntimeException.class, () -> tile.internalPartChange(null)));
-        assertEquals(Arrays.asList("first.changed:null", "rebound.changed:null", "failing.changed:null"), events);
+        assertEquals(Arrays.asList("first.changed:null", "failing.changed:null"), events);
         assertEquals(Arrays.asList(added), tile.jPartList());
         assertNull(tile.getWorldObj(), "Local notification requires no world and performs no world notification");
     }

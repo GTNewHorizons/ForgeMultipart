@@ -36,7 +36,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Add material-specific behavior to generated microblocks | `registerTrait(String)` and `IGeneratedMaterial` — [illuminated Java extension, compilation and side contracts](api/MICROBLOCK_EXTENSIONS.md) |
 | Change an existing FMP saw's cutting strength | `ItemSaw.setHarvestLevel(int)` — [state, lifecycle and Iguana migration](api/SAW_STRENGTH.md) |
 | Read/index/search a tile's parts | `jPartList()` — [part collection ownership and order](api/PART_TRAVERSAL.md#collection-ownership-and-ordering) |
-| Run callbacks while skipping detached parts | `forEachPart(Consumer)` — [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
+| Run callbacks only on parts still owned by the tile | `forEachPart(Consumer)` — [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
 | Rebuild parts on an already prepared composite tile | `loadPartList(Collection)` — [part loading](api/PART_LOADING.md) |
 | Select client/server tile capabilities before preparing state and loading | `MultipartGenerator.generateCompositeTile(TileEntity, Iterable, boolean)` — [staged generation and reflection migration](api/COMPOSITE_GENERATION.md) |
 | Assign stored parts during reconstruction, without binding or notifications | `setPartList(List)` — [storage assignment](api/PART_LOADING.md#storage-assignment) |
@@ -99,9 +99,9 @@ Three advanced methods remain supported because consumers use them directly:
   equal cached entries and invoke the virtual bind chain once; base tiles do nothing. It leaves ownership, storage,
   validation and notifications to the caller. See the [slot-refresh contract](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask).
 - **`internalPartChange(part)`** sends local `onPartChanged` callbacks through the retained `operate` hook. The base
-  traversal captures list order, skips parts whose binding is null at callback time, and excludes parts equal to the
-  changed part using `part.equals(p)`. Null broadcasts to all eligible parts. A non-null binding to another tile
-  still qualifies. Callback failures stop traversal and propagate. ProjectRed deliberately handles dirty state,
+  traversal captures list order, visits only parts still bound to the receiving tile, and excludes parts equal to the
+  changed part using `part.equals(p)`. Null broadcasts to all eligible parts. Detached or transferred parts are skipped.
+  Callback failures stop traversal and propagate. ProjectRed deliberately handles dirty state,
   packets and external neighbors separately; this method does none of those. `notifyPartChange` also performs world
   update/neighbor/lighting notifications when needed.
 

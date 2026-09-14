@@ -293,6 +293,26 @@ class TileMultipartCharacterizationTest {
     }
 
     @Test
+    void replacedTilesDoNotForwardQueuedCallbacksAfterTransfer() {
+        for (boolean mutable : new boolean[] { false, true }) {
+            TileMultipart oldTile = new TileMultipart();
+            CountingPart part = new CountingPart("transferred");
+            oldTile.addPart_do(part);
+            if (mutable) {
+                oldTile.partList_$eq(JavaConversions.asScalaBuffer(new ArrayList<>(oldTile.jPartList())));
+            }
+            TileMultipart replacement = new TileMultipart();
+            replacement.from(oldTile);
+            assertSame(replacement, part.tile());
+
+            oldTile.onChunkLoad();
+            assertEquals(0, part.chunkLoads);
+            replacement.onChunkLoad();
+            assertEquals(1, part.chunkLoads);
+        }
+    }
+
+    @Test
     void lifecycleCallbacksStillDispatchThroughAnOperateOverride() {
         List<String> calls = new ArrayList<>();
         TileMultipart tile = new TileMultipart() {
@@ -313,7 +333,7 @@ class TileMultipartCharacterizationTest {
     }
 
     @Test
-    void operateChecksForAnyBindingAndStopsAtTheOriginalCallbackFailure() {
+    void operateChecksOwnershipAndStopsAtTheOriginalCallbackFailure() {
         TileMultipart tile = new TileMultipart();
         CountingPart detached = new CountingPart("detached");
         CountingPart rebound = new CountingPart("rebound");
@@ -330,7 +350,7 @@ class TileMultipartCharacterizationTest {
             visited.add(part.getType());
             throw failure;
         }))));
-        assertEquals(Arrays.asList("rebound"), visited);
+        assertEquals(Arrays.asList("last"), visited);
     }
 
     @Test
@@ -356,8 +376,8 @@ class TileMultipartCharacterizationTest {
             }
         });
 
-        assertEquals(Arrays.asList("first", "rebound"), visited);
-        assertEquals(Arrays.asList("first", "rebound", "added"), nested);
+        assertEquals(Arrays.asList("first"), visited);
+        assertEquals(Arrays.asList("first", "added"), nested);
     }
 
     @Test
