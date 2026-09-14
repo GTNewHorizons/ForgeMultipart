@@ -85,6 +85,9 @@ class MultipartSaveLoadFunctionalTest {
         Chunk chunk = new Chunk(world, 40, 40);
         UnclaimedTile unclaimed = tile(new UnclaimedTile(), world);
         ConvertedTile converted = tile(new ConvertedTile(), world);
+        converted.xCoord = 642;
+        converted.yCoord = 64;
+        converted.zCoord = 642;
         DeletedTile deleted = tile(new DeletedTile(), world);
         ChunkPosition unclaimedPosition = put(chunk, 1, unclaimed);
         ChunkPosition convertedPosition = put(chunk, 2, converted);
@@ -105,6 +108,14 @@ class MultipartSaveLoadFunctionalTest {
                 TileMultipart.class,
                 chunk.chunkTileEntityMap.get(convertedPosition));
         assertSame(world, replacement.getWorldObj());
+        assertEquals(converted.xCoord, replacement.xCoord);
+        assertEquals(converted.yCoord, replacement.yCoord);
+        assertEquals(converted.zCoord, replacement.zCoord);
+        NBTTagCompound saved = new NBTTagCompound();
+        replacement.writeToNBT(saved);
+        assertEquals(converted.xCoord, saved.getInteger("x"));
+        assertEquals(converted.yCoord, saved.getInteger("y"));
+        assertEquals(converted.zCoord, saved.getInteger("z"));
         assertEquals(1, replacement.jPartList().size());
         assertSame(first.part, replacement.jPartList().get(0));
         assertEquals(1, first.calls);

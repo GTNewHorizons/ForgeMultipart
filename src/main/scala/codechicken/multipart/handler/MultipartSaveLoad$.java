@@ -97,6 +97,9 @@ public final class MultipartSaveLoad$ {
             if (replacement == null) {
                 iterator.remove();
             } else {
+                replacement.xCoord = oldTile.xCoord;
+                replacement.yCoord = oldTile.yCoord;
+                replacement.zCoord = oldTile.zCoord;
                 replacement.setWorldObj(oldTile.getWorldObj());
                 replacement.validate();
                 entry.setValue(replacement);
