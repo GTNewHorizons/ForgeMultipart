@@ -15,6 +15,16 @@ public final class MultipartEventHandler {
 
     private MultipartEventHandler() {}
 
+    @SubscribeEvent
+    public static void playerLoggedOut(cpw.mods.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
+        MultipartEventHandler$.MODULE$.playerLoggedOut(event);
+    }
+
+    @SubscribeEvent
+    public static void playerCloned(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        MultipartEventHandler$.MODULE$.playerCloned(event);
+    }
+
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public static void tileEntityLoad(ChunkDataEvent.Load event) {
         MultipartEventHandler$.MODULE$.tileEntityLoad(event);

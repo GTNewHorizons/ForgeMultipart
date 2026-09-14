@@ -11,6 +11,7 @@ import net.minecraftforge.event.world.ChunkWatchEvent;
 import net.minecraftforge.event.world.WorldEvent;
 
 import codechicken.multipart.BlockMultipart;
+import codechicken.multipart.ControlKeyModifer;
 import codechicken.multipart.TileCache;
 import codechicken.multipart.TileMultipart;
 import cpw.mods.fml.common.eventhandler.EventPriority;
@@ -25,6 +26,19 @@ public final class MultipartEventHandler$ {
     public static final MultipartEventHandler$ MODULE$ = new MultipartEventHandler$();
 
     private MultipartEventHandler$() {}
+
+    @SubscribeEvent
+    public void playerLoggedOut(cpw.mods.fml.common.gameevent.PlayerEvent.PlayerLoggedOutEvent event) {
+        ControlKeyModifer.map().remove(event.player);
+    }
+
+    @SubscribeEvent
+    public void playerCloned(net.minecraftforge.event.entity.player.PlayerEvent.Clone event) {
+        Boolean pressed = ControlKeyModifer.map().remove(event.original);
+        if (pressed != null) {
+            ControlKeyModifer.map().put(event.entityPlayer, pressed);
+        }
+    }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
     public void tileEntityLoad(ChunkDataEvent.Load event) {

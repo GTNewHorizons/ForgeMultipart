@@ -26,6 +26,8 @@ class MultipartEventHandlerCharacterizationTest {
 
     private static final Set<String> EVENT_METHODS = new TreeSet<>(
             Arrays.asList(
+                    "playerLoggedOut(Lcpw/mods/fml/common/gameevent/PlayerEvent$PlayerLoggedOutEvent;)V",
+                    "playerCloned(Lnet/minecraftforge/event/entity/player/PlayerEvent$Clone;)V",
                     "chunkUnWatch(Lnet/minecraftforge/event/world/ChunkWatchEvent$UnWatch;)V",
                     "chunkWatch(Lnet/minecraftforge/event/world/ChunkWatchEvent$Watch;)V",
                     "drawBlockHighlight(Lnet/minecraftforge/client/event/DrawBlockHighlightEvent;)V",
