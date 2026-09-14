@@ -1,4 +1,4 @@
-# Java migration — working handoff
+# Java migration - working handoff
 
 Start here. Work in this migration checkout on **`algent/java`**, based on `master`; inspect
 branch, status and recent commits before editing and preserve existing work. The detached review worktree is not the
@@ -6,13 +6,13 @@ migration checkout; `codex/tile-compatibility-fixes` was deleted after its fixes
 
 | Document | Purpose |
 | --- | --- |
-| [Plan](JAVA_MIGRATION.md) | Phase gates, API/runtime/modern-Java policy, build arrangement and the performance protocol |
-| [Compatibility](JAVA_MIGRATION_COMPATIBILITY.md) | Binary ABI inventory plus the source-level consumer audit and adoption ledger |
-| [Divergences](JAVA_MIGRATION_DIVERGENCES.md) | Intentional effective compatibility differences |
-| [Manual checks](JAVA_MIGRATION_MANUAL_CHECKS.md) | Client/release checks with concrete item examples |
-| [Java API index](docs/API.md) | Consumer entry points, guides and compiling examples |
-| [Release notes](docs/RELEASE_NOTES.md) | What breaks for consumers who rebuild, and the supported replacements |
-| [History](docs/migration/HISTORY.md) | Dated completed-port findings and reference evidence; read as needed |
+| [Plan](README.md) | Phase gates, API/runtime/modern-Java policy, build arrangement and the performance protocol |
+| [Compatibility](COMPATIBILITY.md) | Binary ABI inventory plus the source-level consumer audit and adoption ledger |
+| [Divergences](DIVERGENCES.md) | Intentional effective compatibility differences |
+| [Manual checks](MANUAL_CHECKS.md) | Client/release checks with concrete item examples |
+| [Java API index](../API.md) | Consumer entry points, guides and compiling examples |
+| [Release notes](../RELEASE_NOTES.md) | What breaks for consumers who rebuild, and the supported replacements |
+| [History](HISTORY.md) | Dated completed-port findings and reference evidence; read as needed |
 
 ## Current state and next target
 
@@ -21,7 +21,7 @@ files and 9 Scala files / 747 nonblank Scala lines**. The packaged inventory has
 
 The agreed milestone order is the documented consumer-facing Java API, then consumer release and adoption, then final
 Scala removal; see the plan's API migration design and Phases 8-10. Per-change fixes, their regression cases and their
-recorded ABI evidence are in [the history](docs/migration/HISTORY.md); do not restate them here.
+recorded ABI evidence are in [the history](HISTORY.md); do not restate them here.
 
 Direct typed calls are the intended end state for supported integrations. Optional dependencies should isolate typed
 compatibility code behind presence/version checks; reflection snippets in earlier guides are temporary legacy
@@ -34,7 +34,7 @@ The old `registerParts` family also required `scala.collection.Seq`/`scala.Funct
 `registerPartFactory` compiles without Scala. Keep this gate for remaining APIs; import/bytecode checks alone are insufficient.
 Internal storage writes and reconstruction still dispatch through the old setter/loader hooks, not the Java siblings.
 
-The [API index](docs/API.md) orients consumers to entry points, compiling examples and migration status. Material
+The [API index](../API.md) orients consumers to entry points, compiling examples and migration status. Material
 enumeration and tile read/traversal/loading/storage APIs are also complete. No supplied consumer directly calls the
 two-argument tile occlusion hook; existing `canAddPart`/`canReplacePart` calls need no rename. GuideNH and Schematica
 have Java loading replacements, but consumer source changes, other reflection/extension contracts, releases and pack
@@ -58,9 +58,9 @@ final Scala removal and client/pack release validation.
 
 Extra Utilities remains an active supported consumer. UtilitiesInExcess is the intended replacement, but the support
 switch awaits approval and actual target-pack adoption. Retain existing contracts until those gates pass. The
-[overall remaining-work summary](JAVA_MIGRATION.md#remaining-work-overall) separates FMP work from downstream gates.
+[overall remaining-work summary](README.md#remaining-work-overall) separates FMP work from downstream gates.
 
-A separate [Phase 4b performance pass](JAVA_MIGRATION.md#phase-4b--measured-performance-pass) is planned once the API
+A separate [Phase 4b performance pass](README.md#phase-4b--measured-performance-pass) is planned once the API
 and representative extension workloads are stable, alongside consumer migration. Use fresh realistic profiles and
 repeated paired runs; distinguish FMP implementation gains from migrated-consumer gains, covering hot paths plus
 startup, transitions, rendering, network and memory costs, following the measurement protocol recorded there. The
@@ -76,7 +76,7 @@ Prefer modern syntax where it improves readability and the compilation boundary 
 Scala removal. Defer a specific change if Scala parsing, compile order, ABI or downgrader/runtime support blocks it,
 recording the blocker and revisit condition. Keep the global modern-syntax setting disabled while it breaks Scala
 compilation. The build arrangement, eligibility rules and expansion constraints are in the plan's
-[modern Java readability policy](JAVA_MIGRATION.md#modern-java-readability-policy).
+[modern Java readability policy](README.md#modern-java-readability-policy).
 
 The initial Java API can operate over retained Scala storage and compatibility shells. Record legacy FMP uses,
 replacements, consumer releases, target-pack adoption and verification in the consumer audit. Source patches alone
@@ -219,7 +219,7 @@ also loses Scala property/indexing composition: the converted Face, Corner, Edge
 extra empty argument list before the index when recompiling, while existing bytecode remains compatible.
 
 **A companion object can be load-bearing without a single bytecode reference.** The inventory's 17 `MODULE$` list is
-not the whole test — check the reflective string constants too. `MultipartHelper$` is in neither the `MODULE$` list nor
+not the whole test - check the reflective string constants too. `MultipartHelper$` is in neither the `MODULE$` list nor
 any consumer's constant pool as a type, but guidenh names it as a string, so it was kept. `IconHitEffects$` was in
 neither and was dropped. Check both lists before deleting a companion.
 
@@ -242,7 +242,7 @@ open, then run the focused test and ABI comparison from the clean output.
 **Classes that cannot class-initialize headless make good probes.** `MultipartSaveLoad` reflects into `TileEntity`'s
 static maps through `ObfMapping` and always throws under a plain JVM. That turns "did this branch reach the loader?"
 into an assertion: returning normally proves the guard short-circuited, and `assertThrows(LinkageError.class, ...)`
-proves the other branch did reach it. Use `LinkageError`, not the exact type — the first attempt raises
+proves the other branch did reach it. Use `LinkageError`, not the exact type - the first attempt raises
 `ExceptionInInitializerError` and every later one raises `NoClassDefFoundError`, so test order would otherwise matter.
 
 **Where a trait member cannot be a default, use an interface static.** `TScheduledPacketPart.read` is shadowed by
@@ -324,12 +324,12 @@ composite has already invoked the real base constructor, then preserves the rema
 
 ## Release gaps and cleanup
 
-- The full [manual checklist](JAVA_MIGRATION_MANUAL_CHECKS.md) is still open. The user confirmed the ProjectRed
+- The full [manual checklist](MANUAL_CHECKS.md) is still open. The user confirmed the ProjectRed
   placement crash is fixed (`36e1a58`), but that does not establish all rendering, particles, selection/collision,
   pick-block, activation or lighting behavior. The headless renderer tests cover compiled dispatch, not GPU output.
 - Existing binaries retain the runtime tile interfaces. Recompilation against raw Java mixin inputs can emit invalid
-  class/field opcodes after Forge transforms them. [Stable capability guidance](docs/api/TILE_TRAIT_ACCESS.md) covers
-  redstone, ordinary base/interface calls and slot refresh; [custom authoring guidance](docs/api/CUSTOM_TILE_TRAITS.md)
+  class/field opcodes after Forge transforms them. [Stable capability guidance](../api/TILE_TRAIT_ACCESS.md) covers
+  redstone, ordinary base/interface calls and slot refresh; [custom authoring guidance](../api/CUSTOM_TILE_TRAITS.md)
   covers marker registration, stable capabilities and transformer constraints. The server pass-through fixture does
   not cover client exclusion.
 - Run representative full-pack CPU/allocation and packaged modern-Java validation before performance/release claims.

@@ -84,14 +84,14 @@ entries complete.
 | [ ] | Join a server whose material set differs from the client | In disposable client/server instances, add `"minecraft:coal_ore"` only to the server's `microblocks.cfg` | The client is disconnected with the missing material list, not a crash | `readIDMap` |
 | [ ] | Join a server whose multipart type set differs from the client | Setup-only: use a small test addon that registers a part on only one side; stock consumer removal may be rejected earlier by Forge's mod handshake | The client is disconnected with the ordered missing-part list, not a crash | `MultipartCPH.handlePartRegistration` |
 
-The [Java illuminated extension example](docs/api/MICROBLOCK_EXTENSIONS.md) has dedicated-server and headless halo
+The [Java illuminated extension example](../api/MICROBLOCK_EXTENSIONS.md) has dedicated-server and headless halo
 coverage. When adopting it in ProjectRed, rerun the illuminated shape/lighting checks above on a physical client,
 including hollow connector widths and all sides, pass filtering and the existing halo queue/configuration. Neither
 its callback-side input tests nor its retained client-body probe validates actual client generation or GPU output.
 
 ## Not yet covered anywhere
 
-- [ ] A focused pre-optimization CPU/allocation baseline now exists in `JAVA_MIGRATION.md#phase-4b--measured-performance-pass`. A representative
+- [ ] A focused pre-optimization CPU/allocation baseline now exists in `docs/migration/README.md#phase-4b--measured-performance-pass`. A representative
   full-pack capture and the matching post-optimization comparison still need to be performed. Example setup: a loaded
   chunk containing many AE2 cables, ProjectRed wires/lamps and assorted Forge Multipart microblocks.
 - [ ] Shape-specific microblock NBT and packet payloads. Core `Microblock` shape/material NBT, description bytes and
@@ -117,7 +117,7 @@ translation keys; these are examples for running the checks, not claims that the
 
 ## Converter integration follow-up
 
-The [converter guide](docs/api/BLOCK_CONVERTERS.md) and Forge fixtures establish registration, discarded probes,
+The [converter guide](../api/BLOCK_CONVERTERS.md) and Forge fixtures establish registration, discarded probes,
 committed callback order and example state round trips. Before adopting consumer changes:
 
 - [ ] On a physical client/server, preview and cancel conversion of Chisel torches, OpenComputers cables/prints,
@@ -136,7 +136,7 @@ committed callback order and example state round trips. Before adopting consumer
   face/framed wires with face covers and edge blockers on a physical client/server, including part changes and moves.
   Concrete setup: ProjectRed **Red Alloy Wire** and **Framed Red Alloy Wire** with Stone Covers and Stone Strips.
 - [ ] Verify consumer bytecode uses the stable interface/base owner rather than raw transformed trait class calls or
-  fields. The [Forge fixture](docs/api/TILE_TRAIT_ACCESS.md) proves server linkage, not all client-side capabilities.
+  fields. The [Forge fixture](../api/TILE_TRAIT_ACCESS.md) proves server linkage, not all client-side capabilities.
   This is a `javap`/ASM inspection check; no in-game item exercises the bytecode owner directly.
 - [ ] Rebuild OpenComputers `PrintPart.toggleState` using `tile.refreshPartSlots(this)`, then exercise inactive/active
   and button modes on client/server. Confirm old slots clear, new slots occupy, rejected changes leave caches intact,

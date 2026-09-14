@@ -1,10 +1,10 @@
-# Release notes — the Java port
+# Release notes - the Java port
 
 ForgeMultipart's implementation moved from Scala to Java. This page is for mod authors who depend on FMP.
 
 **If you ship a compiled jar and do not rebuild it, nothing here affects you.** Every runtime interface, method
 descriptor and reflective name the audited consumers use was preserved deliberately, and the retained Scala bridges
-still link. The compatibility ledger for what did change is [JAVA_MIGRATION_DIVERGENCES.md](../JAVA_MIGRATION_DIVERGENCES.md).
+still link. The compatibility ledger for what did change is [divergence ledger](migration/DIVERGENCES.md).
 
 **If you rebuild against the new dev jar, read on.** Recompiling is the case that breaks, and one class of break is
 silent. There are three kinds, in descending order of how badly they fail. The [consumer migration checklist](api/MIGRATION_CHECKLIST.md)
@@ -14,7 +14,7 @@ turns the cases below into concrete compile, runtime, release and pack-adoption 
 
 Six types were Scala traits, which compile to an interface plus a `$class` helper. They are now concrete Java classes
 in the dev jar. Forge's transformer rewrites them back into interfaces at load time, so **existing binaries are
-unaffected** — they already call interface methods, and the runtime type is still an interface.
+unaffected** - they already call interface methods, and the runtime type is still an interface.
 
 Source compiled against the untransformed dev jar is the problem. `javac` and `scalac` see a class, emit
 `invokevirtual` or `getfield`, and the JVM then rejects it against the runtime interface.
@@ -57,7 +57,7 @@ Confirmed still present on each project's default branch:
 
 ## 2. Silent behavior changes: recompiled Scala trait composition
 
-**This is the dangerous one — it compiles cleanly and does the wrong thing at runtime.**
+**This is the dangerous one - it compiles cleanly and does the wrong thing at runtime.**
 
 A Java interface cannot supply a Scala trait's class supertype or its linearization. When a superclass method and an
 interface default both apply, the superclass wins. So recompiling `extends TMultiPart with TCuboidPart` silently
@@ -132,7 +132,7 @@ still has to be redone against `IRedstoneTile` afterwards. Always target the sta
 raw class the dev jar exposes for a transformed trait.
 
 Two honest limits on that guarantee. It covers the surface that is documented here and in the
-[compatibility audit](../JAVA_MIGRATION_COMPATIBILITY.md); a dependency in neither can still be caught out, which is
+[compatibility audit](migration/COMPATIBILITY.md); a dependency in neither can still be caught out, which is
 why removal waits on evidence of adoption in released consumer jars rather than on source patches alone. And FMP's own
 source layout will change when Scala goes, since the Java sources currently live under `src/main/scala` for joint
 compilation. That moves no class, package, descriptor or reflective name, so it is invisible to consumers; only

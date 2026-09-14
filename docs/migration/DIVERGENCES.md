@@ -1,13 +1,13 @@
 # Java migration divergences
 
 Current intentional differences from the `1.7.12` reference. This is a compatibility ledger, not a port diary.
-An unchanged implementation needs no entry. Results and port history belong in `JAVA_MIGRATION.md` and
-`JAVA_MIGRATION_HANDOFF.md`; client gaps in `JAVA_MIGRATION_MANUAL_CHECKS.md`; measurements in
-`JAVA_MIGRATION.md#phase-4b--measured-performance-pass`. Superseded decisions and the original per-port narrative remain in git history.
+An unchanged implementation needs no entry. Results and port history belong in `docs/migration/README.md` and
+`docs/migration/HANDOFF.md`; client gaps in `docs/migration/MANUAL_CHECKS.md`; measurements in
+`docs/migration/README.md#phase-4b--measured-performance-pass`. Superseded decisions and the original per-port narrative remain in git history.
 
 “No audited consumer” means the frozen GTNH binary inventory and consumer-source audit, not every possible
 third-party mod. Removed members can still break unaudited consumers. Check
-`JAVA_MIGRATION_COMPATIBILITY.md`, which holds both the binary inventory and the consumer-source
+`docs/migration/COMPATIBILITY.md`, which holds both the binary inventory and the consumer-source
 audit, before extending this list.
 
 ## Runtime and error behavior

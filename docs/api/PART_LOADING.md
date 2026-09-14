@@ -98,5 +98,5 @@ callback input mutation and partial-failure behavior. Forge tests cover slot-cac
 plus Java assignment/loading on a generated client tile and explicit render-cache rebuilding. The latter does not run
 a real client world or GPU rendering; GuideNH/Schematica previews and full-pack adoption remain manual release gates.
 
-The [consumer ledger](../../JAVA_MIGRATION_COMPATIBILITY.md#java-api-adoption-ledger) records the inspected source
+The [consumer ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records the inspected source
 revisions and pending consumer changes/releases. The supplied reference checkouts are unchanged.

@@ -89,4 +89,4 @@ Server Forge tests cover both exact reflective entries, factory/material identit
 ownership, material trait injection, callback failures and scratch reuse. The Java example tests all 256 shape-byte
 values without copying bindings or altering the source and compiles without Scala. Archived callers, existing APIs,
 method bodies and generated dumps are checked separately. Physical-client creation and GuideNH preview/GPU output
-remain [manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md); reference checkouts and adoption status are unchanged.
+remain [manual release checks](../migration/MANUAL_CHECKS.md); reference checkouts and adoption status are unchanged.

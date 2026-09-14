@@ -62,4 +62,4 @@ tile-only method and need no rename for this contract. Consumer checkouts remain
 Forge tests run the same scenarios through both legacy entries and the Java entry: existing tile identity, air,
 nonconvertible solid blocks, unrelated tile entities, bound torch placeholders, repeated conversions and subsequent
 normal placement. Archived callers, class/member APIs and generated outputs are checked separately. Actual client
-preview rendering remains a [manual release check](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+preview rendering remains a [manual release check](../migration/MANUAL_CHECKS.md).

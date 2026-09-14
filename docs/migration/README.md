@@ -40,18 +40,18 @@ Java-trait rewriting and compiler startup also delegate to Java helpers. Abstrac
 side-only filtering are complete; multiple Scala-trait inheritance still needs its metadata. Retain trait
 state/accessor/super bridges and the compiler/signature/analyser model shells.
 
-Start with [JAVA_MIGRATION_HANDOFF.md](JAVA_MIGRATION_HANDOFF.md) for the exact source/test baseline, workflow and
-Java-source limitations. Read both the [ABI inventory](JAVA_MIGRATION_COMPATIBILITY.md) and
-[consumer audit](JAVA_MIGRATION_COMPATIBILITY.md) before changing compatibility surfaces. Completed-target evidence
-is in [the history](docs/migration/HISTORY.md); the [divergence ledger](JAVA_MIGRATION_DIVERGENCES.md) records only
+Start with [the working handoff](HANDOFF.md) for the exact source/test baseline, workflow and
+Java-source limitations. Read both the [ABI inventory](COMPATIBILITY.md) and
+[consumer audit](COMPATIBILITY.md) before changing compatibility surfaces. Completed-target evidence
+is in [the history](HISTORY.md); the [divergence ledger](DIVERGENCES.md) records only
 effective compatibility differences.
 
 The source-only consumer guards, ordered tile lifecycle/NBT/packet fixtures and generated Scala/Java trait fixtures
 are in place. Schematica's private registry-map view is restored. The tile equality/callback regressions and the
 generated client-render dispatch crash are fixed; the user confirmed placement no longer crashes. Broader
-[manual client checks](JAVA_MIGRATION_MANUAL_CHECKS.md) and full-pack profiling remain release gates.
+[manual client checks](MANUAL_CHECKS.md) and full-pack profiling remain release gates.
 
-Focused traversal/redstone allocation improvements are recorded in [the profile](JAVA_MIGRATION.md#phase-4b--measured-performance-pass).
+Focused traversal/redstone allocation improvements are recorded in [the profile](README.md#phase-4b--measured-performance-pass).
 GTNHLib/UniMixins remain conditional on concrete need. Removing Scala from FMP remains the final target, gated by
 released consumer migrations and retirement of FMP's own Scala-dependent implementation.
 
@@ -77,8 +77,8 @@ verify that the replacement has migrated the relevant FMP contracts before remov
 
 GTNHLib/fastutil, UniMixins, a new generator design and further mechanical Scala-shell extraction are conditional
 work, not mandatory tasks to add without a concrete need. The existing generator is retained. See the detailed
-phases below, [consumer adoption ledger](JAVA_MIGRATION_COMPATIBILITY.md#java-api-adoption-ledger),
-[manual checklist](JAVA_MIGRATION_MANUAL_CHECKS.md) and [performance protocol](JAVA_MIGRATION.md#phase-4b--measured-performance-pass).
+phases below, [consumer adoption ledger](COMPATIBILITY.md#java-api-adoption-ledger),
+[manual checklist](MANUAL_CHECKS.md) and [performance protocol](README.md#phase-4b--measured-performance-pass).
 
 ## Scope and compatibility target
 
@@ -122,7 +122,7 @@ switch. A JDK 25 task compiles the helper with `--release 21`; JVM Downgrader su
 Forge and both packaged jars. Scala 2.11.5 and joint Scala/Java compilation stay on Java 8. The checkpoint passed
 normal/clean builds, frozen consumers and Forge tests with unchanged retained Scala classes and generated tile
 dumps. The arrangement, eligibility rules and limits are below; per-batch verification records are in
-[the history](docs/migration/HISTORY.md).
+[the history](HISTORY.md).
 
 - Prefer clearer pattern matching, switch expressions and local type inference where supported and appropriate;
   retain explicit types or ordinary control flow when they communicate the intent better.
@@ -258,7 +258,7 @@ The source and bytecode audit identified these allocation patterns; the named po
 The focused Forge/JFR baseline confirmed both risks. With eight parts, `updateEntity` and `operate` allocated about 184
 bytes per call, while a three-query redstone iteration allocated 80.5 bytes. The completed ports reduce the normal
 paths to effectively zero measured allocation; these remain focused measurements, not whole-pack TPS. See
-`JAVA_MIGRATION.md#phase-4b--measured-performance-pass`.
+`docs/migration/README.md#phase-4b--measured-performance-pass`.
 
 ### Runtime code generation is architectural, not incidental
 
@@ -413,25 +413,25 @@ Every implementation phase follows the same test-first gate:
 
 If a characterization test captures a confirmed bug that the port intentionally fixes, record it in the divergence log and change that expectation in a separate, explicit bug-fix step. This prevents accidental changes from being presented as fixes.
 
-### Phase 0 — Freeze and measure the reference behavior
+### Phase 0 - Freeze and measure the reference behavior
 
 - [x] Produce and retain a reference dev jar from `f10595d` or the selected migration base.
 - [x] Dump the public/protected JVM API and important generated tile class shapes.
 - [x] Inventory downstream mods that compile against or reflect into ForgeMultipart. See
-  `JAVA_MIGRATION_COMPATIBILITY.md`.
+  `docs/migration/COMPATIBILITY.md`.
 - [x] Record source-level consumers of part IDs, NBT, packets, registration order, reflection, and lifecycle behavior.
 - [ ] Freeze representative part IDs, NBT trees, packet bytes, registration order, and lifecycle behavior as tests.
 - [x] Add a Java-8-compatible JUnit/Jupiter setup to the existing Gradle `test` task.
 - [x] Add a separate Forge integration-test source set/runner for behavior that cannot execute in a plain JVM.
 - [x] Write the first characterization suite against the untouched Scala implementation.
-- [x] Create a remaining manual compatibility checklist for rendering, input, and other behavior that cannot be asserted reliably by the automated harness. See `JAVA_MIGRATION_MANUAL_CHECKS.md`.
+- [x] Create a remaining manual compatibility checklist for rendering, input, and other behavior that cannot be asserted reliably by the automated harness. See `docs/migration/MANUAL_CHECKS.md`.
 - [x] Capture representative CPU and allocation profiles before optimization work. See
-  `JAVA_MIGRATION.md#phase-4b--measured-performance-pass`.
+  `docs/migration/README.md#phase-4b--measured-performance-pass`.
 - [x] Start a divergence log.
 
 Exit condition: there is a reproducible behavior and ABI baseline, the test layers run in CI or an equivalent repeatable command, and the initial suite passes against the Scala implementation.
 
-### Phase 1 — Add infrastructure only when first needed
+### Phase 1 - Add infrastructure only when first needed
 
 - [ ] Add GTNHLib with a pack-aligned version when the first Java migration or data-structure change uses it.
 - [ ] Enable UniMixins when the first fixed class transformation is introduced.
@@ -440,7 +440,7 @@ Exit condition: there is a reproducible behavior and ABI baseline, the test laye
 
 Exit condition: dependencies and loaders are present with no unintended gameplay behavior change.
 
-### Phase 2 — Establish the Java-first API and compatibility bridges
+### Phase 2 - Establish the Java-first API and compatibility bridges
 
 - [x] Inventory every public Scala descriptor and compiler-generated entry point used by downstream code.
 - [x] Add ABI snapshots and compiled consumer fixtures before changing public descriptors.
@@ -456,15 +456,15 @@ keeps its `scala.Tuple2` array while Extra Utilities still uses it; the new API 
 
 Exit condition: new code can use a clean Java API while existing supported binaries still link through the deprecated surface.
 
-### Phase 3 — Convert low-coupling code
+### Phase 3 - Convert low-coupling code
 
 Status: **complete.** The low-risk queue is empty. All eight load-bearing `$class` helpers are Java with their bridges
 retained, as are both registries, the central part/tile types, scheduler/helper utilities, `BlockMultipart` and
 `MultipartRenderer`. Each leaf group was characterized before conversion, `JavaConversions` was replaced with explicit
 Java collections or controlled adapters, and iteration order and null behavior were preserved throughout. Per-type
-evidence is in [the history](docs/migration/HISTORY.md).
+evidence is in [the history](HISTORY.md).
 
-### Immediate compatibility gate — complete
+### Immediate compatibility gate - complete
 
 Status: **complete.** Every source-only constraint that can silently fail now has an automated structural or
 behavioral guard. Schematica's reflective `MultiPartRegistry$` type-map view is restored with its exact field name and
@@ -474,7 +474,7 @@ Galacticraft's name-only `registerMaterial` lookup. `TileMultipart` order and li
 are compact mixed-part NBT/description-packet fixtures and one generated Scala trait, one Java trait and
 representative pass-through interfaces.
 
-### Phase 4 — Convert measured hot paths
+### Phase 4 - Convert measured hot paths
 
 Status: **complete for the measured targets.** Traversal, redstone queries, recipe scans and the generated
 `TSlottedTile` slot scan were characterized, then rewritten without per-call collection allocation, closure
@@ -494,7 +494,7 @@ and improved throughput by 20.3% with an identical checksum.
 
 Exit condition: identified steady-state Scala allocation sites are removed with compatible results.
 
-### Phase 4b — Measured performance pass
+### Phase 4b - Measured performance pass
 
 Status: **planned.** Phase 4's focused historical results are complete; they do not establish current whole-pack
 performance. Re-profile the corrected Java branch and representative consumer integrations, then improve the measured
@@ -578,8 +578,8 @@ The local server EULA must already contain `eula=true`. From PowerShell at the r
 The property is quoted because PowerShell otherwise splits the dotted Gradle property. Normal
 `runFunctionalTestServer` runs are unchanged. Profile mode overwrites these ignored files:
 
-- `run/server/forgemultipart-profile.txt` — exact timings and per-thread allocation counts;
-- `run/server/forgemultipart-baseline.jfr` — JFR CPU, allocation-site and GC events.
+- `run/server/forgemultipart-profile.txt` - exact timings and per-thread allocation counts;
+- `run/server/forgemultipart-baseline.jfr` - JFR CPU, allocation-site and GC events.
 
 ```powershell
 jfr summary run/server/forgemultipart-baseline.jfr
@@ -595,9 +595,9 @@ The fixture uses Zulu OpenJDK 8, eight parts per tile, 1,000,000 warm-up iterati
 iterations per phase, covering `updateEntity`, `operate`, `lightValue`, `getTile` and `redstoneQueries`. The checksum
 consumes all observable work. Allocation bytes come from HotSpot's per-thread allocation counter, not from sampled
 JFR events; JFR remains the source for CPU samples and allocation-site ranking. Recorded results for the Phase 4
-focused baseline are in [the history](docs/migration/HISTORY.md).
+focused baseline are in [the history](HISTORY.md).
 
-### Phase 5 — Convert built-in tile traits through the existing Java path
+### Phase 5 - Convert built-in tile traits through the existing Java path
 
 Status: **complete.** Traits were converted in small related groups behind characterization of the generated
 interface, super dispatch, field accessors, initialization, copying, lifecycle callbacks and class caching, starting
@@ -610,7 +610,7 @@ for a registered Java trait extending another registered Java trait, explicit Ja
 runtime-only fields that must not participate in generated `copyFrom`. The generated runtime interfaces and class
 cache remain reference-identical; pass-through-interface coverage remains green.
 
-### Phase 6 — Convert multipart core and microblocks
+### Phase 6 - Convert multipart core and microblocks
 
 Status: runtime behavior for core code, factories, ordinary helpers and common/face/corner/edge/post/hollow/occlusion
 microblock traits is Java. The remaining Scala trait declarations retain inheritance, state/accessor and super-call
@@ -626,7 +626,7 @@ not an instruction to repeat completed ports; completed per-type evidence is in 
 
 Exit condition: normal runtime implementation is Java; any remaining Scala is isolated to compatibility or ASM support.
 
-### Phase 7 — Port the ASM subsystem last
+### Phase 7 - Port the ASM subsystem last
 
 - [x] Freeze structural and behavioral fixtures for generated classes before changing the compiler.
 - [ ] Translate the existing compiler/generator into readable Java while preserving emitted class shapes and cache keys.
@@ -651,13 +651,13 @@ Exit condition: the composition subsystem is maintainable Java with behavior and
 - [ ] Refresh `README.md` for the Java-first codebase while retaining Scala IDE guidance for any sources that remain.
 - [ ] Move the durable migration documents under `docs/migration/` and decide whether the historical running plan is
   archived or removed before merge.
-- [ ] Complete and record the relevant checks in `JAVA_MIGRATION_MANUAL_CHECKS.md` against a representative client and
+- [ ] Complete and record the relevant checks in `docs/migration/MANUAL_CHECKS.md` against a representative client and
   GTNH pack before release.
 
 Exit condition: source layout, contributor guidance and durable migration documentation match the codebase being
 merged, and all release-required manual checks have recorded results.
 
-### Phase 8 — Remove FMP's Scala implementation and dependencies after consumer migration
+### Phase 8 - Remove FMP's Scala implementation and dependencies after consumer migration
 
 Status: **planned, gated by consumer adoption.** The inventory showed shipping mods linking against trait helpers,
 companion singletons and Scala descriptors, plus ProjectRed registering an external Scala trait. The first release
@@ -682,7 +682,7 @@ inputs, storage, models and compiler support must be replaced or retired before 
 Exit condition: FMP builds and runs without its own Scala requirement, and the supported target-pack integrations
 pass against that artifact. Any unfinished gate keeps the corresponding compatibility support in place.
 
-### Phase 9 — Deprecate the Scala-shaped API and mark the internal boundary
+### Phase 9 - Deprecate the Scala-shaped API and mark the internal boundary
 
 Status: **in progress: all ten Phase 9.1 table entries and Phase 9.2 are complete; broader extension/API guidance remains.**
 This phase does not redesign the API. A surface audit against all 28 consumer checkouts found the
@@ -699,23 +699,23 @@ Apply siblings, deprecations and internal-marker javadoc together when the relev
 Most implementations are already Java; remaining work is at the specific boundaries below. Keep unrelated API
 changes separate from mechanical compiler extraction, and do not add a deprecation without its replacement.
 
-#### 9.1 — Scala-typed signatures
+#### 9.1 - Scala-typed signatures
 
 Each row keeps its existing descriptor for binary compatibility and gains a Java-shaped sibling. The registry's
 existing Java `registerParts` overload still required Scala during javac resolution; `registerPartFactory` avoids it.
 
 | Deprecate | Java-shaped replacement | Notes |
 | --- | --- | --- |
-| `TileMultipart.partList(): scala.collection.Seq` | `jPartList(): java.util.List` | Getter deprecated; captured-sequence view documented in the [guide and compiling example](docs/api/PART_TRAVERSAL.md) |
-| `MultiPartRegistry.registerParts(IPartFactory2, scala.collection.Seq)` and companion entry | `registerPartFactory(IPartFactory2, String...)` | Implemented over existing Java registration; distinct name compiles without Scala. [Guide and example](docs/api/PART_REGISTRATION.md) also cover the retained Boolean/function adapters and their migration |
-| `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | `materialCount(): int` plus existing `materialName(int)` and `getMaterial(int)` | Implemented with static/companion deprecation; [guide and compiling example](docs/api/MATERIAL_ENUMERATION.md). Consumer release/adoption remains pending |
+| `TileMultipart.partList(): scala.collection.Seq` | `jPartList(): java.util.List` | Getter deprecated; captured-sequence view documented in the [guide and compiling example](../api/PART_TRAVERSAL.md) |
+| `MultiPartRegistry.registerParts(IPartFactory2, scala.collection.Seq)` and companion entry | `registerPartFactory(IPartFactory2, String...)` | Implemented over existing Java registration; distinct name compiles without Scala. [Guide and example](../api/PART_REGISTRATION.md) also cover the retained Boolean/function adapters and their migration |
+| `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | `materialCount(): int` plus existing `materialName(int)` and `getMaterial(int)` | Implemented with static/companion deprecation; [guide and compiling example](../api/MATERIAL_ENUMERATION.md). Consumer release/adoption remains pending |
 | `TileMultipart.operate(scala.Function1<TMultiPart, BoxedUnit>)` | `forEachPart(java.util.function.Consumer<TMultiPart>)` | Implemented through the legacy virtual hook; preserves captured traversal, detached-part filtering and callback failures. Lifecycle still calls `operate` |
-| `TileMultipart.occlusionTest(scala.collection.Seq, TMultiPart)` | `testOcclusion(Collection<? extends TMultiPart>, TMultiPart)` | Implemented with an input snapshot and legacy virtual dispatch, including generated partial occlusion; [guide](docs/api/OCCLUSION.md). Distinct Java name avoids Scala overload resolution |
-| `NormalOcclusionTest.apply(scala.collection.Traversable<Cuboid6>, scala.collection.Traversable<Cuboid6>)` and companion entry | `testBoxes(Iterable<? extends Cuboid6>, Iterable<? extends Cuboid6>)` | Implemented over the existing Java loop; both inputs snapshotted before geometry tests. [Guide and compiling example](docs/api/OCCLUSION.md#box-versus-box-queries). ForgeRelocationFMP/OpenComputers adoption remains pending |
-| `TileMultipart.loadParts(scala.collection.Iterable)` | `loadPartList(Collection<TMultiPart>)` | Implemented through the legacy virtual hook; binding, world notifications, input iteration and partial failure retained. [Loading guide](docs/api/PART_LOADING.md) |
+| `TileMultipart.occlusionTest(scala.collection.Seq, TMultiPart)` | `testOcclusion(Collection<? extends TMultiPart>, TMultiPart)` | Implemented with an input snapshot and legacy virtual dispatch, including generated partial occlusion; [guide](../api/OCCLUSION.md). Distinct Java name avoids Scala overload resolution |
+| `NormalOcclusionTest.apply(scala.collection.Traversable<Cuboid6>, scala.collection.Traversable<Cuboid6>)` and companion entry | `testBoxes(Iterable<? extends Cuboid6>, Iterable<? extends Cuboid6>)` | Implemented over the existing Java loop; both inputs snapshotted before geometry tests. [Guide and compiling example](../api/OCCLUSION.md#box-versus-box-queries). ForgeRelocationFMP/OpenComputers adoption remains pending |
+| `TileMultipart.loadParts(scala.collection.Iterable)` | `loadPartList(Collection<TMultiPart>)` | Implemented through the legacy virtual hook; binding, world notifications, input iteration and partial failure retained. [Loading guide](../api/PART_LOADING.md) |
 | `TileMultipart.partList_$eq(scala.collection.Seq)` | `setPartList(List<TMultiPart>)` | Implemented through the legacy setter; Java list copied without binding, null sentinel supported. GuideNH's old reflective name remains supported |
-| `TileMultipart.renderID()` / `renderID_$eq(int)` and companion entries | `getRenderID()` / `setRenderID(int)` | Implemented over the same global value; four legacy entries deprecated. [Guide and compiling example](docs/api/RENDER_ID.md). Reading does not initialize the client renderer |
-| `TileMultipart.getOrConvertTile2(): scala.Tuple2<TileMultipart, Object>` and companion entry | `getOrConvertTileResult(World, BlockCoord): TileConversionResult` with `getTile()` / `isConverted()` | Implemented over the retained tuple path; [guide and compiling example](docs/api/TILE_CONVERSION.md) distinguish existing tiles, uninstalled placeholders and failed conversion. No audited direct tuple caller |
+| `TileMultipart.renderID()` / `renderID_$eq(int)` and companion entries | `getRenderID()` / `setRenderID(int)` | Implemented over the same global value; four legacy entries deprecated. [Guide and compiling example](../api/RENDER_ID.md). Reading does not initialize the client renderer |
+| `TileMultipart.getOrConvertTile2(): scala.Tuple2<TileMultipart, Object>` and companion entry | `getOrConvertTileResult(World, BlockCoord): TileConversionResult` with `getTile()` / `isConverted()` | Implemented over the retained tuple path; [guide and compiling example](../api/TILE_CONVERSION.md) distinguish existing tiles, uninstalled placeholders and failed conversion. No audited direct tuple caller |
 
 Explicitly **not** renamed: `TMultiPart.world()`, `x()`, `y()`, `z()`, and `tile()`. These carry Scala accessor naming
 but no Scala type, so renaming is cosmetic churn across 27 consumers with no compatibility or performance payoff.
@@ -726,19 +726,19 @@ same-name overload there invites a silent wrong-overload bind.
   recursive forwarding as required by the API migration design.
 - [x] Add and document `materialCount()` with existing indexed lookups; retain and deprecate both `getIdMap()` entries.
 - [x] Document `jPartList()` and add `forEachPart(Consumer)`; deprecate the legacy getter/callback entries while retaining
-  their override dispatch. JVM and generated-tile Forge cases cover the [documented contract](docs/api/PART_TRAVERSAL.md).
+  their override dispatch. JVM and generated-tile Forge cases cover the [documented contract](../api/PART_TRAVERSAL.md).
 - [x] Add Java loading and storage assignment, with legacy override/reflection coverage, explicit ownership and
-  lifecycle contracts, and generated server/client tile checks; [guide](docs/api/PART_LOADING.md), [API index](docs/API.md).
+  lifecycle contracts, and generated server/client tile checks; [guide](../api/PART_LOADING.md), [API index](../API.md).
 - [x] Add `testOcclusion(Collection, candidate)` with snapshot ownership, subtype inputs, legacy hook dispatch and
-  generated partial-occlusion coverage; [guide and compiling example](docs/api/OCCLUSION.md).
+  generated partial-occlusion coverage; [guide and compiling example](../api/OCCLUSION.md).
 - [x] Add direct `testBoxes(Iterable, Iterable)` with eager input snapshots, ordered intersection callbacks and retained
-  static/companion bridges; [migration guide](docs/api/OCCLUSION.md#box-versus-box-queries).
+  static/companion bridges; [migration guide](../api/OCCLUSION.md#box-versus-box-queries).
 - [x] Add `registerPartFactory(IPartFactory2, String...)`, deprecate the remaining Scala sequence entries, and document
   initialization/factory/payload contracts with a compiling example and real Forge initialization coverage.
 - [x] Add Java render-ID accessors with shared global-state/sentinel checks, retained static/companion entries and
-  explicit client initialization versus assignment semantics; [guide](docs/api/RENDER_ID.md).
+  explicit client initialization versus assignment semantics; [guide](../api/RENDER_ID.md).
 - [x] Add the named tile conversion result, preserving both tuple descriptors and documenting placeholder versus
-  installed-tile lifecycle; [guide](docs/api/TILE_CONVERSION.md). All ten table entries now have replacements.
+  installed-tile lifecycle; [guide](../api/TILE_CONVERSION.md). All ten table entries now have replacements.
 - [x] For these table siblings, compile external Java examples with Scala excluded from the compile classpath before
   finalizing names. The proposed `loadParts(Collection)` overload required `scala.collection.Iterable` during javac
   overload resolution; the implemented `loadPartList(Collection)` avoids that dependency. Apply this gate to the
@@ -747,17 +747,17 @@ same-name overload there invites a silent wrong-overload bind.
 - [x] Mark the legacy table entries above `@Deprecated` with javadoc naming a working replacement.
 - [x] Confirm every original descriptor still exists in the ABI fixture after these table changes.
 - [x] Document converter registration, candidate ownership and committed lifecycle with a compiling Java example
-  and registry/Forge characterization; [guide](docs/api/BLOCK_CONVERTERS.md).
+  and registry/Forge characterization; [guide](../api/BLOCK_CONVERTERS.md).
 - [x] Characterize raw Java tile-trait linkage failures and document stable interface/base access with a compiling
-  example; [guide](docs/api/TILE_TRAIT_ACCESS.md).
+  example; [guide](../api/TILE_TRAIT_ACCESS.md).
 - [x] Add a supported `refreshPartSlots` operation for OpenComputers' live slot-array mutation, preserving equality,
-  virtual bind dispatch, storage/ownership and caller-controlled notification behavior; [guide](docs/api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask).
+  virtual bind dispatch, storage/ownership and caller-controlled notification behavior; [guide](../api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask).
 - [x] Document custom Java tile-trait authoring with a compiling marker/trait/capability example, registration and
-  state/lifecycle contracts, and generated server/client Forge coverage; [guide](docs/api/CUSTOM_TILE_TRAITS.md).
+  state/lifecycle contracts, and generated server/client Forge coverage; [guide](../api/CUSTOM_TILE_TRAITS.md).
 - [ ] Document the supported API with compiling usage examples and an old-to-new migration guide. Validate Java
   subclasses and generated extensions on the actual Forge path, including both sides where relevant.
 
-#### 9.2 — Mark the internal boundary
+#### 9.2 - Mark the internal boundary
 
 Scala's `private[multipart]` compiles to public. As a result the published surface currently advertises implementation
 hooks as though they were API, and a consumer author cannot distinguish `addPart` from `addPart_do`. This is a more
@@ -767,7 +767,7 @@ deprecation, and no new dependency for a marker annotation.
 Completed with a fresh 2026-09-05 consumer audit covering 28 source checkouts and active Extra Utilities compatibility:
 **no external calls to these FMP members were found**. The installed `+719` binary scan retains the same baseline.
 Javadocs on the declarations below and the five matching material-registry companion bridges mark them internal;
-see the [API boundary guide](docs/API.md#supported-api-and-internal-hooks).
+see the [API boundary guide](../API.md#supported-api-and-internal-hooks).
 
 `TileMultipart.addPart_impl`, `addPart_do`, `remPart_impl`, `writeAddPart`, `partAdded`, `partRemoved`, `from`,
 `copyFrom`, `loadFrom`, `setValid`; `MicroMaterialRegistry.setupIDMap`,
@@ -802,7 +802,7 @@ Exit condition: every Scala-typed public entry has a documented Java-shaped repl
 it, supported extension paths have buildable examples and Forge coverage, implementation-hook members are documented
 as internal, and the retained ABI fixture is unchanged.
 
-### Phase 10 — Upstream consumer cleanup
+### Phase 10 - Upstream consumer cleanup
 
 Status: **planned, required for final Scala removal.** Individual migrations can start as soon as their supported
 Java replacements exist. They need not wait for all internal source conversion; their release and pack adoption
@@ -833,8 +833,8 @@ does not close a row, and scans must distinguish a consumer's own Scala code fro
 | Consumer | What FMP is currently forced to preserve | Upstream fix | Can start |
 | --- | --- | --- | --- |
 | ProjectRed | Runtime Scala-signature decoding and external trait registration, reached through `MicroblockGenerator.registerTrait(classOf[LightMicroblock])` | Rewrite the ~60-line `LightMicroblock` trait as a Java mixin registered through the `registerJavaTrait` path | FMP compiler prerequisites complete; consumer rewrite and release remain |
-| Schematica | Private Scala-mangled field `codechicken$multipart$MultiPartRegistry$$typeMap`, cast to `scala.collection.mutable.Map` | `MultiPartRegistry.getPartFactory(String)` is implemented; [guide and example](docs/api/FACTORY_LOOKUP.md). Schematica replaces map/Option lookup with the public method and retains its microblock creation/rejection policy | FMP lookup ready; consumer patch/release/adoption pending |
-| GuideNH | Companion `MultipartGenerator$.MODULE$.generateCompositeTile` and `MicroblockGenerator$.create`; `partList_$eq(scala.collection.Seq)`; mixin into private `BlockMicroMaterial.block` and `.meta` | Direct Java tile generation/loading, microblock creation and existing `block()` / `meta()` access are documented/tested; [typed material query](docs/api/MATERIAL_ACCESS.md). Remove reflection/accessor mixins when migrating | These FMP paths ready; broader consumer migration/release/adoption pending |
+| Schematica | Private Scala-mangled field `codechicken$multipart$MultiPartRegistry$$typeMap`, cast to `scala.collection.mutable.Map` | `MultiPartRegistry.getPartFactory(String)` is implemented; [guide and example](../api/FACTORY_LOOKUP.md). Schematica replaces map/Option lookup with the public method and retains its microblock creation/rejection policy | FMP lookup ready; consumer patch/release/adoption pending |
+| GuideNH | Companion `MultipartGenerator$.MODULE$.generateCompositeTile` and `MicroblockGenerator$.create`; `partList_$eq(scala.collection.Seq)`; mixin into private `BlockMicroMaterial.block` and `.meta` | Direct Java tile generation/loading, microblock creation and existing `block()` / `meta()` access are documented/tested; [typed material query](../api/MATERIAL_ACCESS.md). Remove reflection/accessor mixins when migrating | These FMP paths ready; broader consumer migration/release/adoption pending |
 | Et Futurum Requiem | Mutable static `int[] ButtonPart.metaSideMap` and `sideMetaMap` must stay public and mutable | `ButtonPart.setOrientation(int, ForgeDirection)` is implemented and documented; Et Futurum adopts it | FMP API ready; consumer patch/release/adoption pending |
 | IguanaTweaksTConstruct | Private `ItemSaw.harvestLevel` field name and type | `ItemSaw.setHarvestLevel(int)` is implemented and documented; Iguana uses it before ForgeMicroblock post-init | FMP API ready; consumer lifecycle/source patch, release and adoption pending |
 | Galacticraft | Selects the first public method named `registerMaterial` without checking its signature, so FMP cannot add any overload of that name | Call `registerMaterial` directly from gated compatibility code; exact-signature reflection is an interim hardening option | Existing public API; consumer migration can start |
@@ -848,12 +848,12 @@ ProjectRed's `LightMicroblock` is the audited external constraint on retiring ru
 Its Java rewrite removes that external dependency only after the updated consumer is released into the pack;
 decoder removal also requires retiring internal Scala trait inputs and resolving retained model bridges.
 The rewrite has two Phase 7 prerequisites:
-1. **Abstract Java mixins over an abstract base — complete.** `registerJavaTrait` now admits `ACC_ABSTRACT` classes,
+1. **Abstract Java mixins over an abstract base - complete.** `registerJavaTrait` now admits `ACC_ABSTRACT` classes,
    retains declared abstract members on the generated interface, and omits them from the static helper and concrete
    method metadata until a later mixin supplies an implementation. A no-argument mixin constructor may call an
    argument-taking base constructor; that direct call is discarded because the generated composite invokes the real
    base constructor before trait initialization.
-2. **`@SideOnly` stripping on the Java path — complete.** `registerJavaTrait` checks both visible and invisible
+2. **`@SideOnly` stripping on the Java path - complete.** `registerJavaTrait` checks both visible and invisible
    annotations before collecting fields, signatures or methods. Opposite-side members are omitted; an excluded
    no-argument constructor produces an empty `$init$` so generated composites remain valid without executing its
    body, including when Forge stripped it before registration. Current-side members retain their generated behavior.
@@ -878,7 +878,7 @@ placeholder, rather than lost material data. Extra Utilities writes `mat` as wel
 UtilitiesInExcess's `extrautils:*` aliases; there is no legacy-conversion risk in the fix.
 
 - [x] Land the two Phase 7 Java-mixin prerequisites with generated Java-trait fixtures.
-- [x] Provide the [Java illuminated microblock example](docs/api/MICROBLOCK_EXTENSIONS.md), including real Forge
+- [x] Provide the [Java illuminated microblock example](../api/MICROBLOCK_EXTENSIONS.md), including real Forge
   registration, all shape families, material/persistence/light contracts, server stripping and a headless retained
   client-body probe. The three example sources compile without Scala. Physical-client rendering remains a release gate.
 - [ ] Land the ProjectRed `LightMicroblock` Java rewrite with a fixture proving equivalent generated microblocks on
@@ -886,21 +886,21 @@ UtilitiesInExcess's `extrautils:*` aliases; there is no legacy-conversion risk i
 - [ ] Migrate Galacticraft to direct registration in gated compatibility code; exact-signature reflection is an interim option.
 - [ ] Fix the UtilitiesInExcess `mat`/`material` key mismatch and its `getIdMap()` use before it enters the pack.
 - [x] Add supported button-orientation mapping for Et Futurum as additive API, preserving the legacy arrays;
-  [guide and example](docs/api/BUTTON_ORIENTATIONS.md). Consumer migration/release/adoption remain pending.
+  [guide and example](../api/BUTTON_ORIENTATIONS.md). Consumer migration/release/adoption remain pending.
 - [x] Add the supported harvest-level setter needed by Iguana, preserving the legacy field name/type;
-  [guide and example](docs/api/SAW_STRENGTH.md). Iguana must finish changes before ForgeMicroblock post-init so its
+  [guide and example](../api/SAW_STRENGTH.md). Iguana must finish changes before ForgeMicroblock post-init so its
   cached maximum sees the final saw tiers. Consumer migration/release/adoption remain pending.
 - [x] Provide Schematica's registered-factory lookup without exposing the mutable map: `getPartFactory(String)`,
   with identity/missing-name checks, exact public reflection, a compiling example and the retained private field.
   This does not complete Schematica's consumer migration.
 - [x] Provide static Java client/server composite generation for Schematica and GuideNH, preserving exact reuse,
-  staged loading, input traversal/failure behavior and the old companion reflection path; [guide](docs/api/COMPOSITE_GENERATION.md).
+  staged loading, input traversal/failure behavior and the old companion reflection path; [guide](../api/COMPOSITE_GENERATION.md).
   Both consumers' release/adoption remain pending.
 - [x] Document and validate the existing Java microblock creation entry for GuideNH, including exact companion/static
   reflection, material trait callbacks, fresh-part/shape ownership and a compiling example. Keep physical-client
-  validation and public-setter versus private-field override behavior explicit; [guide](docs/api/MICROBLOCK_CREATION.md).
+  validation and public-setter versus private-field override behavior explicit; [guide](../api/MICROBLOCK_CREATION.md).
 - [x] Document and validate GuideNH's direct typed material query through existing `block()` / `meta()` accessors;
-  [guide](docs/api/MATERIAL_ACCESS.md). Consumer adoption and physical-client validation of the Java extension example remain open.
+  [guide](../api/MATERIAL_ACCESS.md). Consumer adoption and physical-client validation of the Java extension example remain open.
 - [ ] Patch those four consumers and record the released versions that no longer need the private shapes.
 - [ ] Track all legacy FMP dependencies in the adoption ledger, including trait helper/companion calls and reflection
   outside the cleanup table; verify the released jars actually selected for the target pack.
@@ -933,7 +933,7 @@ The repository uses Java-8-compatible JUnit Jupiter and the existing Forge integ
 are in the handoff. Minecraft 1.7.10 has no modern GameTest framework, so initialization-dependent tests use this
 Forge harness. The dedicated server is headless and does not establish client rendering correctness.
 
-### Layer 1 — Plain JVM characterization tests
+### Layer 1 - Plain JVM characterization tests
 
 Run fast tests through the normal Gradle `test` task, using real implementation classes and small fakes only at world, network, or rendering boundaries. Good targets include:
 
@@ -947,7 +947,7 @@ Run fast tests through the normal Gradle `test` task, using real implementation 
 
 Finite input spaces such as sides, slot masks, and small recipe grids should be covered exhaustively. Larger combinations should use named regression cases plus deterministic property/fuzz tests with a recorded seed. Avoid tests that merely restate the implementation or assert interactions with a large graph of mocks.
 
-### Layer 2 — Golden compatibility fixtures
+### Layer 2 - Golden compatibility fixtures
 
 Store compact fixtures under test resources when behavior has a stable serialized or structural representation:
 
@@ -960,7 +960,7 @@ Store compact fixtures under test resources when behavior has a stable serialize
 
 Golden fixtures must be reviewed rather than regenerated automatically when they fail. Otherwise an accidental change can silently redefine the baseline.
 
-### Layer 3 — Real Forge integration tests
+### Layer 3 - Real Forge integration tests
 
 Use a dedicated test mod/source set launched in an actual Forge environment for behavior coupled to FML, the classloader, worlds, or networking. The harness should fail the Gradle task or process when an assertion fails. It should cover:
 
@@ -973,7 +973,7 @@ Use a dedicated test mod/source set launched in an actual Forge environment for 
 
 Keep this harness narrow: a tiny test mod and deterministic scenarios are preferable to a general automation framework. Run server cases routinely; reserve the slower client cases for changes that touch rendering, client packets, or side-specific initialization.
 
-### Layer 4 — Irreducible manual and performance checks
+### Layer 4 - Irreducible manual and performance checks
 
 Some behavior remains poorly captured by assertions in a legacy client. Retain focused manual checks for visual correctness, selection boxes, particles, input interaction, resource reload, and third-party rendering compatibility. Screenshot comparisons can help, but GPU and renderer differences make them unsuitable as the only oracle.
 
@@ -1023,6 +1023,6 @@ Scala removal is gated by the compatibility evidence above, rather than by a rem
 
 ## Findings log
 
-The dated evidence log is archived in [docs/migration/HISTORY.md](docs/migration/HISTORY.md), including reference
+The dated evidence log is archived in [the history](HISTORY.md), including reference
 revisions, test results, ABI comparisons and resolved regressions. Add future per-target findings there.
-The [working handoff](JAVA_MIGRATION_HANDOFF.md) carries the current baseline and next target.
+The [working handoff](HANDOFF.md) carries the current baseline and next target.

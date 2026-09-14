@@ -91,4 +91,4 @@ method; the archived run excludes only its obsolete pre-addition inventory asser
 and all archived Forge cases run against the addition, with an independent class/member/body comparison.
 
 Generating a client tile in the Forge server harness does not prove physical-client microblock creation or GPU output.
-Schematica and GuideNH preview rendering remain [manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+Schematica and GuideNH preview rendering remain [manual release checks](../migration/MANUAL_CHECKS.md).

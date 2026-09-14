@@ -37,4 +37,4 @@ supplied consumer sources or the frozen downstream member inventory; consumer ch
 JVM tests cover the initial sentinel, both legacy setters, Java accessors, signed integer boundaries and multiple
 block instances reading the global value. Forge verifies the server sentinel and shared block state without loading
 the client renderer. Frozen callers, class APIs and generated output are checked separately. Actual client allocation,
-handler registration and GPU rendering remain [manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+handler registration and GPU rendering remain [manual release checks](../migration/MANUAL_CHECKS.md).

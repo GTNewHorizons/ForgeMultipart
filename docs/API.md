@@ -32,28 +32,28 @@ Existing reflective binaries remain supported until consumer release and pack ad
 
 | Task | API and guide |
 | --- | --- |
-| Define, place, persist, synchronize and remove a custom part | `TMultiPart`, `canPlacePart`, `addPart`, `remPart` — [end-to-end custom-part lifecycle](api/CUSTOM_PARTS.md) |
-| Register block converters | `registerConverter(IPartConverter)` — [registration, state ownership and committed lifecycle](api/BLOCK_CONVERTERS.md) |
-| Register part factories during mod initialization | `registerPartFactory(IPartFactory2, String...)` — [factory timing, payload ownership and migration](api/PART_REGISTRATION.md) |
-| Find the factory registered for a part type | `getPartFactory(String)` — [lookup ownership and Schematica reflection migration](api/FACTORY_LOOKUP.md) |
-| Enumerate microblock materials by numeric ID | `materialCount()`, `materialName(int)`, `getMaterial(int)` — [material enumeration](api/MATERIAL_ENUMERATION.md) |
-| Read a microblock material's block and metadata | `BlockMicroMaterial.block()`, `meta()` — [typed GuideNH query, identity and overrides](api/MATERIAL_ACCESS.md) |
-| Create a microblock with the requested material and side | `MicroblockGenerator.create(MicroblockClass, int, boolean)` — [construction, material traits and GuideNH migration](api/MICROBLOCK_CREATION.md) |
-| Call generated tile capabilities from Java | `TileMultipart`, `IRedstoneTile` and ordinary interfaces — [safe compilation and raw-trait pitfalls](api/TILE_TRAIT_ACCESS.md) |
-| Add aggregate or lifecycle behavior to generated multipart tiles | `registerTrait(marker, trait)` — [custom Java tile traits, stable capabilities and transformer constraints](api/CUSTOM_TILE_TRAITS.md) |
-| Refresh slots after a stored part changes shape | `refreshPartSlots(TMultiPart)` — [ownership, equality and notification responsibilities](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) |
-| Add material-specific behavior to generated microblocks | `registerTrait(String)` and `IGeneratedMaterial` — [illuminated Java extension, compilation and side contracts](api/MICROBLOCK_EXTENSIONS.md) |
-| Change an existing FMP saw's cutting strength | `ItemSaw.setHarvestLevel(int)` — [state, lifecycle and Iguana migration](api/SAW_STRENGTH.md) |
-| Read/index/search a tile's parts | `jPartList()` — [part collection ownership and order](api/PART_TRAVERSAL.md#collection-ownership-and-ordering) |
-| Run callbacks only on parts still owned by the tile | `forEachPart(Consumer)` — [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
-| Rebuild parts on an already prepared composite tile | `loadPartList(Collection)` — [part loading](api/PART_LOADING.md) |
-| Select client/server tile capabilities before preparing state and loading | `MultipartGenerator.generateCompositeTile(TileEntity, Iterable, boolean)` — [staged generation and reflection migration](api/COMPOSITE_GENERATION.md) |
-| Assign stored parts during reconstruction, without binding or notifications | `setPartList(List)` — [storage assignment](api/PART_LOADING.md#storage-assignment) |
-| Test a candidate against a selected collection of parts | `testOcclusion(Collection, candidate)` — [occlusion queries and generated hooks](api/OCCLUSION.md) |
-| Test two groups of bounding boxes directly | `NormalOcclusionTest.testBoxes(Iterable, Iterable)` — [box-versus-box queries](api/OCCLUSION.md#box-versus-box-queries) |
-| Read FMP's global render registration ID | `TileMultipart.getRenderID()` — [render-ID meaning, lifecycle and setter](api/RENDER_ID.md) |
-| Inspect an existing tile or converted placeholder with a named result | `getOrConvertTileResult(World, BlockCoord)` — [conversion outcomes and placement lifecycle](api/TILE_CONVERSION.md) |
-| Add or remap multipart button attachment orientations | `ButtonPart.setOrientation(int, ForgeDirection)` — [metadata, face mapping and Et Futurum migration](api/BUTTON_ORIENTATIONS.md) |
+| Define, place, persist, synchronize and remove a custom part | `TMultiPart`, `canPlacePart`, `addPart`, `remPart` - [end-to-end custom-part lifecycle](api/CUSTOM_PARTS.md) |
+| Register block converters | `registerConverter(IPartConverter)` - [registration, state ownership and committed lifecycle](api/BLOCK_CONVERTERS.md) |
+| Register part factories during mod initialization | `registerPartFactory(IPartFactory2, String...)` - [factory timing, payload ownership and migration](api/PART_REGISTRATION.md) |
+| Find the factory registered for a part type | `getPartFactory(String)` - [lookup ownership and Schematica reflection migration](api/FACTORY_LOOKUP.md) |
+| Enumerate microblock materials by numeric ID | `materialCount()`, `materialName(int)`, `getMaterial(int)` - [material enumeration](api/MATERIAL_ENUMERATION.md) |
+| Read a microblock material's block and metadata | `BlockMicroMaterial.block()`, `meta()` - [typed GuideNH query, identity and overrides](api/MATERIAL_ACCESS.md) |
+| Create a microblock with the requested material and side | `MicroblockGenerator.create(MicroblockClass, int, boolean)` - [construction, material traits and GuideNH migration](api/MICROBLOCK_CREATION.md) |
+| Call generated tile capabilities from Java | `TileMultipart`, `IRedstoneTile` and ordinary interfaces - [safe compilation and raw-trait pitfalls](api/TILE_TRAIT_ACCESS.md) |
+| Add aggregate or lifecycle behavior to generated multipart tiles | `registerTrait(marker, trait)` - [custom Java tile traits, stable capabilities and transformer constraints](api/CUSTOM_TILE_TRAITS.md) |
+| Refresh slots after a stored part changes shape | `refreshPartSlots(TMultiPart)` - [ownership, equality and notification responsibilities](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) |
+| Add material-specific behavior to generated microblocks | `registerTrait(String)` and `IGeneratedMaterial` - [illuminated Java extension, compilation and side contracts](api/MICROBLOCK_EXTENSIONS.md) |
+| Change an existing FMP saw's cutting strength | `ItemSaw.setHarvestLevel(int)` - [state, lifecycle and Iguana migration](api/SAW_STRENGTH.md) |
+| Read/index/search a tile's parts | `jPartList()` - [part collection ownership and order](api/PART_TRAVERSAL.md#collection-ownership-and-ordering) |
+| Run callbacks only on parts still owned by the tile | `forEachPart(Consumer)` - [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
+| Rebuild parts on an already prepared composite tile | `loadPartList(Collection)` - [part loading](api/PART_LOADING.md) |
+| Select client/server tile capabilities before preparing state and loading | `MultipartGenerator.generateCompositeTile(TileEntity, Iterable, boolean)` - [staged generation and reflection migration](api/COMPOSITE_GENERATION.md) |
+| Assign stored parts during reconstruction, without binding or notifications | `setPartList(List)` - [storage assignment](api/PART_LOADING.md#storage-assignment) |
+| Test a candidate against a selected collection of parts | `testOcclusion(Collection, candidate)` - [occlusion queries and generated hooks](api/OCCLUSION.md) |
+| Test two groups of bounding boxes directly | `NormalOcclusionTest.testBoxes(Iterable, Iterable)` - [box-versus-box queries](api/OCCLUSION.md#box-versus-box-queries) |
+| Read FMP's global render registration ID | `TileMultipart.getRenderID()` - [render-ID meaning, lifecycle and setter](api/RENDER_ID.md) |
+| Inspect an existing tile or converted placeholder with a named result | `getOrConvertTileResult(World, BlockCoord)` - [conversion outcomes and placement lifecycle](api/TILE_CONVERSION.md) |
+| Add or remap multipart button attachment orientations | `ButtonPart.setOrientation(int, ForgeDirection)` - [metadata, face mapping and Et Futurum migration](api/BUTTON_ORIENTATIONS.md) |
 
 Each guide explains ownership, lifecycle, legacy replacements and limitations, and links to a compiling Java example
 exercised by the test suite. The loading/setter APIs are advanced reconstruction operations; ordinary placement and
@@ -114,7 +114,7 @@ Three advanced methods remain supported because consumers use them directly:
 
 No reflection is needed to call any of these methods. `operate` and `getOrConvertTile2` retain their documented legacy
 contracts and Java replacements; neither receives an internal-only marker. Removing those bridges still requires
-consumer and internal migration gates. The [consumer audit](../JAVA_MIGRATION_COMPATIBILITY.md#api-boundary-audit)
+consumer and internal migration gates. The [consumer audit](migration/COMPATIBILITY.md#api-boundary-audit)
 records the checked source calls and validation.
 
 ## Compatibility and remaining work
@@ -141,8 +141,8 @@ Scala dependency requires those gates and removal of FMP's remaining internal Sc
 
 | Need | Document |
 | --- | --- |
-| What is complete and what comes next? | [Working handoff](../JAVA_MIGRATION_HANDOFF.md), [migration plan](../JAVA_MIGRATION.md) |
-| Which consumers need changes, releases and pack adoption? | [Consumer adoption ledger](../JAVA_MIGRATION_COMPATIBILITY.md#java-api-adoption-ledger) |
-| Which binary names, reflective lookups and runtime contracts must survive? | [ABI inventory and consumer audit](../JAVA_MIGRATION_COMPATIBILITY.md) |
-| What has been tested and what still needs a client/pack run? | [Migration history](migration/HISTORY.md), [manual release checks](../JAVA_MIGRATION_MANUAL_CHECKS.md) |
-| Why is some Scala or older Java syntax retained? | [Modern Java policy](../JAVA_MIGRATION.md#modern-java-readability-policy), [compiler/toolchain handoff](../JAVA_MIGRATION.md#modern-java-readability-policy) |
+| What is complete and what comes next? | [Working handoff](migration/HANDOFF.md), [migration plan](migration/README.md) |
+| Which consumers need changes, releases and pack adoption? | [Consumer adoption ledger](migration/COMPATIBILITY.md#java-api-adoption-ledger) |
+| Which binary names, reflective lookups and runtime contracts must survive? | [ABI inventory and consumer audit](migration/COMPATIBILITY.md) |
+| What has been tested and what still needs a client/pack run? | [Migration history](migration/HISTORY.md), [manual release checks](migration/MANUAL_CHECKS.md) |
+| Why is some Scala or older Java syntax retained? | [Modern Java policy](migration/README.md#modern-java-readability-policy), [compiler/toolchain handoff](migration/README.md#modern-java-readability-policy) |

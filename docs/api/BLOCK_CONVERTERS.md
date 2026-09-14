@@ -81,4 +81,4 @@ selection, first acceptance, captured lists, duplicates and exception propagatio
 probes, original-tile ownership, callback order, repeated conversion, initialized example registration, NBT/packet
 state and normal installation. The example compiles as Java 8 without Scala on its compile classpath. FMP still uses
 Scala internally. Physical-client construction/rendering and real consumer inventory/network conversion remain
-[manual integration checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md); the example does not establish consumer adoption.
+[manual integration checks](../migration/MANUAL_CHECKS.md); the example does not establish consumer adoption.

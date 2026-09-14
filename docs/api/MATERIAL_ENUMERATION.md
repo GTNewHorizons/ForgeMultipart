@@ -62,7 +62,7 @@ Extra Utilities' NEI handlers use both tuple fields; both indexed replacements a
 
 The static and companion `getIdMap()` methods are deprecated, with their original descriptors and live-array
 behavior retained. This change does not authorize removal of either method. The
-[consumer adoption ledger](../../JAVA_MIGRATION_COMPATIBILITY.md#java-api-adoption-ledger) records the migrations and
+[consumer adoption ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records the migrations and
 released pack versions still needed.
 
 ## Validation

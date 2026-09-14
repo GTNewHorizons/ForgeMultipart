@@ -8,7 +8,7 @@ rather than regenerated automatically, otherwise an accidental change silently r
 `gtnh-daily-678-consumers.txt` is the constant-pool scan of every mod jar in GTNH daily `2026-08-14+678`, listing
 every downstream reference into `codechicken/multipart` and `codechicken/microblock`. Regenerate with
 `tools/AbiScan.java` and diff against this file at every public-API phase; a member present here but absent from the
-port is a linkage break in a shipping mod. See `JAVA_MIGRATION_COMPATIBILITY.md` for the analysis.
+port is a linkage break in a shipping mod. See `docs/migration/COMPATIBILITY.md` for the analysis.
 
 ## Precompiled binary consumers
 
@@ -18,7 +18,7 @@ hide exactly the linkage failure the fixture exists to catch.
 
 `ReferenceScalaPartialOcclusion` was removed together with the `JPartialOcclusion$class` bridge once the inventory
 showed no downstream consumer of that helper. The trait helpers that do need this treatment are listed in
-`JAVA_MIGRATION_COMPATIBILITY.md`.
+`docs/migration/COMPATIBILITY.md`.
 
 ### `ReferenceScalaCuboidPart`
 

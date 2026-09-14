@@ -50,4 +50,4 @@ Et Futurum migration, target-pack adoption and a fresh consumer scan.
 Forge characterization first freezes the old Et Futurum mutation and verifies exact metadata and placement on all six
 faces. API tests verify the two direct calls produce the same arrays, displaced pairs remain one-to-one, invalid input
 is atomic, and the example compiles. A physical client with Et Futurum must still complete the
-[all-face button check](../../JAVA_MIGRATION_MANUAL_CHECKS.md) before release.
+[all-face button check](../migration/MANUAL_CHECKS.md) before release.

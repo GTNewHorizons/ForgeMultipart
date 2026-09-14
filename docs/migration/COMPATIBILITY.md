@@ -9,8 +9,8 @@ questions.
   have linked?" It covers all 27 ForgeMultipart consumers in the supplied GTNH daily `2026-08-25+700` instance, plus
   UtilitiesInExcess as the planned Extra Utilities replacement.
 
-Intentional differences from the reference belong in the [divergence ledger](JAVA_MIGRATION_DIVERGENCES.md), and the
-consumer-facing summary of what breaks on rebuild is in the [release notes](docs/RELEASE_NOTES.md).
+Intentional differences from the reference belong in the [divergence ledger](DIVERGENCES.md), and the
+consumer-facing summary of what breaks on rebuild is in the [release notes](../RELEASE_NOTES.md).
 
 # Part 1 - Downstream ABI inventory
 
@@ -115,7 +115,7 @@ Everything in this section must keep its exact descriptor, or a named consumer f
 | `TEdgePart$class` | `$init$` | OpenComputers |
 
 The `JPartialOcclusion$class` bridge already added on this branch follows the right pattern, but note that
-`JPartialOcclusion$class` itself has **no** downstream caller in the pack — the two consumers that touch
+`JPartialOcclusion$class` itself has **no** downstream caller in the pack - the two consumers that touch
 `JPartialOcclusion` (ForgeRelocationFMP, WitchingGadgets) only call `getPartialOcclusionBoxes()Ljava/lang/Iterable;`.
 The eight helpers above are the ones that actually matter.
 
@@ -145,12 +145,12 @@ so the Java-first collection API mostly exists already and the Scala overloads a
 The branch now supplies `NormalOcclusionTest.testBoxes(java.lang.Iterable, java.lang.Iterable)` for the box-list
 contract. Both old `apply(Traversable, Traversable)` entries remain, with deprecations pointing to the Java entry.
 The shipping ForgeRelocationFMP/OpenComputers companion calls still require their exact descriptor until adoption;
-see the [migration guide](docs/api/OCCLUSION.md#box-versus-box-queries) and consumer ledger.
+see the [migration guide](../api/OCCLUSION.md#box-versus-box-queries) and consumer ledger.
 
 `MultiPartRegistry.registerPartFactory(IPartFactory2, String...)` now provides the Java registration entry without
 Scala overload resolution. Both `registerParts(IPartFactory2, Seq)` entries are deprecated; all eight existing
 registration descriptors remain. ProjectRed's sequence and ForgeRelocationFMP's function companion calls still need
-their bridges until release/adoption. See the [registration guide](docs/api/PART_REGISTRATION.md).
+their bridges until release/adoption. See the [registration guide](../api/PART_REGISTRATION.md).
 
 `IDWriter`, ported on this branch, has **zero** downstream references. Its four deprecated Scala function accessors
 are not load-bearing and can be dropped.
@@ -159,30 +159,30 @@ are not load-bearing and can be dropped.
 
 These fail at runtime, not at link time, so ABI tooling will not catch a break. 20 string constants across:
 
-- `guidenh-1.3.20` — the broadest reflective consumer: `MultipartGenerator`/`MultipartGenerator$`,
+- `guidenh-1.3.20` - the broadest reflective consumer: `MultipartGenerator`/`MultipartGenerator$`,
   `MultipartHelper`/`MultipartHelper$`, `MultipartRenderer`/`MultipartRenderer$`, `TileMultipart`,
   `TileMultipartClient`, `MicroblockClient`, `Microblock`, `MicroblockClass`, `MicroblockGenerator$`,
   `BlockMicroMaterial`/`BlockMicroMaterial$`, `MicroMaterialRegistry`/`MicroMaterialRegistry$`, `BlockMultipart`.
-- `Schematica-1.12.6-GTNH` — `TileMultipart`, `TMultiPart`, `MultiPartRegistry$`, `MultipartGenerator$`, `MicroblockClass`.
-- `Galacticraft-3.4.33-GTNH` — `TileMultipart`, `MicroMaterialRegistry`, `BlockMicroMaterial`.
-- `Waila-1.19.31` — `BlockMultipart`.
-- `AE2`, `ae2fc` — `TileMultipart`.
-- `etfuturum-2.6.52-GTNH` — `codechicken.multipart.minecraft.ButtonPart`.
+- `Schematica-1.12.6-GTNH` - `TileMultipart`, `TMultiPart`, `MultiPartRegistry$`, `MultipartGenerator$`, `MicroblockClass`.
+- `Galacticraft-3.4.33-GTNH` - `TileMultipart`, `MicroMaterialRegistry`, `BlockMicroMaterial`.
+- `Waila-1.19.31` - `BlockMultipart`.
+- `AE2`, `ae2fc` - `TileMultipart`.
+- `etfuturum-2.6.52-GTNH` - `codechicken.multipart.minecraft.ButtonPart`.
 
 Note that both the class and its `$` companion are named in several cases, so renaming or removing a companion
 object breaks these even where no bytecode reference exists.
 
 The branch now offers `MultiPartRegistry.getPartFactory(String): IPartFactory2` to replace Schematica's private
-registry-map reflection, with a [migration guide](docs/api/FACTORY_LOOKUP.md). Its old companion field retains the
+registry-map reflection, with a [migration guide](../api/FACTORY_LOOKUP.md). Its old companion field retains the
 exact private Scala mutable-map shape and live backing; the public addition does not authorize removing that field
 before consumer release/adoption. Generator reflection and preview lifecycle remain separate contracts.
 
 `ButtonPart.setOrientation(int, ForgeDirection): void` now replaces Et Futurum's four reflective array writes and
-keeps the two direction maps consistent; [guide](docs/api/BUTTON_ORIENTATIONS.md). The existing public mutable static
+keeps the two direction maps consistent; [guide](../api/BUTTON_ORIENTATIONS.md). The existing public mutable static
 `metaSideMap` and `sideMetaMap` fields retain their exact names, types and modifiers for old releases. Removing or
 narrowing them still waits for a migrated Et Futurum release, target-pack adoption and a fresh reflective-source scan.
 
-`ItemSaw.setHarvestLevel(int): void` now replaces Iguana's private-field write; [guide](docs/api/SAW_STRENGTH.md).
+`ItemSaw.setHarvestLevel(int): void` now replaces Iguana's private-field write; [guide](../api/SAW_STRENGTH.md).
 The existing private `harvestLevel: int` field remains for old releases and shares storage with the setter. It loses
 only `ACC_FINAL`, which makes the supported mutation explicit and keeps reflective writes working. Removal still
 waits for an Iguana release, target-pack adoption and a fresh scan.
@@ -233,7 +233,7 @@ Types used only for `isInstanceOf`: `BlockMultipart`, `TileMultipart`, `TileMult
    The branch now adds `MultipartGenerator.generateCompositeTile(TileEntity, java.lang.Iterable, boolean)` while
    retaining the exact companion Scala descriptor/body. GuideNH's old Scala sequence is not assignable to the new
    Java parameter, so its existing matcher still falls back to the companion. Both old and new reflective contracts
-   are tested; migration requires a Java parts collection. See the [guide](docs/api/COMPOSITE_GENERATION.md).
+   are tested; migration requires a Java parts collection. See the [guide](../api/COMPOSITE_GENERATION.md).
 
 2. **`MicroblockGenerator$.create` is matched by exact parameter types**, including `pts[0].getName()` string-compared
    against `"codechicken.microblock.MicroblockClass"`. That pins `create(MicroblockClass, int, boolean)` on the
@@ -241,7 +241,7 @@ Types used only for `isInstanceOf`: `BlockMultipart`, `TileMultipart`, `TileMult
    lookup even though every call site still links.
 
    The existing static `MicroblockGenerator.create(MicroblockClass, int, boolean)` now has a
-   [guide and compiling example](docs/api/MICROBLOCK_CREATION.md). Both exact reflective entries are tested; no API
+   [guide and compiling example](../api/MICROBLOCK_CREATION.md). Both exact reflective entries are tested; no API
    shape or production method body changes were needed. GuideNH must change its explicitly selected owner and receiver
    before it stops using the companion. Release/adoption, shape-setter override checks and client previews remain gates.
 
@@ -249,14 +249,14 @@ Types used only for `isInstanceOf`: `BlockMultipart`, `TileMultipart`, `TileMult
    `setPartList(java.util.List)` and `loadPartList(java.util.Collection)`, while retaining the exact legacy setter and
    loader descriptors and override dispatch. Dropping the old setter in favor of the Java method would still break
    guidenh invisibly. Exact and assignability-based reflective tests cover both legacy contracts. `resolvePartList` also falls back to a public *field*
-   named `partList`, which never existed — Scala emits the field private — so that path is dead in the reference too.
+   named `partList`, which never existed - Scala emits the field private - so that path is dead in the reference too.
 
 `MultipartHelper$` is retained on the strength of the fallback path alone: the static is found first today, so the
 companion is never reached in practice. That is a weaker justification than the two "companion only" entries above,
 but the cost of keeping a four-method forwarder is negligible against a silent break.
 
 GuideNH's private `BlockMicroMaterial.block: Block` and `meta: int` fields remain unchanged for its accessor mixin.
-Existing public virtual `block()` / `meta()` now have a [typed query guide](docs/api/MATERIAL_ACCESS.md) and regression
+Existing public virtual `block()` / `meta()` now have a [typed query guide](../api/MATERIAL_ACCESS.md) and regression
 coverage; no descriptor or method body changed. The mixin reads constructor fields whereas direct calls honor
 subclass overrides, as the old reflective fallback already did. Remove the consumer's mixin only when adopting the
 typed query; FMP field removal still waits for released-consumer adoption.
@@ -367,7 +367,7 @@ present. Only the plugin is one of the 27 FMP consumers.
 
 ## Consumer findings
 
-### ProjectRed — deepest current consumer
+### ProjectRed - deepest current consumer
 
 ProjectRed is not merely an optional integration. Wires, framed wires, bundled wires, gates, lamps, buttons, pipes,
 solar panels, and fabricated gates are FMP parts. Its 141 touching classes dominate the installed binary surface.
@@ -400,7 +400,7 @@ trait linearization, tile and microblock code generation, redstone tile traits, 
 and the micro-material system. A launch-only smoke test is inadequate; illuminated microblocks, gates, face/framed
 wires, and routed pipes need functional fixtures.
 
-### Extra Utilities 1.2.12 — active supported consumer
+### Extra Utilities 1.2.12 - active supported consumer
 
 Extra Utilities remains in the supported compatibility target. UtilitiesInExcess is its intended replacement;
 approval to switch that target and adoption of the replacement in the pack are still pending. Preserve the current
@@ -430,7 +430,7 @@ names and descriptors. Obfuscated Minecraft method names should not be treated a
 that Java wrappers still compose into the same generated tile. UtilitiesInExcess does not make this compatibility
 burden disappear until existing worlds and the old mod have been retired.
 
-### OpenComputers — generated slot state is part of the effective API
+### OpenComputers - generated slot state is part of the effective API
 
 OpenComputers converts its cable and 3D print blocks to parts and registers `oc` cable/print factories.
 
@@ -450,7 +450,7 @@ OpenComputers converts its cable and 3D print blocks to parts and registers `oc`
 including its public generated state. Test a print whose on/off shapes occupy different slots next to a cable and a
 face part.
 
-### ProjectBlue — Java parts built on Scala shim bases
+### ProjectBlue - Java parts built on Scala shim bases
 
 ProjectBlue defines tiny Scala bridge bases (`JFacePart`, `JCuboidFacePart`, `JCenterPart`) so most of its FMP code
 can be Java. Its active multipart is the bundled-redstone control panel.
@@ -624,10 +624,10 @@ The branch now provides `MultiPartRegistry.getPartFactory(String)` as the suppor
 It returns the exact registered factory or null without construction or missing-name logging. Schematica can reflect
 this public static method and continue invoking `MicroblockClass.create(client, materialId)` on the returned object;
 `loadPart` would incorrectly choose the server factory path for its client preview. The old private field remains.
-See the [guide](docs/api/FACTORY_LOOKUP.md) and the now-available [Java tile generator](docs/api/COMPOSITE_GENERATION.md);
+See the [guide](../api/FACTORY_LOOKUP.md) and the now-available [Java tile generator](../api/COMPOSITE_GENERATION.md);
 consumer patches and pack adoption remain pending.
 
-### UtilitiesInExcess — future replacement, already a substantial consumer
+### UtilitiesInExcess - future replacement, already a substantial consumer
 
 UtilitiesInExcess is not in the `+700` JAR scan but is in scope because it is intended to replace Extra Utilities.
 
@@ -767,14 +767,14 @@ behavior:
 This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
 Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
 tile occlusion and box queries, render-ID accessors and named tile conversion results are implemented on
-`algent/java`. The [API index](docs/API.md) links the guides and compiling Java examples. These additions are not yet
+`algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
 tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
 
 | Legacy contract | Consumer and inspected source | Supported replacement | Consumer migration/release | Target-pack adoption and removal gate |
 | --- | --- | --- | --- | --- |
-| `TRedstoneTile.openConnections(int)` | ProjectRed `e173952e96a4`: `transmission/redwires.scala` | Existing stable `IRedstoneTile.openConnections(int)` with the same mask/rotation logic; [guide](docs/api/TILE_TRAIT_ACCESS.md) | FMP source-access example and Forge coverage complete; consumer source patch/release pending | Retain the old runtime interface descriptor until adoption |
-| `TSlottedTile.v_partMap()` array mutation | OpenComputers `2c00f79be24b`: `PrintPart.toggleState` | `TileMultipart.refreshPartSlots(part)`; [equality, cache and notification contract](docs/api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) | FMP API/example complete; consumer source patch/release pending, preserving validation and following sound/notify/packet/schedule order | Keep the live array/accessor ABI until released pack adoption; do not replace it with reflection or a whole-tile reload |
-| External Scala `LightMicroblock` registered through `MicroblockGenerator.registerTrait` | ProjectRed `e173952e96a4`: `illumination/lightmicroblocks.scala` | Java source trait registered by name, `IGeneratedMaterial`, typed sibling traversal and halo helper; [example](docs/api/MICROBLOCK_EXTENSIONS.md) | FMP example tested; consumer rewrite/release, existing config/halo wiring and physical-client checks pending | Retain external Scala trait ingestion until released-consumer adoption and internal Scala-trait removal |
+| `TRedstoneTile.openConnections(int)` | ProjectRed `e173952e96a4`: `transmission/redwires.scala` | Existing stable `IRedstoneTile.openConnections(int)` with the same mask/rotation logic; [guide](../api/TILE_TRAIT_ACCESS.md) | FMP source-access example and Forge coverage complete; consumer source patch/release pending | Retain the old runtime interface descriptor until adoption |
+| `TSlottedTile.v_partMap()` array mutation | OpenComputers `2c00f79be24b`: `PrintPart.toggleState` | `TileMultipart.refreshPartSlots(part)`; [equality, cache and notification contract](../api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) | FMP API/example complete; consumer source patch/release pending, preserving validation and following sound/notify/packet/schedule order | Keep the live array/accessor ABI until released pack adoption; do not replace it with reflection or a whole-tile reload |
+| External Scala `LightMicroblock` registered through `MicroblockGenerator.registerTrait` | ProjectRed `e173952e96a4`: `illumination/lightmicroblocks.scala` | Java source trait registered by name, `IGeneratedMaterial`, typed sibling traversal and halo helper; [example](../api/MICROBLOCK_EXTENSIONS.md) | FMP example tested; consumer rewrite/release, existing config/halo wiring and physical-client checks pending | Retain external Scala trait ingestion until released-consumer adoption and internal Scala-trait removal |
 | `MultiPartRegistry$.registerParts(IPartFactory2, Seq)` and existing array calls | ProjectRed `e173952e96a4`: transmission, expansion and fabrication proxies | `MultiPartRegistry.registerPartFactory` with existing `IPartFactory2` methods and unchanged IDs | Source patch and release pending; Boolean-factory proxies separately need the two-method adapter described in the guide | No migrated pack version verified; retain all registration bridges and external trait support |
 | `MultiPartRegistry$.registerParts(Function2, Seq)` | ForgeRelocationFMP `49a810b8c63b`: proxy init registering `rfmp_frame` | `IPartFactory2` creating a fresh `FramePart` on both paths, registered through `registerPartFactory` | Source patch and release pending; preserve `rfmp_frame` and keep converter/pass-through registration | No migrated pack version verified; retain the function companion descriptor |
 | `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | UtilitiesInExcess `3e107a1fe9bc15fcb6a808242ffda1354dac7c3a`: `FMPRecipeLoader.run`, `UEMultipartItem.getSubItems` | `materialCount()` with `materialName(int)` and, when needed, `getMaterial(int)` | Source patch and first released version pending; checkout used as reference only | No migrated pack version verified; retain the bridge |
@@ -788,9 +788,9 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | Private `MultiPartRegistry$` Scala `typeMap` field and `Map.get` / `Option` | Schematica `3b03ee937953`: `nbt.ForgeMultipart.init` and `createPart` | Call public static `MultiPartRegistry.getPartFactory(partID)` directly; keep material lookup, `MicroblockClass.create(client, materialId)` and whole-preview rejection | Source patch/release pending; lookup and Java tile generation implemented | No migrated pack version verified; retain the exact private live Scala-map field |
 | `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` | Schematica `3b03ee937953` exact reflection; GuideNH `7d8fb44e77b9` static-first assignability matcher | Static `MultipartGenerator.generateCompositeTile(TileEntity, java.lang.Iterable, boolean)` with Java parts; retain subsequent state setup/loading | Source patches/releases pending; preserve client part construction, candidate-reuse branch and notification order | No migrated pack version verified; retain the companion and Scala descriptor |
 | `MicroblockGenerator$.create(MicroblockClass, int, boolean)` exact reflection and private shape copy | GuideNH `7d8fb44e77b9`: `getMicroblockGeneratorCreate`, `promoteMicroblockToClient` | Existing static `MicroblockGenerator.create` with the same parameter types/order; recreate family/material and restore encoded shape through public API | Source patch/release pending; guide/example tested on server, physical client and custom shape-setter overrides require adoption checks | No migrated pack version verified; retain companion singleton and exact descriptor |
-| Private `BlockMicroMaterial.block` / `meta` accessor mixin and reflective material query | GuideNH `7d8fb44e77b9`: `AccessorBlockMicroMaterial`, `resolvePrimaryMicroblockId` | Direct `jPartList()`, `Microblock.material()`, `getMaterial(int)`, `BlockMicroMaterial.block()` / `meta()`; [typed example](docs/api/MATERIAL_ACCESS.md) | Source patch/release pending; remove mixin, retain export filtering/failure policy, validate getter overrides and optional loading | No migrated pack version verified; retain private fields |
-| Reflective mutation of `ButtonPart.metaSideMap` / `sideMetaMap` | Et Futurum Requiem `78a5744dfd33`: `compat.CompatMisc.runModHooksInit` | Two direct `ButtonPart.setOrientation(int, ForgeDirection)` calls; [mapping and lifecycle guide](docs/api/BUTTON_ORIENTATIONS.md) | FMP API/example complete; consumer source patch and first released version pending | Retain both public mutable arrays until the migrated release is in the target pack and a fresh scan confirms no legacy access |
-| Reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `modcompat.fmp.IguanaFMPCompat.postInit` | Read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](docs/api/SAW_STRENGTH.md) | FMP API/example complete; consumer source/lifecycle patch and first released version pending | Retain the private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
+| Private `BlockMicroMaterial.block` / `meta` accessor mixin and reflective material query | GuideNH `7d8fb44e77b9`: `AccessorBlockMicroMaterial`, `resolvePrimaryMicroblockId` | Direct `jPartList()`, `Microblock.material()`, `getMaterial(int)`, `BlockMicroMaterial.block()` / `meta()`; [typed example](../api/MATERIAL_ACCESS.md) | Source patch/release pending; remove mixin, retain export filtering/failure policy, validate getter overrides and optional loading | No migrated pack version verified; retain private fields |
+| Reflective mutation of `ButtonPart.metaSideMap` / `sideMetaMap` | Et Futurum Requiem `78a5744dfd33`: `compat.CompatMisc.runModHooksInit` | Two direct `ButtonPart.setOrientation(int, ForgeDirection)` calls; [mapping and lifecycle guide](../api/BUTTON_ORIENTATIONS.md) | FMP API/example complete; consumer source patch and first released version pending | Retain both public mutable arrays until the migrated release is in the target pack and a fresh scan confirms no legacy access |
+| Reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `modcompat.fmp.IguanaFMPCompat.postInit` | Read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP API/example complete; consumer source/lifecycle patch and first released version pending | Retain the private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | OpenComputers `2c00f79be24b`: `common.block.Cable.canConnectFromSideFMP`, `server.network.Network.canConnectFromSideFMP` | `NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)`; `otherBounds` already comes from Java `getOcclusionBoxes()` | Source patch and release pending; retain side/color/face filtering | No migrated pack version verified; retain the companion and descriptor |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | ForgeRelocationFMP `49a810b8c63b`: `FramePart.occlusionTest` | `NormalOcclusionTest.testBoxes(boxes.asJava, getOcclusionBoxes)`; retain combined normal/partial/collision boxes and caller order | Source patch and release pending; preserve temporary face bounds and replacement protocol | No migrated pack version verified; retain the companion and descriptor |
 
@@ -839,7 +839,7 @@ server slot rebuilding/notifications and client storage/loading/render-cache que
 consumer release and pack adoption are still separate gates.
 
 Tile collection occlusion is implemented as `testOcclusion(Collection<? extends TMultiPart>, TMultiPart)`, documented
-in the [occlusion guide](docs/api/OCCLUSION.md). The supplied Java/Scala source search found no direct consumer calls or
+in the [occlusion guide](../api/OCCLUSION.md). The supplied Java/Scala source search found no direct consumer calls or
 overrides of the old two-argument tile `occlusionTest` and no `testOcclusion` name collisions. The frozen ABI floor
 likewise contains no direct reference to that tile descriptor. The legacy hook is nevertheless required by generated
 `TPartialOcclusionTile` behavior and by existing tile placement/replacement dispatch; it remains supported.
@@ -856,10 +856,10 @@ calls, touching tolerance and original input/callback exceptions. Both legacy en
 their descriptors or bodies. The Java example compiles with Scala excluded; the shared private copy helper only widens
 its generic input to accept box subclasses. The source check found the three box-list calls listed above and no
 `testBoxes` collision. The installed `+719` rescan retains all 386 member/type/reflection rows from `+678` across 27
-consumers. Evidence: `run/migration-box-occlusion-reference/`; [guide](docs/api/OCCLUSION.md#box-versus-box-queries).
+consumers. Evidence: `run/migration-box-occlusion-reference/`; [guide](../api/OCCLUSION.md#box-versus-box-queries).
 
 Factory registration is implemented as `registerPartFactory(IPartFactory2, String...)`, with a
-[guide and compiling example](docs/api/PART_REGISTRATION.md). A probe against the old Java overload family required
+[guide and compiling example](../api/PART_REGISTRATION.md). A probe against the old Java overload family required
 Scala `Seq`/`Function2` even for Java arrays and factories; the new name compiles without Scala. All eight legacy
 static/companion entries retain their bodies/descriptors. Both `IPartFactory2` sequence entries are deprecated, and
 the older Boolean/function adapter deprecations now identify the supported replacement.
@@ -872,7 +872,7 @@ across 27 consumers. Schematica's private registry-map dependency is separate an
 checkouts remain unchanged. Evidence: `run/migration-registration-reference/`.
 
 Render-ID access is implemented as `TileMultipart.getRenderID()` / `setRenderID(int)`, with a
-[lifecycle guide](docs/api/RENDER_ID.md). No direct use of the four old static/companion accessors or new-name collision
+[lifecycle guide](../api/RENDER_ID.md). No direct use of the four old static/companion accessors or new-name collision
 was found in FMP-related consumer source, and the frozen member inventory contains none of those descriptors.
 Internal block/renderer calls retain the old paths and share the same global value; all four legacy entries remain
 with deprecations. This addition does not replace GuideNH's renderer reflection or allocate/register a renderer.
@@ -880,7 +880,7 @@ JVM and dedicated-server checks preserve the -1 sentinel, unrestricted integer a
 physical-client rendering remains a separate gate. Evidence: `run/migration-render-id-reference/`.
 
 Tile conversion is available as `TileMultipart.getOrConvertTileResult(World, BlockCoord)`, returning an immutable
-`TileConversionResult` with `getTile()` / `isConverted()`; see the [guide](docs/api/TILE_CONVERSION.md). Both legacy
+`TileConversionResult` with `getTile()` / `isConverted()`; see the [guide](../api/TILE_CONVERSION.md). Both legacy
 static/companion tuple methods remain with deprecations and unchanged bodies/descriptors. The new API wraps their
 existing path, retaining existing-tile identity, converter dispatch and uninstalled-placeholder behavior.
 
@@ -912,7 +912,7 @@ Forge tests; the full current suite and independent ABI comparison check the int
 generation/worldless loading is covered, while physical-client microblock construction and GPU previews remain manual.
 Reference checkouts and consumer adoption remain unchanged. Evidence: `run/migration-composite-generation-reference/`.
 
-GuideNH's microblock creation contract is documented at [microblock creation](docs/api/MICROBLOCK_CREATION.md). The
+GuideNH's microblock creation contract is documented at [microblock creation](../api/MICROBLOCK_CREATION.md). The
 static Java method already existed, so this slice adds Javadocs, tests and an example with no production API/body
 changes. GuideNH hardcodes the companion owner and caches its singleton; its source must switch both to use the static
 method. It copies only shape after recreation, not arbitrary custom state or binding. The Java example preserves
@@ -929,7 +929,7 @@ from the unchanged archived Forge mod pass. Physical-client creation/GPU preview
 server strips the client's factory method. All 386 pack ABI/reflection rows remain across 27 consumers, and reference
 checkouts are unchanged. Evidence: `run/migration-microblock-creation-reference/`.
 
-GuideNH's block/meta query now has a [typed example and contract](docs/api/MATERIAL_ACCESS.md) using existing public
+GuideNH's block/meta query now has a [typed example and contract](../api/MATERIAL_ACCESS.md) using existing public
 methods throughout. The baseline pins constructor identity/raw metadata and the distinction between virtual getters
 and raw mixin fields. Forge exercises first-usable-part ordering, non-block/invalid-block filtering, registry aliases,
 metadata formatting and failure propagation. Getter overrides are intentional public semantics; the old mixin bypasses
@@ -942,7 +942,7 @@ Evidence: `run/migration-material-access-reference/`; archived validation retain
 
 Rechecked 2026-09-05 across 28 source checkouts and active Extra Utilities compatibility. Searches cover method
 names, FMP-importing Java/Scala source, reflective names and the installed `+719` constant-pool inventory. No external
-calls were found to the 15 tile/material-registry hooks listed in [Phase 9.2](JAVA_MIGRATION.md#92--mark-the-internal-boundary).
+calls were found to the 15 tile/material-registry hooks listed in [Phase 9.2](README.md#92--mark-the-internal-boundary).
 The registry's five companion forwarders carry matching Javadocs. Common-name matches included GuideNH comments
 explicitly avoiding `from` / `copyFrom` and WR-CBE's unrelated `RenderWireless.loadIcons`; neither calls these hooks.
 This is an audit of the supplied references, not proof about every possible external mod or dynamic lookup.
@@ -950,7 +950,7 @@ This is an audit of the supplied references, not proof about every possible exte
 The supported exceptions are actual calls: OpenComputers `2c00f79be24b`, `PrintPart.scala:171`, clears the old slot
 entries before `tile.bindPart(this)`; ProjectRed `e173952e96a4`, `gatepartrs.scala:74`, calls
 `tile.internalPartChange(this)` between its own packet/dirty work and selective external-neighbor notification.
-The [API guide](docs/API.md#supported-api-and-internal-hooks) preserves both contracts. The old `bindPart` comment's
+The [API guide](../API.md#supported-api-and-internal-hooks) preserves both contracts. The old `bindPart` comment's
 blanket prohibition on external calls was incorrect. Cache binding does not place/rebind a part, and it is not a
 universal idempotent refresh; local part notification does not implicitly perform world updates.
 
@@ -963,7 +963,7 @@ Evidence: `run/migration-api-boundary-reference/`, including source revisions an
 
 ## Java illuminated microblock extension
 
-The ProjectRed-style [Java example](docs/api/MICROBLOCK_EXTENSIONS.md) uses public name-based registration and
+The ProjectRed-style [Java example](../api/MICROBLOCK_EXTENSIONS.md) uses public name-based registration and
 `IGeneratedMaterial`; no consumer reflection or Scala classpath is needed. Register the input before class loading,
 keep inherited access in an ordinary helper with Object parameters, and dispatch via the stable Microblock base.
 The example preserves metadata 16–31, cutter metadata modulo 16, all-shape trait selection, strict sibling selection,
@@ -1016,7 +1016,7 @@ changes, while each externally observed behavior has a named consumer and a focu
 
 ## Java block converter guidance
 
-The existing `IPartConverter` and static `registerConverter` now have a [Java guide and compiling example](docs/api/BLOCK_CONVERTERS.md).
+The existing `IPartConverter` and static `registerConverter` now have a [Java guide and compiling example](../api/BLOCK_CONVERTERS.md).
 No production descriptor or method body changed. Reference calls confirm Chisel's block/metadata selection,
 ForgeRelocationFMP's frame construction, OpenComputers' original cable/print tile lookup and AE2's cable-bus state copy.
 Their converter registrations need no replacement API; companion users can select the existing static entry.
@@ -1031,7 +1031,7 @@ require integration validation. This is FMP API coverage, not a released consume
 
 ## Stable Java access to transformed tile traits
 
-The [tile access guide](docs/api/TILE_TRAIT_ACCESS.md) distinguishes raw dev-jar classes from runtime interfaces.
+The [tile access guide](../api/TILE_TRAIT_ACCESS.md) distinguishes raw dev-jar classes from runtime interfaces.
 Actual javac callers reproduce `IncompatibleClassChangeError` for `TRedstoneTile.openConnections` and `NoSuchFieldError`
 for `TSlottedTile.v_partMap`; the same generated tiles work through `IRedstoneTile` and `TileMultipart.partMap`.
 `IRedstoneTile` is now documented as a supported capability, correcting its former internal label without changing
@@ -1047,7 +1047,7 @@ release/adoption is recorded. Evidence: `run/migration-tile-trait-access-referen
 
 ## Custom Java tile-trait authoring
 
-The [authoring guide](docs/api/CUSTOM_TILE_TRAITS.md) now covers the existing name-based
+The [authoring guide](../api/CUSTOM_TILE_TRAITS.md) now covers the existing name-based
 `MultipartGenerator.registerTrait` path with a top-level Java input, separate marker and stable capability interfaces,
 an ordinary helper and no reflection. The Forge example exercises both side selections, transformed dispatch, binding,
 exact tile reuse and generated-class caching. It owns no state and derives its aggregate from the live part list;

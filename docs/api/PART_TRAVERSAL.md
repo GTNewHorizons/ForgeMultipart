@@ -98,7 +98,7 @@ GuideNH also reflects `partList`, `partList_$eq` and `loadParts` while reconstru
 uses to the Java getter does not migrate its setter/loading contracts. Their [Java replacements](PART_LOADING.md)
 are implemented; the consumer patch, release and pack adoption remain separate work. No reference checkout was edited.
 
-The [adoption ledger](../../JAVA_MIGRATION_COMPATIBILITY.md#java-api-adoption-ledger) records inspected revisions and
+The [adoption ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records inspected revisions and
 the remaining release gates. JVM checks cover both getter forms, mutable storage, callback mutation/reentrancy,
 detached/rebound parts, override dispatch and failures. The Forge test removes and adds real parts during traversal
 of a generated slotted tile. Client rendering and full-pack adoption remain manual release checks.

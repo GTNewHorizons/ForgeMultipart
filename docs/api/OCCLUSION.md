@@ -124,7 +124,7 @@ JVM tests cover both directions, early rejection, original exceptions, null boun
 subtype/non-list collections, override routing and the shape example. A Forge test demonstrates that the generated
 partial trait rejects overlapping partial parts that plain pair tests accept. Existing descriptors, generated output,
 and frozen pre-change callers are checked separately. Actual client previews and full-pack adoption remain covered
-by the [manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+by the [manual release checks](../migration/MANUAL_CHECKS.md).
 
 Box-query tests run the same snapshot, input-failure, ordering, null and exception contracts against both legacy entries
 and the Java entry. The compiling example also covers touching tolerance and containment; frozen pre-change tests

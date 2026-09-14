@@ -76,6 +76,6 @@ reflection, server construction, NBT loading, unbound ownership and the Java exa
 Scala excluded from its classpath. Archived callers and the private field's binary shape are checked separately.
 
 Physical-client microblock construction and Schematica preview rendering remain
-[manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md). A dedicated Forge server strips `clientTrait()`, so
+[manual release checks](../migration/MANUAL_CHECKS.md). A dedicated Forge server strips `clientTrait()`, so
 calling client microblock creation there fails before it can exercise a real client preview; the server fixture does
 not claim that coverage.

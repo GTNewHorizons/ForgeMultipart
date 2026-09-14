@@ -88,4 +88,4 @@ payload objects/cursors. The new entry runs through the same checks, and the exa
 The archived pre-change Forge test mod and JVM fixtures run against the new implementation without recompiling their
 callers. Existing member descriptors, method bodies, Scala signatures and generated output are checked separately.
 The dedicated-server suite invokes the client construction method with a real packet; physical-client rendering and
-full-pack adoption remain [manual release checks](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+full-pack adoption remain [manual release checks](../migration/MANUAL_CHECKS.md).

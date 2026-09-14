@@ -1,19 +1,19 @@
 # Migration history
 
 Historical findings from the Scala-to-Java migration. Counts, next-target suggestions and outstanding work below
-describe the state at the time of each entry; use the [working handoff](../../JAVA_MIGRATION_HANDOFF.md) for current
-state and the [plan](../../JAVA_MIGRATION.md) for remaining gates. Routine sessions need not read this entire log.
+describe the state at the time of each entry; use the [working handoff](HANDOFF.md) for current
+state and the [plan](README.md) for remaining gates. Routine sessions need not read this entire log.
 
-The former detailed per-port handoff is also available with `git show cf8b2f9:JAVA_MIGRATION_HANDOFF.md`.
+The former detailed per-port handoff is also available with `git show cf8b2f9:docs/migration/HANDOFF.md`.
 Keep new findings here; summarize only current state and constraints in the handoff. Intentional compatibility
-differences belong in the [divergence ledger](../../JAVA_MIGRATION_DIVERGENCES.md).
+differences belong in the [divergence ledger](DIVERGENCES.md).
 
 Per-entry green-build status was removed in a later pass: superseded intermediate test counts, generated-dump
 comparisons, formatting/checkstyle results and stale "X is next" pointers. Findings, decisions, rejected options and
 ABI observations were kept. A passing build was the baseline expectation for every entry, so its absence here does not
 mean a check was skipped. The last two sections hold records moved from the retired profile and downgrader documents.
 
-### 2026-09-09 — Scheduler unload and inventory size regressions
+### 2026-09-09 - Scheduler unload and inventory size regressions
 
 - Restored the original Scala mutable-set filtering in `TickScheduler.WorldTickScheduler.postTick`, matching the
   retained-collection approach in `PacketScheduler`. Java's fail-fast set iterator threw when a scheduled callback
@@ -49,11 +49,11 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Confirmed that every non-exempt part needs at least one exclusively owned voxel. Any second write to an occupied voxel permanently changes it to `-1`, including overlap between two boxes supplied by the same part; this can make that part fail the test. Preserve this exact dynamic-tile behavior during translation unless it is changed later as an explicitly documented bug fix.
 - Completed the first behavior-preserving production conversion by replacing `IDWriter.scala` with `IDWriter.java`. All eight existing encoding cases, all 25 plain-JVM tests, the clean build, and both Java 8 Forge server checks pass unchanged.
 - Preserved the four legacy Scala function accessor descriptors as deprecated binary bridges and added direct Java `write(MCDataOutput, int)` and `read(MCDataInput)` methods. Recompiled Scala registry callers use the new primitive methods because Scala property auto-application does not apply to accessors declared in Java.
-- Removed the six `IDWriter$$anonfun$setMax$*` compiler artifacts from the packaged jar. Their disappearance and replacement with Java anonymous helper classes is recorded in `JAVA_MIGRATION_DIVERGENCES.md`; the supported `IDWriter` descriptors remain link-compatible.
+- Removed the six `IDWriter$$anonfun$setMax$*` compiler artifacts from the packaged jar. Their disappearance and replacement with Java anonymous helper classes is recorded in `docs/migration/DIVERGENCES.md`; the supported `IDWriter` descriptors remain link-compatible.
 - Added a frozen Scala 2.11.5 consumer compiled against the reference dev jar. Its constructor and inherited default method call `JPartialOcclusion$class` directly, so it detects the linkage failure that freshly recompiled tests would miss.
 - Replaced `TPartialOcclusion.scala` with Java implementations of `PartialOcclusionTest` and `JPartialOcclusion`. The interface keeps its name and method descriptors, while `allowCompleteOcclusion()` is now a Java default method and the deprecated `$class` helper remains for old Scala binaries.
 - Passed all ten partial-occlusion behavior/API cases, the frozen Scala binary consumer, all 27 plain-JVM tests, a clean build, and both Java 8 Forge server checks. The existing marker-interface registration remains unchanged and continues to drive runtime tile generation.
-- Completed the downstream ABI inventory by constant-pool scan of 240 mod jars in GTNH daily `2026-08-14+678`, recorded in `JAVA_MIGRATION_COMPATIBILITY.md` with the scanner in `tools/AbiScan.java` and the frozen baseline in `src/test/fixtures/abi/`. GitHub code search was rejected as an oracle because it indexes default branches only and cannot see reflection strings or closed-source consumers.
+- Completed the downstream ABI inventory by constant-pool scan of 240 mod jars in GTNH daily `2026-08-14+678`, recorded in `docs/migration/COMPATIBILITY.md` with the scanner in `tools/AbiScan.java` and the frozen baseline in `src/test/fixtures/abi/`. GitHub code search was rejected as an oracle because it indexes default branches only and cannot see reflection strings or closed-source consumers.
 - Found 27 consumer jars referencing 35 inherited types, 255 exact member descriptors, 76 other types, and 20 reflective string constants.
 - Answered open decision 2: third-party Scala traits are registered externally. ProjRed passes its own `LightMicroblock` Scala trait to `MicroblockGenerator.registerTrait`, so `registerScalaTrait` and ScalaSignature decoding must survive Phase 7.
 - Answered open decision 4: Scala runtime removal is not achievable for the first Java release. ProjRed, OpenComputers, ProjectBlue, and ForgeRelocationFMP link against 16 static methods on 8 trait `$class` helpers plus 17 companion `MODULE$` singletons.
@@ -61,7 +61,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Found zero downstream references to `IDWriter`, so its four retained Scala function accessors are not load-bearing and can be dropped.
 - Removed both speculative bridges the inventory proved dead: the four `IDWriter` Scala function accessors and the whole `JPartialOcclusion$class` helper, along with the `ReferenceScalaPartialOcclusion` fixture that only existed to verify the helper. `JPartialOcclusion` itself and both of its method descriptors are unchanged.
 - `IDWriter` now selects a carrier width instead of storing Scala closures, removing the per-call `Integer` boxing and `Function1`/`Function2` allocation that the first port had preserved. The nine encoding cases still pass unchanged.
-- Established the working rule for the remaining phases: check `JAVA_MIGRATION_COMPATIBILITY.md` before writing a bridge, rather than writing one reflexively for every converted file.
+- Established the working rule for the remaining phases: check `docs/migration/COMPATIBILITY.md` before writing a bridge, rather than writing one reflexively for every converted file.
 - Ported `TCuboidPart`, `JCuboidPart` and `TCuboidPart$class` to Java, the first conversion of a trait whose `$class` helper is genuinely load-bearing. All reference descriptors are preserved, verified by diffing `javap -s` against the reference dev jar, and a frozen Scala 2.11.5 consumer whose forwarders call all four statics loads and runs against the port.
 - Found the first structural limit of the migration: Scala trait linearization cannot be reproduced by a Java interface, because a superclass method always beats an interface default on the JVM. Recompiled Scala consumers that mix `TCuboidPart` into a `TMultiPart` subclass now silently get `TMultiPart`'s empty implementations. Binary compatibility is unaffected, and `CuboidPartCharacterizationTest` carries the regression guard, but this applies to every remaining trait that overrides `TMultiPart` members and should be assumed for `TFacePart`, `TNormalOcclusion`, `TIconHitEffects` and `TItemMultiPart` as well.
 - Recorded the consequence for consumers: Scala code that recompiles must extend `JCuboidPart` or declare the overrides itself. This belongs in the release notes for the first Java release, not only in the divergence log.
@@ -90,13 +90,13 @@ mean a check was skipped. The last two sections hold records moved from the reti
 
 - Ported the six marker interfaces: `TSlottedPart`, `IRandomDisplayTick`, `INeighborTileChange`, `TRandomUpdateTick`, `ISidedHollowConnect` and `IMicroMaterialRender`. All six are member- and descriptor-identical to the reference, and the seven implementors and mixin tiles were diffed as well and are unchanged member for member.
 - Confirmed that five of the six were already pure abstract interfaces in bytecode with no `$class` helper, so their conversion had no bytecode consequence at all. Exactly one class left the jar: `TRandomUpdateTick$class`.
-- Applied the default-versus-abstract rule to `TRandomUpdateTick.onWorldJoin` and got the failing answer: `TMultiPart` declares `onWorldJoin`, so a default would be shadowed by the superclass and the auto-registration would silently never run. It stays abstract, and implementors declare it and call `TickScheduler.loadRandomTick` themselves, which `RedstoneTorchPart` — the only implementor in this codebase — already did.
+- Applied the default-versus-abstract rule to `TRandomUpdateTick.onWorldJoin` and got the failing answer: `TMultiPart` declares `onWorldJoin`, so a default would be shadowed by the superclass and the auto-registration would silently never run. It stays abstract, and implementors declare it and call `TickScheduler.loadRandomTick` themselves, which `RedstoneTorchPart` - the only implementor in this codebase - already did.
 - Applied the bridge rule to `TRandomUpdateTick$class` and got a clean negative: no jar in the pack references `TRandomUpdateTick` in any form, and the frozen baseline contains exactly the eight `$class` helpers the inventory lists. No bridge was written, following the `IDWriter` precedent. The accepted cost is a recompiled-Scala-consumer break with no shipping consumer.
 - Found that `IMicroMaterialRender` is implemented for every part solely by `TMultiPart`'s Scala-style `world`/`x`/`y`/`z`/`getRenderBounds` accessors. Renaming any of them to a bean accessor would silently unimplement the interface, so the names are now pinned by a characterization test rather than left to reviewer attention.
 - Established that for interfaces carrying no implementation, the characterization is the shape: every member abstract and public, no superinterface, and the exact member set. That is enough to catch the two realistic failure modes, a stray default and a renamed accessor.
 - Noted that `IRedstonePart.scala` is misleadingly named and is not a marker-trait file. It carries six traits plus `RedstoneInteractions`, whose `MODULE$` is load-bearing, and was moved out of the low-risk group.
-- Historical documentation gap: the ports between `TItemMultiPart` and this entry — `TEdgePart`, `Saw`, both
-  registries, `TileMultipart`, `TMultiPart`, `TickScheduler` and `BlockMultipart` — did not receive dated findings
+- Historical documentation gap: the ports between `TItemMultiPart` and this entry - `TEdgePart`, `Saw`, both
+  registries, `TileMultipart`, `TMultiPart`, `TickScheduler` and `BlockMultipart` - did not receive dated findings
   here. Use the handoff for their current status and git history for the original validation narrative; the divergence
   ledger now records only their effective compatibility differences.
 - Ported `MultipartHelper`, `MultipartHelper$` and `MultipartHelper$IPartTileConverter` to Java. All three are public-member- and descriptor-identical to the reference and the full emitted class list is unchanged, so this port neither added nor removed a class.
@@ -105,7 +105,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Confirmed that erasure does not weaken `IPartTileConverter.convert`. The cast to `T` compiles away, but the `ClassCastException` a mismatched tile produces comes from the synthetic bridge on the subclass overriding `convertMulti(T)`, which is the same mechanism Scala's `asInstanceOf[T]` relied on. It is now pinned by a test, because the code reads as though the check was lost.
 - Added five Forge server tests, doubling that suite, because most of this class cannot run headless. They cover tile construction through the ASM generator, the NBT round trip through the save/load hooks, `registerTileConverter` appending to a Scala `MutableList` from Java, and `sendDescPacket` against a loaded chunk.
 - Dropped the two commented-out blocks the reference carried, the `PlayerInstance.playersInChunk` reflection and the multi-tile `sendDescPackets`, rather than reproducing dead Scala as dead Java. The reason they existed, a missing forge access transformer, is now in the class javadoc.
-- Read guidenh's actual source at `6137525` rather than inferring from its constant pool, and recorded the exact reflective member list in `JAVA_MIGRATION_COMPATIBILITY.md`. The scan could see the 20 names; only the source shows which members are looked up on them, and none of it is visible to the ABI diff.
+- Read guidenh's actual source at `6137525` rather than inferring from its constant pool, and recorded the exact reflective member list in `docs/migration/COMPATIBILITY.md`. The scan could see the 20 names; only the source shows which members are looked up on them, and none of it is visible to the ABI diff.
 - Found that `MultipartGenerator$.MODULE$` is load-bearing through reflection. `generateCompositeTile` is `private[multipart]`, so no static forwarder exists and guidenh's static attempt always misses, leaving the companion as the only route. Phase 6/7 must keep it.
 - Found that `MicroblockGenerator$.create` is matched by exact parameter types, with `MicroblockClass`'s fully qualified name string-compared. Widening a parameter or renaming the class breaks the lookup while every call site still links.
 - Verified against the already-ported `TileMultipart` that `partList_$eq(scala.collection.Seq)`, `loadParts`, `notifyTileChange` and `markRender` all survived. `partList_$eq` is a Scala `var` setter with no Java-facing equivalent and is reflectively load-bearing, so dropping it for a list mutator would have broken guidenh invisibly. It was kept.
@@ -173,7 +173,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Added an opt-in Forge/JFR workload and captured the first focused CPU/allocation baseline. With eight parts,
   `updateEntity` and `operate` allocate 184.0 and 183.9 bytes per call; generated redstone's three-query iteration
   allocates 80.5 bytes. CPU and allocation sites point to `TileMultipart.parts()` collection copies and Scala
-  redstone `IntRef`/closure traversal. Full methodology and rerun commands are in `JAVA_MIGRATION.md#phase-4b--measured-performance-pass`.
+  redstone `IntRef`/closure traversal. Full methodology and rerun commands are in `docs/migration/README.md#phase-4b--measured-performance-pass`.
 - The expanded baseline is 130 plain-JVM tests and 28 Forge server tests, all passing.
 
 ### 2026-08-28
@@ -522,7 +522,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   methods, their abstract/static modifiers and both binary names remain exact; no new API or default methods are
   introduced. Neither downstream audit contains a reference to this support trait.
 - The two-type ABI and both generator companions' disassembly match the reference.
-- Condensed `JAVA_MIGRATION_DIVERGENCES.md` from 3,134 to 189 lines, keeping effective runtime, binary and source
+- Condensed `docs/migration/DIVERGENCES.md` from 3,134 to 189 lines, keeping effective runtime, binary and source
   differences plus one shared classfile section. Removed repeated preservation claims, validation histories and
   superseded intermediate decisions; the original narrative remains in git history. The workflow now records test
   results here and updates the divergence ledger only for a genuinely new difference.
@@ -898,7 +898,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   this history, duplicated completed-port handoff summaries were removed, and current phase/status text was refreshed.
   The manual checklist now names verified consumer items, including the inverted ProjectRed lamp requirement.
 
-### 2026-09-03 — composite class generation
+### 2026-09-03 - composite class generation
 
 - Added eight Forge characterization tests for `ASMMixinCompiler.mixinClasses`, passing on untouched Scala and
   committed first as `1c9cd65`. They execute generated JVM classes and freeze empty selection, constructor forwarding,
@@ -917,7 +917,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   9 Scala files / 1,444 nonblank Scala lines. Next: `ASMMixinCompiler.registerJavaTrait`, characterized before
   extraction; abstract mixins, side-only filtering and the wide-field defect remain separate compiler changes.
 
-### 2026-09-03 — Java trait rewriting
+### 2026-09-03 - Java trait rewriting
 
 - Added nine Forge characterization tests for `ASMMixinCompiler.registerJavaTrait`, passing against untouched Scala
   and committed first as `85ad2e4`. They freeze rejected shapes, exact input cloning, constructors, initialization,
@@ -936,7 +936,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   9 Scala files / 1,196 nonblank Scala lines. Next: assess the remaining compiler startup/model shell before selecting
   another extraction; retained ScalaSignature model bridges remain the Java-source limit.
 
-### 2026-09-03 — compiler startup
+### 2026-09-03 - compiler startup
 
 - Added seven Forge characterization tests for the `ASMMixinCompiler` singleton startup, passing against untouched
   Scala and committed first as `e9d81d6`. They execute reflective definition and transformer invocation on isolated
@@ -956,7 +956,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   malformed inherited-call casts are real but dormant for current consumers. Abstract Java mixins and Java-path side
   filtering remain required before the microblock traits can move, and will be separate behavior targets.
 
-### 2026-09-03 — abstract Java mixins
+### 2026-09-03 - abstract Java mixins
 
 - Added two Forge characterizations before changing behavior and committed them as `3556725`. They freeze the old
   abstract-input rejection before parent or method inspection and prove that concrete Java mixins already preserve
@@ -977,7 +977,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   dev config remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188 nonblank Scala lines. Next:
   Java-path `@SideOnly` member filtering, characterized first as its own compiler behavior target.
 
-### 2026-09-03 — Java mixin side filtering
+### 2026-09-03 - Java mixin side filtering
 
 - Expanded the Forge Java-trait fixture against the untouched implementation and committed it first as `a481859`.
   It proves that the old Java path retained runtime-visible and runtime-invisible client annotations on a dedicated
@@ -999,7 +999,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   guard and dev config remain correct. Sources stay at 214 Java files and 9 Scala files / 1,188 nonblank Scala lines.
   Next: `microblock/MicroblockTraits.scala`, characterized before conversion.
 
-### 2026-09-03 — Common microblock trait implementation
+### 2026-09-03 - Common microblock trait implementation
 
 - Committed seven JVM and two Forge characterization tests first as `d6eb56b`. A frozen Scala 2.11.5 concrete
   `CommonMicroblockClient`, compiled under Java 8 against the unchanged jar, exercises all three trait helper bridges.
@@ -1020,7 +1020,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   files and 9 Scala files / 1,170 nonblank Scala lines. Next: `microblock/FaceMicroblockTraits.scala` implementation,
   with characterization before conversion. GPU rendering and full client selection remain on the manual checklist.
 
-### 2026-09-03 — Face microblock trait implementation
+### 2026-09-03 - Face microblock trait implementation
 
 - Committed five JVM and three Forge characterization tests first as `dc845bc`. The frozen Scala 2.11.5 face-client
   consumer was compiled under Java 8 against the untouched jar. Tests verify actual emitted face indices, position,
@@ -1041,7 +1041,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   prove per-face dispatch, not GPU output. Next: `microblock/CornerMicroblockTraits.scala` implementation, characterized
   before conversion.
 
-### 2026-09-03 — Corner microblock trait implementation
+### 2026-09-03 - Corner microblock trait implementation
 
 - Committed three JVM and three Forge characterization tests first as `82da452`. A frozen Scala 2.11.5 corner
   implementor, compiled under Java 8 against the untouched jar, pins the virtual shape setter/getter and seven-slot
@@ -1059,7 +1059,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Next: `EdgeMicroblock` in `microblock/EdgeMicroblockTraits.scala`; characterize and port the post traits separately.
   Client/GPU and full-pack validation remain on the existing manual checklist.
 
-### 2026-09-03 — Edge microblock trait implementation
+### 2026-09-03 - Edge microblock trait implementation
 
 - Committed three JVM and three Forge characterization tests first as `5e020e5`. A frozen Scala 2.11.5 implementor,
   compiled under Java 8 against the untouched jar, pins virtual shape access, byte truncation/integer overflow and the
@@ -1078,7 +1078,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   support and generated state before extraction. `PostMicroblockClient` follows separately. The existing manual
   Stone Strip / ProjectRed Red Alloy Wire and illuminated-strip checks cover the remaining client/full-pack gate.
 
-### 2026-09-03 — Post microblock trait implementation
+### 2026-09-03 - Post microblock trait implementation
 
 - Committed six JVM and four Forge characterization tests first as `afd6c69`. Frozen Scala 2.11.5 post/face
   implementors compiled under Java 8 against the untouched jar pin virtual calls, failure ordering and a real
@@ -1099,7 +1099,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Next: `PostMicroblockClient`; characterize render dispatch, lifecycle super ordering, shrink/split/reset behavior
   and size/transparency/axis tie-breaks before conversion. Client/GPU and full-pack checks remain manual.
 
-### 2026-09-03 — Post microblock client implementation
+### 2026-09-03 - Post microblock client implementation
 
 - Committed eight JVM characterization tests and one Forge test first as `47885d1`. Frozen Scala 2.11.5 client forwarders
   and lifecycle predecessors pin the exact `-1` render branch, material reuse, live second-segment changes, repeated
@@ -1120,7 +1120,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   dedicated server strips the client factory entry point; helper/geometry coverage does not establish actual client
   generation or GPU output. Next: `HollowMicroblock`, followed separately by `HollowMicroblockClient`.
 
-### 2026-09-03 — Hollow microblock trait implementation
+### 2026-09-03 - Hollow microblock trait implementation
 
 - Committed five JVM and four Forge characterization tests first as `6e807cc`, before changing production code.
   Frozen Scala 2.11.5 forwarders compiled under Java 8 against the untouched jar pin repeated tile/raw-shape reads,
@@ -1146,7 +1146,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   Added a manual hollow-cover interaction/reload check with ProjectRed Framed Red Alloy Wire and Hollow Inverted
   White Lamp Cover examples; actual client generation, GPU output and full-pack validation remain manual gates.
 
-### 2026-09-04 — Hollow microblock client implementation
+### 2026-09-04 - Hollow microblock client implementation
 
 - Committed eight JVM and one Forge characterization tests first as `c22d1ac`, before changing production code.
   Frozen Scala 2.11.5 forwarders and a real superclass predecessor pin default-mask initialization, super/read order,
@@ -1172,7 +1172,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   cover AE2 cables and ProjectRed Framed Red Alloy Wire through hollow covers. Recorded rendering commands and
   headless helper tests do not validate actual client generation or GPU/full-pack output.
 
-### 2026-09-04 — Micro occlusion trait implementation
+### 2026-09-04 - Micro occlusion trait implementation
 
 - Committed eight JVM and two Forge characterization tests first as `c709759`. Frozen Scala 2.11.5 forwarders
   compiled under Java 8 against the untouched jar pin the real super call before null/non-micro guards, repeated
@@ -1193,7 +1193,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   mask updates and failures. Retain `JMicroShrinkRender` and required Scala metadata/state/super bridges. Actual
   client generation, GPU drawing and full-pack checks remain on the existing manual checklist.
 
-### 2026-09-04 — Micro occlusion client state updates
+### 2026-09-04 - Micro occlusion client state updates
 
 - Committed six JVM and one Forge characterization tests first as `d69d12b`, against untouched production code.
   Frozen Scala 2.11.5 forwarders compiled under Java 8 pin the three real superclass predecessors, virtual recalc
@@ -1219,7 +1219,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   ProjectRed Inverted White Lamp microblocks, including a server rejoin. Headless probes do not establish actual
   client generation, GPU output or full-pack correctness; those checks remain unrecorded release gates.
 
-### 2026-09-04 — Packet scheduler callback regression
+### 2026-09-04 - Packet scheduler callback regression
 
 - Restored the original Scala mutable hash-map `foreach` traversal behind `PacketScheduler`'s Java API. Java's
   fail-fast iterator threw `ConcurrentModificationException` when a write callback scheduled another part. Keeping
@@ -1230,7 +1230,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   checked against the original Scala implementation under Java 8.
 - Formatting, test checkstyle, all four packet-interface JVM tests and all 237 Forge server tests pass.
 
-### 2026-09-04 — Multipart virtual tile accessor regression
+### 2026-09-04 - Multipart virtual tile accessor regression
 
 - Restored virtual `tile()` and `tile_$eq` dispatch throughout `TMultiPart`, matching the original Scala methods.
   Binding, coordinates/world lookup, ray tracing, harvesting and packet operations now honor part subclasses that
@@ -1239,7 +1239,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   reads that publish a replacement tile before the render update. All three failed before the fix.
 - Formatting, test checkstyle, the three new cases and all seven existing tile equality cases pass.
 
-### 2026-09-04 — Tick scheduler equality regression
+### 2026-09-04 - Tick scheduler equality regression
 
 - Restored Scala's null-safe part equality in `ChunkTickScheduler.scheduleTick` with `Objects.equals`. Distinct but
   equal parts share the original entry and callback target, and random-to-scheduled promotion updates that entry.
@@ -1249,7 +1249,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - The four touched class surfaces retain their callable member names and descriptors. The packaged inventory grows
   from 444 to 445 classes solely for the packet traversal callback; no existing class is removed.
 
-### 2026-09-04 — Scoped modern Java compilation
+### 2026-09-04 - Scoped modern Java compilation
 
 - Kept Scala 2.11.5 and joint Java compilation on Java 8. Scalac resolves `StackAnalyserLogic` through its source
   path; a separate JDK 25 task compiles that helper with `--release 21`, and JVM Downgrader supplies only Java 8
@@ -1259,11 +1259,11 @@ mean a check was skipped. The last two sections hold records moved from the reti
   398 frozen JVM consumer tests, and 237 Java 8 Forge tests. All 445 dev/release classes remain Java 8 compatible;
   with matching version metadata, only the helper changes and it exactly matches the isolated prototype. All
   retained Scala classes and 116 generated ASM dumps are identical. Source-jar contents, formatting, and checkstyle
-  pass. Evidence and reproduction commands are in `JAVA_MIGRATION.md#modern-java-readability-policy` and ignored `run/jvmdg-trial/`.
+  pass. Evidence and reproduction commands are in `docs/migration/README.md#modern-java-readability-policy` and ignored `run/jvmdg-trial/`.
 - Prefer completing useful remaining Scala behavior extractions before broad Java syntax changes. Most remaining
   Scala declarations preserve model/trait binary contracts; zero Scala is a separate compatibility decision.
 
-### 2026-09-04 — StackAnalyser constructor initialization
+### 2026-09-04 - StackAnalyser constructor initialization
 
 - Committed nine JVM characterization cases first as `929a704`, against the untouched Scala constructor.
   They cover direct constructor arguments despite overridden getters, virtual receiver/parameter pushes and
@@ -1291,7 +1291,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   case-class, product and serialization contracts. The simple model getters and full Scala shell replacement
   remain separate from useful behavior extraction.
 
-### 2026-09-04 — StackAnalyser constant types
+### 2026-09-04 - StackAnalyser constant types
 
 - Committed eight JVM characterization cases first as `89f31e3`, against the untouched Scala `Const.getType`.
   They cover all eight boxed primitive classes without numeric coercion, fresh object types for null and strings,
@@ -1318,7 +1318,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   `ASMMixinCompiler.FieldMixin.accessName`: characterize private-flag selection, owner mangling, null behavior and
   virtual accessor/failure ordering while retaining the case-class model.
 
-### 2026-09-04 — FieldMixin accessor names
+### 2026-09-04 - FieldMixin accessor names
 
 - Committed seven JVM characterization cases first as `ddeed27`, against the untouched Scala `accessName` body.
   They cover every access-flag bit and combinations, literal slash-to-dollar owner mangling, unchanged field names,
@@ -1346,7 +1346,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   `ASMMixinCompiler.MixinInfo.linearise`, with characterization of recursive parent order, repeated/diamond parents,
   virtual collection/parent dispatch and null/failure behavior before extraction.
 
-### 2026-09-04 — MixinInfo linearisation
+### 2026-09-04 - MixinInfo linearisation
 
 - Committed seven JVM characterization cases first as `d93b09d`, against the untouched Scala method. They cover
   depth-first parent order, duplicate/diamond ancestors, identity, mutable and immutable collection builders,
@@ -1365,7 +1365,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Source totals remain 224 Java files and nine Scala files / 765 nonblank lines. The next candidate is
   `ScalaSignature.Bytes.section`, preserving clamping, copy boundaries and virtual getter/failure ordering.
 
-### 2026-09-04 — ScalaSignature byte sections
+### 2026-09-04 - ScalaSignature byte sections
 
 - Committed six JVM characterization cases first as `13de853`, against the untouched Scala `Bytes.section`.
   They cover independent drop/take clamping including integer extremes, fresh empty/full/partial result arrays,
@@ -1387,7 +1387,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   `ScalaSignature.TypeRef.jName`, preserving name normalization, aliases and virtual dispatch while retaining
   path-dependent model declarations and trait bridges. Descriptor conversion remains a separate target.
 
-### 2026-09-04 — ScalaSignature type names
+### 2026-09-04 - ScalaSignature type names
 
 - Committed seven JVM characterization cases first as `ac1182e`, against the untouched Scala `TypeRef.jName`.
   They cover literal dot-to-slash conversion, exact normalized Any/AnyRef aliases, unchanged string identities,
@@ -1409,7 +1409,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   lines. Next candidate: `ScalaSignature.TypeRef.jDesc`, preserving primitive/array cases, virtual fallback and
   failure order while retaining the model overrides and trait bridges.
 
-### 2026-09-04 — ScalaSignature type descriptors
+### 2026-09-04 - ScalaSignature type descriptors
 
 - Committed seven JVM characterization cases first as `b3b3f10` against the untouched `TypeRef.jDesc`. They pin
   exact primitive/array matching, legacy reference descriptors (including Char), virtual fallback and repeated
@@ -1426,7 +1426,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   Source totals are 224 Java files and nine Scala files / 751 nonblank lines. Next: `TMethodType.jDesc` assembly,
   preserving parameter/return lookup order, nulls, failures and the retained trait/models.
 
-### 2026-09-04 — ScalaSignature method descriptors
+### 2026-09-04 - ScalaSignature method descriptors
 
 - Committed seven JVM characterization cases first as `d61aed2` against the untouched `TMethodType.jDesc`. They
   cover MethodType/ParameterlessType assembly, ordered virtual parameter info/return-type/descriptor reads,
@@ -1447,7 +1447,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   version. Sources remain 224 Java files and nine Scala files / 749 nonblank lines. Next: `ClassSymbolRef.jInterfaces`,
   retaining its List contract, virtual lookup, ordered mapping and failure behavior.
 
-### 2026-09-04 — ScalaSignature interface names
+### 2026-09-04 - ScalaSignature interface names
 
 - Committed seven JVM characterization cases first as `6ccb83f` against the untouched `ClassSymbolRef.jInterfaces`.
   They pin ClassSymbol/ObjectSymbol parent exclusion, ordered names and duplicates, the empty List singleton,
@@ -1469,7 +1469,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 749 nonblank lines. Next:
   `ClassSymbolRef.toString`, preserving formatting, virtual reads and failure order.
 
-### 2026-09-04 — ScalaSignature class-symbol strings
+### 2026-09-04 - ScalaSignature class-symbol strings
 
 - Committed seven JVM characterization cases first as `1234112` against the untouched
   `ClassSymbolRef.toString`. They cover concrete ClassSymbol/ObjectSymbol runtime names, anonymous suffix trimming,
@@ -1488,7 +1488,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   version. Source totals are 224 Java files and nine Scala files / 748 nonblank lines. Next:
   `MethodSymbol.toString`, preserving formatting, virtual reads and failure order.
 
-### 2026-09-04 — ScalaSignature method-symbol strings
+### 2026-09-04 - ScalaSignature method-symbol strings
 
 - Committed seven JVM characterization cases first as `d81195a` against the untouched `MethodSymbol.toString`.
   They cover its fixed prefix for concrete and anonymous subclasses, punctuation/nulls, lowercase two's-complement
@@ -1505,7 +1505,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   version. Source totals are 224 Java files and nine Scala files / 747 nonblank lines. Next:
   `TypeRefType.jDesc`, preserving array/super routing, virtual reads and malformed-input behavior.
 
-### 2026-09-04 — ScalaSignature applied-type descriptors
+### 2026-09-04 - ScalaSignature applied-type descriptors
 
 - Committed seven JVM characterization cases first as `5493086` against the untouched `TypeRefType.jDesc`. They pin
   the array branch's first argument descriptor, fallback routing through `TypeRef.jDesc` and `jName`, two/three
@@ -1526,7 +1526,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Source totals are 224 Java files and nine Scala files / 744 nonblank lines. Next:
   `ClassSymbolRef.full`, preserving owner/name concatenation, virtual reads and failure order.
 
-### 2026-09-04 — ScalaSignature class-symbol full names
+### 2026-09-04 - ScalaSignature class-symbol full names
 
 - Committed seven JVM characterization cases first as `05c2792` against the untouched `ClassSymbolRef.full`. They
   pin concrete class/object names, punctuation, literal null full/name results, repeated owner/full/name read order,
@@ -1546,7 +1546,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 744 nonblank lines. Next:
   `MethodSymbol.full`, preserving owner/name concatenation, virtual reads and failure order.
 
-### 2026-09-04 — ScalaSignature method-symbol full names
+### 2026-09-04 - ScalaSignature method-symbol full names
 
 - Committed seven JVM characterization cases first as `55f21ef` against the untouched `MethodSymbol.full`. They pin
   constructor and punctuation names, literal null full/name results, repeated owner/full/name read order, null-owner
@@ -1566,7 +1566,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 744 nonblank lines. Next:
   `ClassSymbolRef.jParent`, preserving info/parent/name lookup order and failures.
 
-### 2026-09-04 — ScalaSignature class parent names
+### 2026-09-04 - ScalaSignature class parent names
 
 - Committed seven JVM characterization cases first as `6e3a301` against the untouched `ClassSymbolRef.jParent`.
   They pin ClassSymbol/ObjectSymbol results, repeated virtual info/parent/jName order, first-parent selection without
@@ -1587,7 +1587,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 744 nonblank lines. Next:
   `MethodSymbol.jDesc`, preserving info/descriptor lookup order and failures.
 
-### 2026-09-04 — ScalaSignature method-symbol descriptors
+### 2026-09-04 - ScalaSignature method-symbol descriptors
 
 - Committed seven JVM characterization cases first as `16f4568` against the untouched `MethodSymbol.jDesc`. They pin
   literal and null descriptors, repeated virtual info/descriptor read order, changing uncached info results, null info,
@@ -1606,7 +1606,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 744 nonblank lines. Next:
   `MethodSymbol.info`, preserving info-id/evaluation lookup order, casts and failures.
 
-### 2026-09-04 — ScalaSignature method-symbol info evaluation
+### 2026-09-04 - ScalaSignature method-symbol info evaluation
 
 - Committed seven JVM characterization cases first as `9859aa8` against the untouched `MethodSymbol.info`. They pin
   exact/null evaluated results, repeated virtual info-ID/eval order, changing uncached IDs and results, the invalid-type
@@ -1625,7 +1625,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   committed version. Sources remain 224 Java files and nine Scala files / 747 nonblank lines. Next:
   `ClassSymbolRef.info`, preserving outer/info-id/evaluation order, casts, trait bridges and failures.
 
-### 2026-09-04 — TileMultipart part-list accessor compatibility
+### 2026-09-04 - TileMultipart part-list accessor compatibility
 
 - Restored virtual `partList()` / `partList_$eq()` dispatch throughout the Java tile implementation, including
   traversal, mutation, copying, serialization and queries. Retained the optimized list traversal, captured-sequence
@@ -1638,7 +1638,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   Evidence is under ignored `run/conversion-review/`; migration-plan changes remain deferred until the review fixes
   are complete.
 
-### 2026-09-04 — Microblock state accessor compatibility
+### 2026-09-04 - Microblock state accessor compatibility
 
 - Restored virtual shape/material getters and setters for geometry, material lookup, drops, pick-block, NBT and
   description/incremental packets. The backing fields, JVM signatures and serialized formats remain unchanged.
@@ -1649,7 +1649,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   use its shape/material accessors, but no supplied consumer overriding those accessors was found. Evidence is
   under ignored `run/conversion-review/`; no migration-plan changes were made.
 
-### 2026-09-04 — BlockMicroMaterial property accessor compatibility
+### 2026-09-04 - BlockMicroMaterial property accessor compatibility
 
 - Restored virtual block, metadata, icon-transform and registry-key reads across material properties, items,
   strength, icon loading and rendering. Preserved the constructor's direct argument use, private reflective fields,
@@ -1665,7 +1665,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   accessors. These are verified extension-contract regressions, without a demonstrated current-pack gameplay
   failure. Evidence is under ignored `run/conversion-review/`; migration-plan changes remain deferred.
 
-### 2026-09-04 — Java material enumeration API
+### 2026-09-04 - Java material enumeration API
 
 - Committed two baseline cases first as `9b78099`, pinning the shared legacy array, uninitialized access, server ID
   ordering, missing slots and empty maps. Saved the pre-API jar and all 532 compiled tests before implementation.
@@ -1682,7 +1682,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   call sites and Extra Utilities' tuple-array readers have supported replacements; consumer changes, releases and
   pack adoption remain pending. Evidence is under ignored `run/migration-material-enumeration-reference/`.
 
-### 2026-09-04 — Java tile collection and traversal API
+### 2026-09-04 - Java tile collection and traversal API
 
 - Committed three baseline cases first as `5c1e760`, pinning captured Java views, lifecycle override dispatch,
   non-null binding checks and callback failure propagation. Saved the pre-API jar, source, reports, generated dumps
@@ -1704,7 +1704,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   386 member/type/reflection rows match the frozen `+678` inventory; consumer version changes do not permit bridge
   removal. Reference checkouts were not modified. Evidence: `run/migration-part-traversal-reference/`.
 
-### 2026-09-05 — Java tile loading/state API and documentation index
+### 2026-09-05 - Java tile loading/state API and documentation index
 
 - Committed four JVM and one Forge baseline cases first as `92273bd`. They pin storage aliasing/null state, binding
   and cache-hook order, stale ticking/old bindings, partial failures, exact/assignable reflection and generated slots.
@@ -1725,7 +1725,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   links. Updated the plan, ABI notes and GuideNH/Schematica adoption ledger; reference checkouts remain unchanged and
   consumer releases/pack adoption are pending. Evidence: `run/migration-part-loading-reference/`.
 
-### 2026-09-05 — Java collection occlusion query
+### 2026-09-05 - Java collection occlusion query
 
 - Committed three JVM baseline cases and stronger generated-trait assertions first as `6744f5b`. They pin pair order,
   both rejection directions, lazy null behavior, original exceptions and replacement-hook dispatch. Saved the pre-API
@@ -1747,7 +1747,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   has an explicit plan row and is the next candidate. Reference checkouts remain unchanged; client previews and
   consumer release/adoption remain separate gates. Evidence: `run/migration-part-occlusion-reference/`.
 
-### 2026-09-05 — Java box-versus-box occlusion query
+### 2026-09-05 - Java box-versus-box occlusion query
 
 - Committed three JVM baseline cases as `c7a3ed9` before changing production code. Both static and companion entries
   are checked for eager input collection, shallow snapshots, duplicate/callback order, short-circuiting, null handling
@@ -1766,7 +1766,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   27 consumers. Reference checkouts are unchanged; consumer release/adoption and manual client/pack checks remain
   pending. Next: multipart factory registration. Evidence: `run/migration-box-occlusion-reference/`.
 
-### 2026-09-05 — Java part factory registration
+### 2026-09-05 - Java part factory registration
 
 - Committed four Forge baseline cases as `e4deac8`. Real mod initialization exercises all eight old registration
   descriptors. Tests pin lazy construction, owner/array identity, partial duplicate failures, closed-state ordering,
@@ -1788,7 +1788,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   external trait migration and physical-client/pack checks remain separate. Next API-table entry: render-ID accessors.
   Evidence: `run/migration-registration-reference/`.
 
-### 2026-09-05 — Java render-ID accessors
+### 2026-09-05 - Java render-ID accessors
 
 - Committed two JVM cases and one Forge case as `3c22ab6` before changing production code. They pin the initial -1
   sentinel, shared static/companion storage, all integer values and block render-type reads. Saved the reference jar,
@@ -1805,7 +1805,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   allocation/registration/rendering remain manual gates. Next API-table entry: the tile conversion result.
   Evidence: `run/migration-render-id-reference/`.
 
-### 2026-09-05 — Planned measured performance follow-up
+### 2026-09-05 - Planned measured performance follow-up
 
 - Added Phase 4b after checking the completed focused Phase 4 work. It covers realistic consumer/pack hot paths and
   broader startup, transition, client rendering, networking and memory costs, with repeated controlled comparisons.
@@ -1814,7 +1814,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   It can overlap consumer migration once representative API/extension workloads are stable. No new performance
   measurements or speedup claims are introduced by this plan update.
 
-### 2026-09-05 — Named Java tile conversion result
+### 2026-09-05 - Named Java tile conversion result
 
 - Committed three Forge characterization cases as `7396f2d` before production edits. Both legacy entries preserve
   existing-tile identity, null/false for nonconvertible blocks (including unrelated tile entities), and bound torch
@@ -1838,7 +1838,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   Java extensions, measured performance work and actual client/pack checks remain separate gates.
   Evidence: `run/migration-tile-conversion-reference/`.
 
-### 2026-09-05 — Supported registered-factory lookup
+### 2026-09-05 - Supported registered-factory lookup
 
 - Traced Schematica `3b03ee937953` from private Scala map lookup through `MicroblockClass.create(client, materialId)`
   and NBT loading. Existing `loadPart` selects server construction, so it cannot replace that client-preview lookup.
@@ -1863,7 +1863,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   material/shape restoration, all-parts rejection and notifications must retain their staged lifecycle.
   Evidence: `run/migration-factory-lookup-reference/`.
 
-### 2026-09-05 — Staged Java composite-tile generation
+### 2026-09-05 - Staged Java composite-tile generation
 
 - Traced Schematica and GuideNH generation followed by their distinct NBT/world/position/loading/notification steps.
   `MultipartHelper.createTileFromParts` constructs and loads a server tile immediately, so it cannot replace their
@@ -1888,7 +1888,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   microblock construction and preview rendering remain manual. Next bounded task: GuideNH's existing Java microblock
   creation entry and its documented contract. Evidence: `run/migration-composite-generation-reference/`.
 
-### 2026-09-05 — Existing Java microblock creation contract
+### 2026-09-05 - Existing Java microblock creation contract
 
 - Traced GuideNH's exact companion selection and shape-only promotion. The static Java creation method already
   delegates to that implementation, so no API addition, deprecation or production behavior change was needed.
@@ -1912,7 +1912,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   Next bounded task: GuideNH's private material access versus existing public accessors.
   Evidence: `run/migration-microblock-creation-reference/`.
 
-### 2026-09-05 — Typed GuideNH material access
+### 2026-09-05 - Typed GuideNH material access
 
 - Confirmed that existing `BlockMicroMaterial.block()` / `meta()` cover GuideNH's private-field read use case. Added
   Javadocs and a compiling complete material query using direct typed part traversal, material lookup and block
@@ -1941,7 +1941,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Next bounded task: Phase 9.2 internal-boundary Javadocs with a fresh caller audit, including supported `bindPart`
   and `internalPartChange`; external Java extension guidance and the measured performance pass remain separate.
 
-### 2026-09-05 — Document the internal API boundary
+### 2026-09-05 - Document the internal API boundary
 
 - Rechecked Phase 9.2 across 28 source checkouts and active Extra Utilities compatibility. Found no external calls to the
   15 listed implementation hooks. Reviewed name collisions: WR-CBE calls its own renderer's `loadIcons`; GuideNH
@@ -1969,7 +1969,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   with generated Forge coverage. Reference consumers remain unmodified; consumer releases/adoption, physical-client
   rendering and the focused measured performance pass remain separate gates.
 
-### 2026-09-05 — Clarify remaining work and active consumer support
+### 2026-09-05 - Clarify remaining work and active consumer support
 
 - Standardized Extra Utilities references as an active supported consumer. UtilitiesInExcess remains the intended
   replacement; switching the compatibility target awaits approval and pack adoption, with the replacement's FMP
@@ -1981,7 +1981,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   changed; the existing 571 JVM / 273 Forge checkpoint remains the runtime evidence. The post-commit build verifies
   clean artifact versions under the existing workflow.
 
-### 2026-09-05 — Java illuminated microblock extension example
+### 2026-09-05 - Java illuminated microblock extension example
 
 - Traced ProjectRed `e173952e96a4`'s illuminated material/trait through registration, metadata, light aggregation and
   client halo geometry. The existing public `MicroblockGenerator.registerTrait(String)` already selects Java input;
@@ -2016,7 +2016,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   lifecycle guidance; broader transformed-tile compilation guidance and remaining audited reflection replacements
   remain separate. The performance pass, consumer release/adoption and final Scala removal gates are unchanged.
 
-### 2026-09-05 — Java block converter registration and lifecycle
+### 2026-09-05 - Java block converter registration and lifecycle
 
 - Reused existing `IPartConverter` / `registerConverter` / `convertBlock`; no API addition, descriptor change or
   production method-body change. Javadocs now describe block iterable ownership, ordered/duplicate registration,
@@ -2047,7 +2047,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   checks. Next: source-compilation guidance and safe public access for transformed tile traits. Remaining reflection
   capabilities, client validation, downstream releases/adoption and final Scala removal stay open.
 
-### 2026-09-05 — Stable Java access to transformed tile traits
+### 2026-09-05 - Stable Java access to transformed tile traits
 
 - Committed baseline `bfe5b86` before production documentation changes. Two Forge tests execute javac-compiled raw
   consumer calls: `TRedstoneTile.openConnections` fails with IncompatibleClassChangeError and `TSlottedTile.v_partMap`
@@ -2075,7 +2075,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
   released or counted as adopted. Custom tile-trait authoring examples, slot mutation, remaining reflection APIs and
   physical-client/full-pack validation remain open. Evidence: `run/migration-tile-trait-access-reference/`.
 
-### 2026-09-08 — Stable slot refresh for stored parts
+### 2026-09-08 - Stable slot refresh for stored parts
 
 - Traced OpenComputers PrintPart's state toggle at the recorded consumer revision. It changes its slot mask, clears
   every live slot entry equal to itself, calls the virtual `bindPart` chain once, then performs its own sound, part
@@ -2098,7 +2098,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Consumer source/release/adoption remain pending. Next bounded task: a custom Java tile-trait authoring example with
   generated Forge coverage; remaining audited reflection replacements and physical-client checks stay separate.
 
-### 2026-09-08 — Custom Java tile-trait authoring
+### 2026-09-08 - Custom Java tile-trait authoring
 
 - Committed baseline `d98e48f` before production documentation changes. Its Forge example registers a top-level Java
   trait by name during initialization and verifies server/client selection, stable capability dispatch, mixed-part
@@ -2119,7 +2119,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Next bounded task: expose supported button-orientation customization for Et Futurum, then cover Iguana's saw-strength
   customization. Consumer adoption, physical-client/full-pack checks and measured performance remain separate gates.
 
-### 2026-09-09 — Supported multipart button orientations
+### 2026-09-09 - Supported multipart button orientations
 
 - Inspected Et Futurum Requiem at `78a5744dfd33`. Its initialization hook reflectively obtains the two public static
   `ButtonPart` direction arrays, writes metadata `0` to `UP` and metadata `5` to `DOWN` in both directions, then catches
@@ -2141,7 +2141,7 @@ mean a check was skipped. The last two sections hold records moved from the reti
 - Next bounded task: expose supported saw-strength customization for Iguana. Consumer adoption, physical-client/full-pack
   checks and measured performance remain separate gates.
 
-### 2026-09-09 — Supported saw-strength mutation
+### 2026-09-09 - Supported saw-strength mutation
 
 - Inspected IguanaTweaksTConstruct `2.7.12` at `2bc09889d3e2`. Its post-init loop reads and writes the private
   `ItemSaw.harvestLevel` field with boxed reflection, then uses the changed value for cutting and tooltips. The
@@ -2167,9 +2167,9 @@ mean a check was skipped. The last two sections hold records moved from the reti
 
 ## Phase 4 focused performance records (2026-08-27 / 2026-08-28)
 
-Recorded results from the focused pre-optimization baseline, moved here when `JAVA_MIGRATION.md#phase-4b--measured-performance-pass` was folded
+Recorded results from the focused pre-optimization baseline, moved here when `docs/migration/README.md#phase-4b--measured-performance-pass` was folded
 into the plan. Each result is scoped to its recorded workload and revision. The reusable protocol, harness commands
-and workload description are in [the plan](../../JAVA_MIGRATION.md#phase-4b--measured-performance-pass).
+and workload description are in [the plan](README.md#phase-4b--measured-performance-pass).
 
 ## Baseline captured 2026-08-27
 
@@ -2308,9 +2308,9 @@ snapshots before publishing a replacement immutable `Seq`.
 
 ## JVM Downgrader integration records (2026-09-08 / 2026-09-09)
 
-Per-batch verification records from the scoped modern-Java integration, moved here when `JAVA_MIGRATION.md#modern-java-readability-policy`
+Per-batch verification records from the scoped modern-Java integration, moved here when `docs/migration/README.md#modern-java-readability-policy`
 was folded into the plan. The build arrangement, eligibility rules, fastutil decision and limits are in
-[the plan](../../JAVA_MIGRATION.md#modern-java-readability-policy).
+[the plan](README.md#modern-java-readability-policy).
 
 ### Per-batch results
 

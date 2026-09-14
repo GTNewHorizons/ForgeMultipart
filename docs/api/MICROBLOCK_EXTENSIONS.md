@@ -47,7 +47,7 @@ The existing transformer cannot safely handle all inherited field/method accesse
 therefore delegate to an ordinary helper using an **Object parameter**, then cast to `Microblock` in that helper.
 This forces the required runtime cast and keeps loops, allocation and callbacks outside the transformed input.
 The three example files compile with Scala excluded from the Java classpath; they use Java 8 syntax because that is
-the verified joint-compilation/test boundary. See the [compiler constraints](../../JAVA_MIGRATION_HANDOFF.md#retained-compiler-constraints).
+the verified joint-compilation/test boundary. See the [compiler constraints](../migration/HANDOFF.md#retained-compiler-constraints).
 
 ## Behavioral contract
 
@@ -82,7 +82,7 @@ A headless compiler probe retains the actual compiled client method in a uniquel
 side annotation from the test input. It checks generated dispatch, pass filtering and queued coordinates/colour/bounds.
 That is **not** a physical-client construction, side-selection or GPU test. Existing side-filtering tests cover the
 compiler separately; actual client generation, connector-dependent halos, lighting and previews remain required
-checks in the [manual checklist](../../JAVA_MIGRATION_MANUAL_CHECKS.md).
+checks in the [manual checklist](../migration/MANUAL_CHECKS.md).
 
 ProjectRed's reference checkout is unchanged. Its migration must preserve registration order/names, wire the existing
 configuration and halo queue, release the consumer, and validate the released jar in the pack. Keep ProjectRed's
