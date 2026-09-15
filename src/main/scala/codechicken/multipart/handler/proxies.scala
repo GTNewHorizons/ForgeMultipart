@@ -13,7 +13,7 @@ import codechicken.lib.packet.PacketCustom
 import net.minecraft.world.ChunkCoordIntPair
 import codechicken.lib.vec.BlockCoord
 import codechicken.lib.world.{TileChunkLoadHook, WorldExtensionManager}
-import cpw.mods.fml.common.FMLCommonHandler
+import cpw.mods.fml.common.{FMLCommonHandler, Loader}
 import cpw.mods.fml.common.registry.GameRegistry
 import net.minecraft.block.Block
 import org.apache.logging.log4j.Logger
@@ -90,6 +90,8 @@ class MultipartProxy_serverImpl {
     TileChunkLoadHook.init()
 
     MultipartCompatiblity.load()
+    if (Loader.isModLoaded("cubicchunks"))
+      CubicChunksCompat.init()
   }
 
   def onTileClassBuilt(t: Class[_ <: TileEntity]) {

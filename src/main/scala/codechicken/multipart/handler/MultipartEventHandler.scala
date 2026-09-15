@@ -1,30 +1,28 @@
 package codechicken.multipart.handler
 
-import codechicken.multipart.{
-  TileCache,
-  TileMultipart,
-  MultiPartRegistry,
-  BlockMultipart
-}
+import codechicken.multipart.{BlockMultipart, TileCache, TileMultipart}
 import cpw.mods.fml.common.eventhandler.{EventPriority, SubscribeEvent}
-import net.minecraft.server.MinecraftServer
-import codechicken.lib.packet.PacketCustom
-import net.minecraftforge.event.world._
-import java.util.EnumSet
-import scala.collection.JavaConverters._
-import java.util.List
-import net.minecraft.entity.player.EntityPlayerMP
-import cpw.mods.fml.relauncher.SideOnly
-import cpw.mods.fml.relauncher.Side
-import net.minecraftforge.client.event.DrawBlockHighlightEvent
-import net.minecraft.util.MovingObjectPosition
-import net.minecraft.util.MovingObjectPosition.MovingObjectType
 import cpw.mods.fml.common.gameevent.TickEvent
+import cpw.mods.fml.relauncher.{Side, SideOnly}
+import net.minecraft.entity.player.EntityPlayerMP
+import net.minecraft.server.MinecraftServer
+import net.minecraft.tileentity.TileEntity
+import net.minecraft.util.MovingObjectPosition.MovingObjectType
+import net.minecraft.world.ChunkPosition
+import net.minecraftforge.client.event.DrawBlockHighlightEvent
+import net.minecraftforge.event.world._
+
+import java.util.List
+import scala.collection.JavaConverters._
 
 object MultipartEventHandler {
   @SubscribeEvent(priority = EventPriority.HIGHEST)
   def tileEntityLoad(event: ChunkDataEvent.Load) {
-    MultipartSaveLoad.loadTiles(event.getChunk)
+    MultipartSaveLoad.loadTiles(
+      event.getChunk.worldObj,
+      event.getChunk.chunkTileEntityMap
+        .asInstanceOf[java.util.Map[ChunkPosition, TileEntity]]
+    )
   }
 
   @SubscribeEvent
