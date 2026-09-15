@@ -6,8 +6,7 @@ An API for dynamically handling different functional parts in the one block spac
 Requirements:
 * The latest version of CCL (files.minecraftforge.net/CodeChickenLib/)
 * Forge
-* JDK 8 and JDK 25. The mod targets Java 8, but a small set of helpers is compiled at Java 21 by the
-  `compileModernJava` task and downgraded to Java 8, so both toolchains must be resolvable to build.
+* JDK 8. The mod compiles directly for Java 8.
 * A scala compatible IDE and project (For eclipse, download the scala eclipse plugin and right click on the project -> Add Scala Nature).
   Most of the codebase is Java now; the Java sources live under `src/main/scala` so they can be joint-compiled
   with the Scala files that remain.

@@ -74,8 +74,8 @@ final class PostMicroblockClientLogic {
 
         @Override
         public BoxedUnit apply(TMultiPart other) {
-            if (other instanceof PostMicroblock post && !other.equals(part)) {
-                part.shrinkPost(post);
+            if (other instanceof PostMicroblock && !other.equals(part)) {
+                part.shrinkPost((PostMicroblock) other);
             }
             return BoxedUnit.UNIT;
         }

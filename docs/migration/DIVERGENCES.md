@@ -205,14 +205,6 @@ These are accepted once for the migration, not repeated for every otherwise equi
   the retained getter and old Iguana reflection. Its name, type and visibility remain unchanged.
 - TickScheduler's private Scala scheduler types become package-private static nested Java classes, retaining their
   binary names.
-- The modern-syntax helpers that have nested or anonymous classes carry `xyz.wagyourtail.jvmdg.j11.NestHost` and
-  `NestMembers` annotations on 23 packaged classes, recording nest relationships Java 8 class files cannot express.
-  These annotation types are deliberately not shipped and JVM Downgrader is not a runtime dependency: the packaged
-  classes contain no executable Downgrader API reference, and reflection skips an annotation whose type is absent
-  instead of throwing, so `getAnnotations()` on these classes returns an empty array on a Java 8 runtime. Forge and
-  FMP's own scanners read annotation tables through ASM without loading the types. Do not shade the Downgrader API
-  jar to resolve them; that would place FMP classes in a namespace it does not own and duplicate types other
-  installed mods already provide.
 
 ## Updating this ledger
 

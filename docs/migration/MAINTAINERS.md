@@ -10,29 +10,16 @@ These constraints explain the retained build and runtime machinery. Consumer mig
   modern-runtime policy spans Java 17–26; validate packaged releases on the selected supported runtime. Equal
   throughput across Java versions is not required. The deobfuscated Forge test runner uses Java 8; the current
   modern dedicated-server run tasks are not a substitute for packaged validation.
-- Keep `enableModernJavaSyntax = false` while Scala 2.11.5 remains. The convention plugin's global JVM Downgrader
-  mode forces a modern toolchain that Scala cannot run on. With gtnhgradle 2.0.29, forcing Java 8 also conflicts
-  with the mode's multi-release version constraints. Revisit the supported global mode after Scala removal,
-  including an explicit stubs-provider decision; `gtnhlib` adds a runtime dependency and shading is rejected in
-  [DIVERGENCES.md](DIVERGENCES.md).
-- Normal Java and joint Scala/Java compilation use Java 8. `modernJavaPaths` in `build.gradle` is the single list
-  that both excludes modern helpers from joint javac and includes them in `compileModernJava`. Scalac resolves
-  their declarations through `-sourcepath`; JDK 25 compiles their bodies with `--release 21` after Scala compilation.
-  Only `downgradeModernJava`'s Java 8 output joins main outputs, tests, Forge and packaged jars.
-- Keep declaration inputs and downgrade output directories declared to Gradle. A modern-source exclusion without
-  a matching inclusion can silently omit a class. Helpers importing retained Scala models cannot simply move to
-  `src/main/java`: `compileJava` runs before those Scala types exist. Retire per-file routing when the dependency
-  cycle permits a source-set boundary, and remove the special routing after Scala removal.
+- Keep `enableModernJavaSyntax = false` while Scala 2.11.5 remains. Normal Java and joint Scala/Java compilation
+  use Java 8. Helpers importing retained Scala models belong in the joint `src/main/scala` source set because
+  `compileJava` runs before those Scala types exist.
 - `scalaCompileOptions.force = true` prevents stale `Tags.VERSION` constants in joint-compiled Java `@Mod`
   annotations. Zinc otherwise misses those consumers when the generated constant changes. Verify all five mod
   annotations in dev/release artifacts against their artifact version; replace the guard only with equivalent coverage.
-- Modernize bounded helpers only after checking declaration visibility, compile order, ABI and generated output.
-  Java 21 is the validated source ceiling. Records/sealed types are not automatic replacements for ABI-sensitive
-  models. New library APIs may need runtime stubs even when syntax downgrades successfully.
 - Keep registered trait inputs and compatibility facades conservative. Moving `RedstoneInteractions$` or
   `BlockMultipart` pulls transformer-sensitive dependencies; `RenderPartResolver` is needed by joint compilation
-  before the modern stage. Bootstrap and mixin source sets are not downgraded by this task. The explicit
-  `Microblock` cast in `PostMicroblockTraitLogic` is required by the retained Scala declaration.
+  before Java helpers that use it. The explicit `Microblock` cast in `PostMicroblockTraitLogic` is required by the
+  retained Scala declaration.
 - GTNHLib is compile-only here. Its fastutil compile classpath does not grant a runtime dependency. Declare that
   dependency explicitly before using fastutil in ordinary code; require profiling evidence for such a change.
 
@@ -106,7 +93,7 @@ mechanical ports. Coverage percentages and signature counts alone are insufficie
 
 A Scala-to-Java replacement needs clean verification: Zinc can retain the removed Scala class and package it
 instead of exercising the new source. Stop the daemon if Windows holds build outputs open. Verify packaged
-class version 52, unexpected downgrader API references and mod-version freshness, including after the release commit.
+class version 52 and mod-version freshness, including after the release commit.
 
 JUnit reports are under `build/test-results/test/` and `run/server/junit-out/`; inspect counts, failures, errors and
 skips. The Forge task rejects missing/failed reports. Keep that CI gate required. Generated dumps are under

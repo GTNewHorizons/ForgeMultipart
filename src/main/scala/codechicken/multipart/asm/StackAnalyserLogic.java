@@ -56,20 +56,18 @@ final class StackAnalyserLogic {
 
     static Type constType(Const constant) {
         Object value = constant.c();
-        return switch (value) {
-            case Byte ignored -> BYTE_TYPE;
-            case Short ignored -> SHORT_TYPE;
-            case Integer ignored -> INT_TYPE;
-            case Long ignored -> LONG_TYPE;
-            case Float ignored -> FLOAT_TYPE;
-            case Double ignored -> DOUBLE_TYPE;
-            case Character ignored -> CHAR_TYPE;
-            case Boolean ignored -> BOOLEAN_TYPE;
-            case String ignored -> getObjectType("java/lang/String");
-            case null -> getObjectType("java/lang/Object");
-            // The failure message rereads the virtual accessor after classification.
-            default -> throw new IllegalArgumentException("Unknown const " + constant.c());
-        };
+        if (value instanceof Byte) return BYTE_TYPE;
+        if (value instanceof Short) return SHORT_TYPE;
+        if (value instanceof Integer) return INT_TYPE;
+        if (value instanceof Long) return LONG_TYPE;
+        if (value instanceof Float) return FLOAT_TYPE;
+        if (value instanceof Double) return DOUBLE_TYPE;
+        if (value instanceof Character) return CHAR_TYPE;
+        if (value instanceof Boolean) return BOOLEAN_TYPE;
+        if (value instanceof String) return getObjectType("java/lang/String");
+        if (value == null) return getObjectType("java/lang/Object");
+        // The failure message rereads the virtual accessor after classification.
+        throw new IllegalArgumentException("Unknown const " + constant.c());
     }
 
     static void initialize(StackAnalyser a, Type owner, MethodNode method,
@@ -126,167 +124,256 @@ final class StackAnalyserLogic {
     }
 
     static void visitInsn(StackAnalyser a, AbstractInsnNode insn) {
-        switch (insn) {
-            case InsnNode ignored -> {
-                int op = insn.getOpcode();
-                switch (op) {
-                    case ACONST_NULL -> a.push(new Const(null, insn));
-                    case ICONST_M1 -> a.push(new Const(-1, insn));
-                    case ICONST_0 -> a.push(new Const(0, insn));
-                    case ICONST_1 -> a.push(new Const(1, insn));
-                    case ICONST_2 -> a.push(new Const(2, insn));
-                    case ICONST_3 -> a.push(new Const(3, insn));
-                    case ICONST_4 -> a.push(new Const(4, insn));
-                    case ICONST_5 -> a.push(new Const(5, insn));
-                    case LCONST_0 -> a.push(new Const(0L, insn));
-                    case LCONST_1 -> a.push(new Const(1L, insn));
-                    case FCONST_0 -> a.push(new Const(0f, insn));
-                    case FCONST_1 -> a.push(new Const(1f, insn));
-                    case FCONST_2 -> a.push(new Const(2f, insn));
-                    case DCONST_0 -> a.push(new Const(0d, insn));
-                    case DCONST_1 -> a.push(new Const(1d, insn));
-                    case POP -> rawPop(a);
-                    case POP2 -> {
-                        rawPop(a);
-                        rawPop(a);
-                    }
-                    case DUP -> a.push(peek(a));
-                    case DUP_X1 -> a.insert(2, peek(a));
-                    case DUP_X2 -> a.insert(3, peek(a));
-                    case DUP2 -> {
-                        a.push(a.peek(1));
-                        a.push(a.peek(1));
-                    }
-                    case DUP2_X1 -> {
-                        a.insert(3, a.peek(1));
-                        a.insert(3, peek(a));
-                    }
-                    case DUP2_X2 -> {
-                        a.insert(4, a.peek(1));
-                        a.insert(4, peek(a));
-                    }
-                    case SWAP -> a.push(a.pop(1));
-                    // Preserve the reference's inferred types, including conversions to int reporting double.
-                    case L2I, F2I, D2I -> a.push(new PrimitiveCast(pop(a), DOUBLE_TYPE, insn));
-                    case I2L, F2L, D2L -> a.push(new PrimitiveCast(pop(a), LONG_TYPE, insn));
-                    case I2F, L2F, D2F -> a.push(new PrimitiveCast(pop(a), FLOAT_TYPE, insn));
-                    case I2D, L2D, F2D -> a.push(new PrimitiveCast(pop(a), DOUBLE_TYPE, insn));
-                    case I2B -> a.push(new PrimitiveCast(pop(a), BYTE_TYPE, insn));
-                    case I2C -> a.push(new PrimitiveCast(pop(a), CHAR_TYPE, insn));
-                    case I2S -> a.push(new PrimitiveCast(pop(a), SHORT_TYPE, insn));
-                    case ARRAYLENGTH -> a.push(new ArrayLength(pop(a), insn));
-                    case ATHROW, MONITORENTER, MONITOREXIT -> pop(a);
-                    default -> {
-                        if (op >= IALOAD && op <= SALOAD) {
-                            a.push(new ArrayLoad(pop(a), pop(a), insn));
-                        } else if (op >= IASTORE && op <= SASTORE) {
-                            pop(a);
-                            pop(a);
-                            pop(a);
-                        } else if (op >= IADD && op <= DREM || op >= ISHL && op <= LXOR || op >= LCMP && op <= DCMPG) {
-                            a.push(new BinaryOp(op, pop(a), pop(a), insn));
-                        } else if (op >= INEG && op <= DNEG) {
-                            a.push(new UnaryOp(op, pop(a), insn));
-                        } else if (op >= IRETURN && op <= ARETURN) {
-                            pop(a);
-                        }
-                    }
-                }
-            }
-            case IntInsnNode intInsn -> {
-                switch (insn.getOpcode()) {
-                    case BIPUSH -> a.push(new Const((byte) intInsn.operand, insn));
-                    case SIPUSH -> a.push(new Const((short) intInsn.operand, insn));
-                    default -> throw new MatchError(insn.getOpcode());
-                }
-            }
-            case LdcInsnNode ldc -> {
-                if (insn.getOpcode() != LDC) throw new MatchError(insn.getOpcode());
-                a.push(new Const(ldc.cst, insn));
-            }
-            case VarInsnNode varInsn -> {
-                int op = insn.getOpcode();
-                if (op >= ILOAD && op <= ALOAD) {
-                    a.push(new Load(a.locals().apply(varInsn.var), insn));
-                } else if (op >= ISTORE && op <= ASTORE) {
-                    a.setL(varInsn.var, new Store(pop(a), insn));
-                } else {
-                    throw new MatchError(op);
-                }
-            }
-            case IincInsnNode incInsn -> {
-                if (insn.getOpcode() != IINC) throw new MatchError(insn.getOpcode());
-                a.setL(
-                        incInsn.var,
-                        new Store(
-                                new BinaryOp(
-                                        IINC,
-                                        new Const(incInsn.incr, insn),
-                                        new Load(a.locals().apply(incInsn.var), insn),
-                                        insn),
-                                insn));
-            }
-            case JumpInsnNode ignored -> {
-                int op = insn.getOpcode();
-                if (op >= IFEQ && op <= IFLE || op == IFNULL || op == IFNONNULL) {
+        if (insn instanceof InsnNode) {
+            int op = insn.getOpcode();
+            switch (op) {
+                case ACONST_NULL:
+                    a.push(new Const(null, insn));
+                    break;
+                case ICONST_M1:
+                    a.push(new Const(-1, insn));
+                    break;
+                case ICONST_0:
+                    a.push(new Const(0, insn));
+                    break;
+                case ICONST_1:
+                    a.push(new Const(1, insn));
+                    break;
+                case ICONST_2:
+                    a.push(new Const(2, insn));
+                    break;
+                case ICONST_3:
+                    a.push(new Const(3, insn));
+                    break;
+                case ICONST_4:
+                    a.push(new Const(4, insn));
+                    break;
+                case ICONST_5:
+                    a.push(new Const(5, insn));
+                    break;
+                case LCONST_0:
+                    a.push(new Const(0L, insn));
+                    break;
+                case LCONST_1:
+                    a.push(new Const(1L, insn));
+                    break;
+                case FCONST_0:
+                    a.push(new Const(0f, insn));
+                    break;
+                case FCONST_1:
+                    a.push(new Const(1f, insn));
+                    break;
+                case FCONST_2:
+                    a.push(new Const(2f, insn));
+                    break;
+                case DCONST_0:
+                    a.push(new Const(0d, insn));
+                    break;
+                case DCONST_1:
+                    a.push(new Const(1d, insn));
+                    break;
+                case POP:
+                    rawPop(a);
+                    break;
+                case POP2:
+                    rawPop(a);
+                    rawPop(a);
+                    break;
+                case DUP:
+                    a.push(peek(a));
+                    break;
+                case DUP_X1:
+                    a.insert(2, peek(a));
+                    break;
+                case DUP_X2:
+                    a.insert(3, peek(a));
+                    break;
+                case DUP2:
+                    a.push(a.peek(1));
+                    a.push(a.peek(1));
+                    break;
+                case DUP2_X1:
+                    a.insert(3, a.peek(1));
+                    a.insert(3, peek(a));
+                    break;
+                case DUP2_X2:
+                    a.insert(4, a.peek(1));
+                    a.insert(4, peek(a));
+                    break;
+                case SWAP:
+                    a.push(a.pop(1));
+                    break;
+                // Preserve the reference's inferred types, including conversions to int reporting double.
+                case L2I:
+                case F2I:
+                case D2I:
+                    a.push(new PrimitiveCast(pop(a), DOUBLE_TYPE, insn));
+                    break;
+                case I2L:
+                case F2L:
+                case D2L:
+                    a.push(new PrimitiveCast(pop(a), LONG_TYPE, insn));
+                    break;
+                case I2F:
+                case L2F:
+                case D2F:
+                    a.push(new PrimitiveCast(pop(a), FLOAT_TYPE, insn));
+                    break;
+                case I2D:
+                case L2D:
+                case F2D:
+                    a.push(new PrimitiveCast(pop(a), DOUBLE_TYPE, insn));
+                    break;
+                case I2B:
+                    a.push(new PrimitiveCast(pop(a), BYTE_TYPE, insn));
+                    break;
+                case I2C:
+                    a.push(new PrimitiveCast(pop(a), CHAR_TYPE, insn));
+                    break;
+                case I2S:
+                    a.push(new PrimitiveCast(pop(a), SHORT_TYPE, insn));
+                    break;
+                case ARRAYLENGTH:
+                    a.push(new ArrayLength(pop(a), insn));
+                    break;
+                case ATHROW:
+                case MONITORENTER:
+                case MONITOREXIT:
                     pop(a);
-                } else if (op >= IF_ICMPEQ && op <= IF_ACMPNE) {
-                    pop(a);
-                    pop(a);
-                } else if (op == JSR) {
-                    a.push(new ReturnAddress(insn));
-                } else if (op != GOTO) {
-                    throw new MatchError(op);
-                }
-            }
-            case TableSwitchInsnNode ignored -> pop(a);
-            case LookupSwitchInsnNode ignored -> pop(a);
-            case FieldInsnNode field -> {
-                switch (insn.getOpcode()) {
-                    case GETSTATIC -> a.push(new GetField(null, field, insn));
-                    case PUTSTATIC -> pop(a);
-                    case GETFIELD -> a.push(new GetField(pop(a), field, insn));
-                    case PUTFIELD -> {
+                    break;
+                default:
+                    if (op >= IALOAD && op <= SALOAD) {
+                        a.push(new ArrayLoad(pop(a), pop(a), insn));
+                    } else if (op >= IASTORE && op <= SASTORE) {
                         pop(a);
                         pop(a);
+                        pop(a);
+                    } else if (op >= IADD && op <= DREM || op >= ISHL && op <= LXOR || op >= LCMP && op <= DCMPG) {
+                        a.push(new BinaryOp(op, pop(a), pop(a), insn));
+                    } else if (op >= INEG && op <= DNEG) {
+                        a.push(new UnaryOp(op, pop(a), insn));
+                    } else if (op >= IRETURN && op <= ARETURN) {
+                        pop(a);
                     }
-                    default -> throw new MatchError(insn.getOpcode());
-                }
             }
-            case MethodInsnNode method -> {
-                switch (insn.getOpcode()) {
-                    case INVOKEVIRTUAL, INVOKESPECIAL, INVOKEINTERFACE ->
-                        a.push(new Invoke(insn.getOpcode(), a.popArgs(method.desc), pop(a), method, insn));
-                    case INVOKESTATIC ->
-                        a.push(new Invoke(insn.getOpcode(), a.popArgs(method.desc), null, method, insn));
-                    default -> throw new MatchError(insn.getOpcode());
-                }
+        } else if (insn instanceof IntInsnNode) {
+            IntInsnNode intInsn = (IntInsnNode) insn;
+            switch (insn.getOpcode()) {
+                case BIPUSH:
+                    a.push(new Const((byte) intInsn.operand, insn));
+                    break;
+                case SIPUSH:
+                    a.push(new Const((short) intInsn.operand, insn));
+                    break;
+                default:
+                    throw new MatchError(insn.getOpcode());
             }
-            case TypeInsnNode typeInsn -> {
-                switch (insn.getOpcode()) {
-                    case NEW -> a.push(new New(getObjectType(typeInsn.desc), insn));
-                    case NEWARRAY -> a.push(new NewArray(pop(a), getObjectType(typeInsn.desc), insn));
-                    case ANEWARRAY -> a.push(new NewArray(pop(a), getObjectType("[" + typeInsn.desc), insn));
-                    case CHECKCAST -> a.push(new Cast(pop(a), getObjectType(typeInsn.desc), insn));
-                    case INSTANCEOF -> a.push(new UnaryOp(INSTANCEOF, pop(a), insn));
-                    default -> throw new MatchError(insn.getOpcode());
-                }
+        } else if (insn instanceof LdcInsnNode) {
+            if (insn.getOpcode() != LDC) throw new MatchError(insn.getOpcode());
+            a.push(new Const(((LdcInsnNode) insn).cst, insn));
+        } else if (insn instanceof VarInsnNode) {
+            VarInsnNode varInsn = (VarInsnNode) insn;
+            int op = insn.getOpcode();
+            if (op >= ILOAD && op <= ALOAD) {
+                a.push(new Load(a.locals().apply(varInsn.var), insn));
+            } else if (op >= ISTORE && op <= ASTORE) {
+                a.setL(varInsn.var, new Store(pop(a), insn));
+            } else {
+                throw new MatchError(op);
             }
-            case MultiANewArrayInsnNode multi -> {
-                StackEntry[] sizes = new StackEntry[multi.dims];
-                for (int i = 0; i < sizes.length; i++) sizes[i] = pop(a);
-                a.push(new NewMultiArray(sizes, getType(multi.desc), insn));
+        } else if (insn instanceof IincInsnNode) {
+            IincInsnNode incInsn = (IincInsnNode) insn;
+            if (insn.getOpcode() != IINC) throw new MatchError(insn.getOpcode());
+            a.setL(
+                    incInsn.var,
+                    new Store(
+                            new BinaryOp(
+                                    IINC,
+                                    new Const(incInsn.incr, insn),
+                                    new Load(a.locals().apply(incInsn.var), insn),
+                                    insn),
+                            insn));
+        } else if (insn instanceof JumpInsnNode) {
+            int op = insn.getOpcode();
+            if (op >= IFEQ && op <= IFLE || op == IFNULL || op == IFNONNULL) {
+                pop(a);
+            } else if (op >= IF_ICMPEQ && op <= IF_ACMPNE) {
+                pop(a);
+                pop(a);
+            } else if (op == JSR) {
+                a.push(new ReturnAddress(insn));
+            } else if (op != GOTO) {
+                throw new MatchError(op);
             }
-            case LabelNode label -> {
-                Option<TryCatchBlockNode> handler = a.codechicken$multipart$asm$StackAnalyser$$catchHandlers()
-                        .get(label);
-                if (handler instanceof Some) {
-                    a.push(new CaughtException(Type.getType(((Some<TryCatchBlockNode>) handler).x().type), insn));
-                } else if (!None$.MODULE$.equals(handler)) {
-                    throw new MatchError(handler);
-                }
+        } else if (insn instanceof TableSwitchInsnNode || insn instanceof LookupSwitchInsnNode) {
+            pop(a);
+        } else if (insn instanceof FieldInsnNode) {
+            FieldInsnNode field = (FieldInsnNode) insn;
+            switch (insn.getOpcode()) {
+                case GETSTATIC:
+                    a.push(new GetField(null, field, insn));
+                    break;
+                case PUTSTATIC:
+                    pop(a);
+                    break;
+                case GETFIELD:
+                    a.push(new GetField(pop(a), field, insn));
+                    break;
+                case PUTFIELD:
+                    pop(a);
+                    pop(a);
+                    break;
+                default:
+                    throw new MatchError(insn.getOpcode());
             }
-            case null, default -> {}
+        } else if (insn instanceof MethodInsnNode) {
+            MethodInsnNode method = (MethodInsnNode) insn;
+            switch (insn.getOpcode()) {
+                case INVOKEVIRTUAL:
+                case INVOKESPECIAL:
+                case INVOKEINTERFACE:
+                    a.push(new Invoke(insn.getOpcode(), a.popArgs(method.desc), pop(a), method, insn));
+                    break;
+                case INVOKESTATIC:
+                    a.push(new Invoke(insn.getOpcode(), a.popArgs(method.desc), null, method, insn));
+                    break;
+                default:
+                    throw new MatchError(insn.getOpcode());
+            }
+        } else if (insn instanceof TypeInsnNode) {
+            TypeInsnNode typeInsn = (TypeInsnNode) insn;
+            switch (insn.getOpcode()) {
+                case NEW:
+                    a.push(new New(getObjectType(typeInsn.desc), insn));
+                    break;
+                case NEWARRAY:
+                    a.push(new NewArray(pop(a), getObjectType(typeInsn.desc), insn));
+                    break;
+                case ANEWARRAY:
+                    a.push(new NewArray(pop(a), getObjectType("[" + typeInsn.desc), insn));
+                    break;
+                case CHECKCAST:
+                    a.push(new Cast(pop(a), getObjectType(typeInsn.desc), insn));
+                    break;
+                case INSTANCEOF:
+                    a.push(new UnaryOp(INSTANCEOF, pop(a), insn));
+                    break;
+                default:
+                    throw new MatchError(insn.getOpcode());
+            }
+        } else if (insn instanceof MultiANewArrayInsnNode) {
+            MultiANewArrayInsnNode multi = (MultiANewArrayInsnNode) insn;
+            StackEntry[] sizes = new StackEntry[multi.dims];
+            for (int i = 0; i < sizes.length; i++) sizes[i] = pop(a);
+            a.push(new NewMultiArray(sizes, getType(multi.desc), insn));
+        } else if (insn instanceof LabelNode) {
+            Option<TryCatchBlockNode> handler = a.codechicken$multipart$asm$StackAnalyser$$catchHandlers()
+                    .get((LabelNode) insn);
+            if (handler instanceof Some) {
+                a.push(new CaughtException(Type.getType(((Some<TryCatchBlockNode>) handler).x().type), insn));
+            } else if (!None$.MODULE$.equals(handler)) {
+                throw new MatchError(handler);
+            }
         }
     }
 }

@@ -42,8 +42,8 @@ final class HollowMicroblockTraitLogic {
         }
         // The second virtual lookup is observable when a part overrides tile().
         TMultiPart center = ((TMultiPart) part).tile().partMap(6);
-        if (center instanceof ISidedHollowConnect connection) {
-            return connection.getHollowSize(part.getSlot());
+        if (center instanceof ISidedHollowConnect) {
+            return ((ISidedHollowConnect) center).getHollowSize(part.getSlot());
         }
         return 8;
     }
@@ -60,15 +60,26 @@ final class HollowMicroblockTraitLogic {
         double z1 = c.min.z;
         double z2 = c.max.z;
         int slot = part.getSlot();
-        Cuboid6[] boxes = switch (slot) {
-            case 0, 1 -> new Cuboid6[] { new Cuboid6(d2, y1, d1, x2, y2, d2), new Cuboid6(x1, y1, d1, d1, y2, d2),
-                    new Cuboid6(x1, y1, d2, x2, y2, z2), new Cuboid6(x1, y1, z1, x2, y2, d1) };
-            case 2, 3 -> new Cuboid6[] { new Cuboid6(d1, d2, z1, d2, y2, z2), new Cuboid6(d1, y1, z1, d2, d1, z2),
-                    new Cuboid6(d2, y1, z1, x2, y2, z2), new Cuboid6(x1, y1, z1, d1, y2, z2) };
-            case 4, 5 -> new Cuboid6[] { new Cuboid6(x1, d1, d2, x2, d2, z2), new Cuboid6(x1, d1, z1, x2, d2, d1),
-                    new Cuboid6(x1, d2, z1, x2, y2, z2), new Cuboid6(x1, y1, z1, x2, d1, z2) };
-            default -> throw new MatchError(slot);
-        };
+        Cuboid6[] boxes;
+        switch (slot) {
+            case 0:
+            case 1:
+                boxes = new Cuboid6[] { new Cuboid6(d2, y1, d1, x2, y2, d2), new Cuboid6(x1, y1, d1, d1, y2, d2),
+                        new Cuboid6(x1, y1, d2, x2, y2, z2), new Cuboid6(x1, y1, z1, x2, y2, d1) };
+                break;
+            case 2:
+            case 3:
+                boxes = new Cuboid6[] { new Cuboid6(d1, d2, z1, d2, y2, z2), new Cuboid6(d1, y1, z1, d2, d1, z2),
+                        new Cuboid6(d2, y1, z1, x2, y2, z2), new Cuboid6(x1, y1, z1, d1, y2, z2) };
+                break;
+            case 4:
+            case 5:
+                boxes = new Cuboid6[] { new Cuboid6(x1, d1, d2, x2, d2, z2), new Cuboid6(x1, d1, z1, x2, d2, d1),
+                        new Cuboid6(x1, d2, z1, x2, y2, z2), new Cuboid6(x1, y1, z1, x2, d1, z2) };
+                break;
+            default:
+                throw new MatchError(slot);
+        }
         return JavaConversions.seqAsJavaList(sequence(boxes));
     }
 

@@ -25,52 +25,7 @@ tasks.test {
     }
 }
 
-// Scope modern syntax to these helpers; retained Scala and joint Java stay on Java 8.
-apply plugin: xyz.wagyourtail.jvmdg.gradle.JVMDowngraderPlugin
-
-// Single source of truth for the modern-syntax helpers. These are compiled by compileModernJava
-// and must be excluded from compileScala; keep one list, because a file excluded from the joint
-// Scala compile but absent from this list is never compiled at all, and nothing reports it.
-def modernJavaPaths = [
-    'codechicken/multipart/asm/StackAnalyserLogic.java',
-    'codechicken/multipart/asm/JavaTraitRegistration.java',
-    'codechicken/multipart/asm/ClassInfoLookup.java',
-    'codechicken/multipart/asm/ScalaSignatureParser.java',
-    'codechicken/microblock/HollowMicroblockTraitLogic.java',
-    'codechicken/microblock/PostMicroblockClientLogic.java',
-    'codechicken/microblock/HollowMicroblockClientLogic.java',
-    'codechicken/microblock/TMicroOcclusionLogic.java',
-]
-def modernJavaSources = sourceSets.main.scala.matching { include modernJavaPaths }
-def legacyScala = tasks.named('compileScala') {
+tasks.named('compileScala') {
     // Zinc does not invalidate joint-compiled Java annotations when Tags.VERSION changes.
     scalaCompileOptions.force = true
-    // Scalac reads the Java declaration without asking Java 8 javac to compile its body.
-    exclude modernJavaPaths
-    scalaCompileOptions.additionalParameters = ['-sourcepath', file('src/main/scala').absolutePath]
-    inputs.files(modernJavaSources).withPropertyName('modernJavaDeclarations').withPathSensitivity(PathSensitivity.RELATIVE)
 }
-
-def compileModernJava = tasks.register('compileModernJava', JavaCompile) {
-    source(modernJavaSources)
-    classpath = sourceSets.main.compileClasspath + files(
-        tasks.named('compileJava').flatMap { it.destinationDirectory },
-        legacyScala.flatMap { it.destinationDirectory })
-    destinationDirectory = layout.buildDirectory.dir('classes/java/modern')
-    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(25) }
-    options.release = 21
-    options.encoding = 'UTF-8'
-}
-
-def downgradeModernJava = tasks.register('downgradeModernJava', xyz.wagyourtail.jvmdg.gradle.task.files.DowngradeFiles) {
-    inputCollection = files(compileModernJava.flatMap { it.destinationDirectory })
-    classpath = compileModernJava.get().classpath
-    downgradeTo = JavaVersion.VERSION_1_8
-    multiReleaseOriginal = false
-    multiReleaseVersions = [] as Set
-    // The bundled plugin otherwise declares outputs only when inputs already exist.
-    outputs.dirs(outputMap.values())
-}
-
-sourceSets.main.output.classesDirs.from(downgradeModernJava.map { it.outputCollection })
-tasks.named('classes') { dependsOn(downgradeModernJava) }

@@ -9,9 +9,10 @@ final class TMicroOcclusionLogic {
     private TMicroOcclusionLogic() {}
 
     static boolean occlusionTest(TMicroOcclusion part, TMultiPart next) {
-        if (!(next instanceof TMicroOcclusion other)) {
+        if (!(next instanceof TMicroOcclusion)) {
             return true;
         }
+        TMicroOcclusion other = (TMicroOcclusion) next;
         int shape1 = MicroOcclusion$.MODULE$.shapePriority(part.getSlot());
         int shape2 = MicroOcclusion$.MODULE$.shapePriority(other.getSlot());
         if (other.getSize() + part.getSize() > 8) {

@@ -157,18 +157,22 @@ final class ScalaSignatureParser {
         Bytes bytes = entry.bytes();
         ByteCodeReader reader = bytes.reader();
         byte id = entry.id();
-        return switch (id) {
-            case 1, 2 -> reader.readString(bytes.len());
-            case 3 -> sig.NoSymbol().full();
-            case 9, 10 -> {
+        switch (id) {
+            case 1:
+            case 2:
+                return reader.readString(bytes.len());
+            case 3:
+                return sig.NoSymbol().full();
+            case 9:
+            case 10:
                 String name = sig.evalS(reader.readNat());
                 if (bytes.pos() + bytes.len() > reader.pos()) {
                     name = sig.evalS(reader.readNat()) + "." + name;
                 }
-                yield name;
-            }
-            default -> throw new MatchError(Byte.valueOf(id));
-        };
+                return name;
+            default:
+                throw new MatchError(Byte.valueOf(id));
+        }
     }
 
     static List<?> evalList(ScalaSignature sig, ByteCodeReader reader) {
@@ -181,36 +185,61 @@ final class ScalaSignatureParser {
 
     static Object eval(ScalaSignature sig, int index, Object entry, ByteCodeReader reader, byte id) {
         // The Scala optimizer constructs case classes directly, without initializing their companions.
-        return switch (id) {
-            case 1, 2 -> sig.evalS(index);
-            case 3 -> sig.NoSymbol();
-            case 6 -> sig.new ClassSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
-                    reader.readNat());
-            case 7 -> sig.new ObjectSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
-                    reader.readNat());
-            case 8 -> sig.new MethodSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
-                    reader.readNat());
-            case 9, 10 -> sig.new ExternalSymbol(sig.evalS(index));
-            // NoPrefixType is treated as NoType in the reference.
-            case 11, 12 -> sig.NoType();
-            case 13 -> sig.new ThisType(sig.evalT(reader.readNat()));
-            case 14 -> sig.new SingleType(sig.evalT(reader.readNat()), sig.evalT(reader.readNat()));
-            // Retain the reference's parameterless interpretation of a bounded super type.
-            case 21, 48 -> sig.new ParameterlessType(sig.evalT(reader.readNat()));
-            case 25 -> sig.new BooleanLiteral(reader.readLong() != 0);
-            case 26 -> sig.new ByteLiteral((byte) reader.readLong());
-            case 27 -> sig.new ShortLiteral((short) reader.readLong());
-            case 28 -> sig.new CharLiteral((char) reader.readLong());
-            case 29 -> sig.new IntLiteral((int) reader.readLong());
-            case 30 -> sig.new LongLiteral(reader.readLong());
-            case 31 -> sig.new FloatLiteral(Float.intBitsToFloat((int) reader.readLong()));
-            case 32 -> sig.new DoubleLiteral(Double.longBitsToDouble(reader.readLong()));
-            case 33 -> sig.new StringLiteral(sig.evalS(reader.readNat()));
-            case 34 -> sig.NullLiteral();
-            case 35 -> sig.new TypeLiteral(sig.evalT(reader.readNat()));
-            case 36 -> sig.new EnumLiteral(sig.evalT(reader.readNat()));
-            default -> entry;
-        };
+        switch (id) {
+            case 1:
+            case 2:
+                return sig.evalS(index);
+            case 3:
+                return sig.NoSymbol();
+            case 6:
+                return sig.new ClassSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
+                        reader.readNat());
+            case 7:
+                return sig.new ObjectSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
+                        reader.readNat());
+            case 8:
+                return sig.new MethodSymbol(sig.evalS(reader.readNat()), sig.evalT(reader.readNat()), reader.readNat(),
+                        reader.readNat());
+            case 9:
+            case 10:
+                return sig.new ExternalSymbol(sig.evalS(index));
+            case 11:
+            case 12: // NoPrefixType is treated as NoType in the reference.
+                return sig.NoType();
+            case 13:
+                return sig.new ThisType(sig.evalT(reader.readNat()));
+            case 14:
+                return sig.new SingleType(sig.evalT(reader.readNat()), sig.evalT(reader.readNat()));
+            case 21:
+            case 48: // Retain the reference's parameterless interpretation of a bounded super type.
+                return sig.new ParameterlessType(sig.evalT(reader.readNat()));
+            case 25:
+                return sig.new BooleanLiteral(reader.readLong() != 0);
+            case 26:
+                return sig.new ByteLiteral((byte) reader.readLong());
+            case 27:
+                return sig.new ShortLiteral((short) reader.readLong());
+            case 28:
+                return sig.new CharLiteral((char) reader.readLong());
+            case 29:
+                return sig.new IntLiteral((int) reader.readLong());
+            case 30:
+                return sig.new LongLiteral(reader.readLong());
+            case 31:
+                return sig.new FloatLiteral(Float.intBitsToFloat((int) reader.readLong()));
+            case 32:
+                return sig.new DoubleLiteral(Double.longBitsToDouble(reader.readLong()));
+            case 33:
+                return sig.new StringLiteral(sig.evalS(reader.readNat()));
+            case 34:
+                return sig.NullLiteral();
+            case 35:
+                return sig.new TypeLiteral(sig.evalT(reader.readNat()));
+            case 36:
+                return sig.new EnumLiteral(sig.evalT(reader.readNat()));
+            default:
+                return entry;
+        }
     }
 
     static <T> IndexedSeq<T> collect(ScalaSignature sig, int id) {

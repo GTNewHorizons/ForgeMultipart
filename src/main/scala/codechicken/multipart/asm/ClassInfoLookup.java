@@ -191,7 +191,7 @@ final class ClassInfoLookup {
 
         // Preserve the compiler's argument-count indexing, including its behavior for wide stack values.
         StackEntry receiver = stack.peek(Type.getType(call.desc).getArgumentTypes().length);
-        if (!(receiver instanceof Load load) || !(load.e() instanceof This)) return Option.empty();
+        if (!(receiver instanceof Load) || !(((Load) receiver).e() instanceof This)) return Option.empty();
 
         return ASMMixinCompiler$.MODULE$.getClassInfo(stack.owner().getInternalName()).superClass()
                 .flatMap(new AbstractFunction1<ClassInfo, Option<MethodInfo>>() {
