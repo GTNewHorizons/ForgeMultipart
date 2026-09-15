@@ -20,7 +20,13 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
 
     public static BlockButton stoneButton = (BlockButton) Blocks.stone_button;
     public static BlockButton woodenButton = (BlockButton) Blocks.wooden_button;
+
+    /** Legacy mutable mapping retained for existing integrations; new code should use {@link #setOrientation}. */
     public static int[] metaSideMap = new int[] { -1, 4, 5, 2, 3, -1, -1, -1 };
+
+    /**
+     * Legacy mutable inverse mapping retained for existing integrations; new code should use {@link #setOrientation}.
+     */
     public static int[] sideMetaMap = new int[] { -1, -1, 3, 4, 1, 2 };
     public static Cuboid6[] cuboidRegions = setupCuboids();
 
@@ -44,6 +50,38 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
                                                         // isn't the actual instance, we'll copy from this later.
         }
         return regions;
+    }
+
+    /**
+     * Sets the attachment face represented by a button's orientation metadata.
+     *
+     * <p>
+     * Call this during common mod initialization, before button parts are loaded or placed. This updates both placement
+     * and metadata lookups and removes any previous inverse mappings displaced by the new pair.
+     *
+     * @param metadata       the orientation bits, from 0 through 7; do not include the pressed or button-type bits
+     * @param attachmentFace the face occupied by the multipart button
+     * @throws IllegalArgumentException if the metadata or face is outside its supported range
+     */
+    public static void setOrientation(int metadata, ForgeDirection attachmentFace) {
+        if (metadata < 0 || metadata > 7) {
+            throw new IllegalArgumentException("Button orientation metadata must be between 0 and 7: " + metadata);
+        }
+        if (attachmentFace == null || attachmentFace == ForgeDirection.UNKNOWN) {
+            throw new IllegalArgumentException("Button attachment face must be one of the six cardinal directions");
+        }
+
+        int side = attachmentFace.ordinal();
+        int previousSide = metaSideMap[metadata];
+        if (previousSide >= 0 && previousSide < sideMetaMap.length && sideMetaMap[previousSide] == metadata) {
+            sideMetaMap[previousSide] = -1;
+        }
+        int previousMetadata = sideMetaMap[side];
+        if (previousMetadata >= 0 && previousMetadata < metaSideMap.length && metaSideMap[previousMetadata] == side) {
+            metaSideMap[previousMetadata] = -1;
+        }
+        metaSideMap[metadata] = side;
+        sideMetaMap[side] = metadata;
     }
 
     public static BlockButton getButton(int meta) {
