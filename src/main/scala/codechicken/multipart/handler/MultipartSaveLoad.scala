@@ -87,7 +87,7 @@ object MultipartSaveLoad {
 
       if (!next) {
         if (t != null) {
-          t.setWorldObj(e.getValue.getWorldObj)
+          t.setWorldObj(world)
           t.validate()
           e.setValue(t)
         } else
