@@ -11,6 +11,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 
@@ -146,6 +148,30 @@ class MultipartSaveLoadFunctionalTest {
         assertEquals("mc_torch", rebuilt.jPartList().get(0).getType());
         assertEquals("mc_button", rebuilt.jPartList().get(1).getType());
         assertSame(foreignDummy, chunk.chunkTileEntityMap.get(foreignPosition));
+    }
+
+    @Test
+    void rebuildsTilesFromAStandaloneCubeMapWithTheEventWorld() {
+        World world = world();
+        TileMultipart savedTile = MultipartHelper.createTileFromParts(Arrays.asList(new TorchPart(5)));
+        savedTile.xCoord = 5;
+        savedTile.yCoord = 70;
+        savedTile.zCoord = 6;
+        NBTTagCompound savedTag = new NBTTagCompound();
+        savedTile.writeToNBT(savedTag);
+        ChunkPosition position = new ChunkPosition(5, 70, 6);
+        Map<ChunkPosition, TileEntity> tiles = new HashMap<>();
+        tiles.put(position, dummy(savedTag, null));
+
+        MultipartSaveLoad.loadTiles(world, tiles);
+
+        TileMultipart rebuilt = assertInstanceOf(TileMultipart.class, tiles.get(position));
+        assertSame(world, MultipartSaveLoad.loadingWorld());
+        assertSame(world, rebuilt.getWorldObj());
+        assertEquals(5, rebuilt.xCoord);
+        assertEquals(70, rebuilt.yCoord);
+        assertEquals(6, rebuilt.zCoord);
+        assertEquals("mc_torch", rebuilt.jPartList().get(0).getType());
     }
 
     private static TileEntity dummy(NBTTagCompound tag, World world) {

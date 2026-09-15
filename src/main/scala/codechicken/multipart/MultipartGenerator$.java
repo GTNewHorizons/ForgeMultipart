@@ -144,8 +144,11 @@ public final class MultipartGenerator$ implements ScratchBitSet {
     }
 
     public void silentAddTile(World world, BlockCoord pos, TileEntity tile) {
+        tile.xCoord = pos.x;
+        tile.yCoord = pos.y;
+        tile.zCoord = pos.z;
         Chunk chunk = world.getChunkFromBlockCoords(pos.x, pos.z);
-        if (chunk != null) chunk.func_150812_a(pos.x & 15, pos.y, pos.z & 15, tile);
+        if (chunk != null) chunk.addTileEntity(tile);
     }
 
     /**

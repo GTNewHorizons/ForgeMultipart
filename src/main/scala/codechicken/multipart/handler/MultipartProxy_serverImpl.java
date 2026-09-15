@@ -16,6 +16,7 @@ import codechicken.multipart.BlockMultipart;
 import codechicken.multipart.MultipartGenerator;
 import codechicken.multipart.TickScheduler$;
 import cpw.mods.fml.common.FMLCommonHandler;
+import cpw.mods.fml.common.Loader;
 import cpw.mods.fml.common.registry.GameRegistry;
 
 public class MultipartProxy_serverImpl {
@@ -96,6 +97,9 @@ public class MultipartProxy_serverImpl {
         TileChunkLoadHook.init();
 
         MultipartCompatiblity.load();
+        if (Loader.isModLoaded("cubicchunks")) {
+            CubicChunksCompat.init();
+        }
     }
 
     public void onTileClassBuilt(Class<? extends TileEntity> type) {

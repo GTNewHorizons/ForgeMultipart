@@ -4,6 +4,7 @@ import java.util.Map;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.tileentity.TileEntity;
+import net.minecraft.world.ChunkPosition;
 import net.minecraft.world.World;
 import net.minecraft.world.chunk.Chunk;
 
@@ -41,6 +42,10 @@ public final class MultipartSaveLoad {
 
     public static void loadTiles(Chunk chunk) {
         MultipartSaveLoad$.MODULE$.loadTiles(chunk);
+    }
+
+    public static void loadTiles(World world, Map<ChunkPosition, TileEntity> tiles) {
+        MultipartSaveLoad$.MODULE$.loadTiles(world, tiles);
     }
 
     /** Dummy registered tile that holds multipart NBT until its chunk finishes loading. */

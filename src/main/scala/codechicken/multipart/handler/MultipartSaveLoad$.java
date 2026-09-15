@@ -72,9 +72,12 @@ public final class MultipartSaveLoad$ {
 
     @SuppressWarnings("unchecked")
     public void loadTiles(Chunk chunk) {
-        loadingWorld = chunk.worldObj;
-        Iterator<Map.Entry<ChunkPosition, TileEntity>> iterator = ((Map<ChunkPosition, TileEntity>) chunk.chunkTileEntityMap)
-                .entrySet().iterator();
+        loadTiles(chunk.worldObj, (Map<ChunkPosition, TileEntity>) chunk.chunkTileEntityMap);
+    }
+
+    public void loadTiles(World world, Map<ChunkPosition, TileEntity> tiles) {
+        loadingWorld = world;
+        Iterator<Map.Entry<ChunkPosition, TileEntity>> iterator = tiles.entrySet().iterator();
 
         while (iterator.hasNext()) {
             Map.Entry<ChunkPosition, TileEntity> entry = iterator.next();
@@ -100,7 +103,7 @@ public final class MultipartSaveLoad$ {
                 replacement.xCoord = oldTile.xCoord;
                 replacement.yCoord = oldTile.yCoord;
                 replacement.zCoord = oldTile.zCoord;
-                replacement.setWorldObj(oldTile.getWorldObj());
+                replacement.setWorldObj(world);
                 replacement.validate();
                 entry.setValue(replacement);
             }

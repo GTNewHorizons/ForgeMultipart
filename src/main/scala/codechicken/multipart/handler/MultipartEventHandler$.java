@@ -1,10 +1,13 @@
 package codechicken.multipart.handler;
 
 import java.util.List;
+import java.util.Map;
 
 import net.minecraft.entity.player.EntityPlayerMP;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.tileentity.TileEntity;
 import net.minecraft.util.MovingObjectPosition.MovingObjectType;
+import net.minecraft.world.ChunkPosition;
 import net.minecraftforge.client.event.DrawBlockHighlightEvent;
 import net.minecraftforge.event.world.ChunkDataEvent;
 import net.minecraftforge.event.world.ChunkWatchEvent;
@@ -41,8 +44,11 @@ public final class MultipartEventHandler$ {
     }
 
     @SubscribeEvent(priority = EventPriority.HIGHEST)
+    @SuppressWarnings("unchecked")
     public void tileEntityLoad(ChunkDataEvent.Load event) {
-        MultipartSaveLoad.loadTiles(event.getChunk());
+        MultipartSaveLoad.loadTiles(
+                event.getChunk().worldObj,
+                (Map<ChunkPosition, TileEntity>) event.getChunk().chunkTileEntityMap);
     }
 
     @SubscribeEvent

@@ -27,6 +27,7 @@ class MultipartSaveLoadCharacterizationTest {
                     "getClassToNameMap()Ljava/util/Map;",
                     "hookLoader()V",
                     "loadTiles(Lnet/minecraft/world/chunk/Chunk;)V",
+                    "loadTiles(Lnet/minecraft/world/World;Ljava/util/Map;)V",
                     "loadingWorld()Lnet/minecraft/world/World;",
                     "loadingWorld_$eq(Lnet/minecraft/world/World;)V",
                     "registerTileClass(Ljava/lang/Class;)V"));
