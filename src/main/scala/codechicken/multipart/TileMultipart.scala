@@ -78,7 +78,8 @@ class TileMultipart extends TileEntity with IChunkLoadTile {
     val it = partList.iterator
     while (it.hasNext) {
       val p = it.next()
-      if (p.tile != null) f(p)
+      // A replaced tile can still receive queued callbacks after its parts have moved.
+      if (p.tile == this) f(p)
     }
   }
 
