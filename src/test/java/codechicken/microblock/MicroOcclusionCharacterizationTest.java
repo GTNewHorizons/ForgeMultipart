@@ -22,6 +22,7 @@ import org.objectweb.asm.Type;
 import codechicken.lib.vec.Cuboid6;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
+import scala.MatchError;
 
 class MicroOcclusionCharacterizationTest {
 
@@ -194,6 +195,13 @@ class MicroOcclusionCharacterizationTest {
             MicroOcclusion.shrink(alreadyInside, obstacle, side);
         }
         assertCuboid(original, alreadyInside);
+    }
+
+    @Test
+    void rejectsUnknownShrinkSidesWithScalaMatchError() {
+        Cuboid6 obstacle = Cuboid6.full.copy();
+        assertThrows(MatchError.class, () -> MicroOcclusion.shrink(Cuboid6.full.copy(), obstacle, 6));
+        assertThrows(MatchError.class, () -> MicroOcclusion$.MODULE$.shrink(Cuboid6.full.copy(), obstacle, 6));
     }
 
     @Test

@@ -158,7 +158,7 @@ public final class MicroOcclusion$ {
             case 2:
                 return (secondBits & 4) == 0 ? 4 : 5;
             default:
-                throw new IllegalArgumentException("Switch Falloff");
+                throw new MatchError(firstEdge >> 2);
         }
     }
 
