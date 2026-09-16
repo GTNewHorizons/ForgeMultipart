@@ -43,7 +43,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Add aggregate or lifecycle behavior to generated multipart tiles | `registerTrait(marker, trait)` - [custom Java tile traits, stable capabilities and transformer constraints](api/CUSTOM_TILE_TRAITS.md) |
 | Refresh slots after a stored part changes shape | `refreshPartSlots(TMultiPart)` - [ownership, equality and notification responsibilities](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) |
 | Add material-specific behavior to generated microblocks | `registerTrait(String)` and `IGeneratedMaterial` - [illuminated Java extension, compilation and side contracts](api/MICROBLOCK_EXTENSIONS.md) |
-| Change an existing FMP saw's cutting strength | `ItemSaw.setHarvestLevel(int)` - [state, lifecycle and Iguana migration](api/SAW_STRENGTH.md) |
+| Access built-in saws and change their cutting strength | `MicroblockProxy.sawStone()` and `ItemSaw.setHarvestLevel(int)` - [state, rendering and Iguana migration](api/SAW_STRENGTH.md) |
 | Read/index/search a tile's parts | `jPartList()` - [part collection ownership and order](api/PART_TRAVERSAL.md#collection-ownership-and-ordering) |
 | Run callbacks only on parts still owned by the tile | `forEachPart(Consumer)` - [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
 | Rebuild parts on an already prepared composite tile | `loadPartList(Collection)` - [part loading](api/PART_LOADING.md) |

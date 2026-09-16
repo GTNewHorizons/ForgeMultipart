@@ -19,6 +19,21 @@ The [compiling example](../../src/test/java/codechicken/microblock/examples/SawS
 setter call. Keep FMP-typed code in an optional compatibility class loaded only after the usual mod-presence and
 supported-version checks.
 
+Iguana's client proxy also reads the three built-in saws and the renderer mode through `MicroblockProxy$.MODULE$`.
+The Java facade exposes the same state directly:
+
+```java
+Item stoneSaw = MicroblockProxy.sawStone();
+Item ironSaw = MicroblockProxy.sawIron();
+Item diamondSaw = MicroblockProxy.sawDiamond();
+if (!MicroblockProxy.useSawIcons()) {
+    // Register the existing 3D saw renderers.
+}
+```
+
+The compiling example covers these calls without Scala on its compile classpath. Keep the companion access only for
+already released binaries; rebuilt Java consumers should use the static facade.
+
 ## State and lifecycle
 
 The setter changes only cutting strength. It does not recalculate the saw's durability or alter existing item-stack
@@ -46,4 +61,5 @@ scan. The source patch, release and pack update are downstream work; the referen
 
 The baseline test reproduces Iguana's boxed reflective read/write on the untouched implementation. Regression tests
 run both that path and the direct setter, checking the public getter, stack cutting strength, maximum saw strength and
-unchanged durability. A pack with Iguana still needs the recorded cutting-tier check before release.
+unchanged durability. The Java API example also compiles the static proxy access with Scala excluded. A pack with
+Iguana still needs the recorded cutting-tier and client renderer checks before release.

@@ -787,7 +787,7 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | `MicroblockGenerator$.create(MicroblockClass, int, boolean)` exact reflection and private shape copy | GuideNH `7d8fb44e77b9`: `getMicroblockGeneratorCreate`, `promoteMicroblockToClient` | `createPreviewTileFromNBT` for whole previews; existing static `MicroblockGenerator.create` for individual unbound parts | Source patch/release pending; physical client and custom preview factories require adoption checks | No migrated pack version verified; retain companion singleton and exact descriptor |
 | Private `BlockMicroMaterial.block` / `meta` accessor mixin and reflective material query | GuideNH `7d8fb44e77b9`: `AccessorBlockMicroMaterial`, `resolvePrimaryMicroblockId` | Direct `jPartList()`, `Microblock.material()`, `getMaterial(int)`, `BlockMicroMaterial.block()` / `meta()`; [typed example](../api/MATERIAL_ACCESS.md) | Source patch/release pending; remove mixin, retain export filtering/failure policy, validate getter overrides and optional loading | No migrated pack version verified; retain private fields |
 | Reflective mutation of `ButtonPart.metaSideMap` / `sideMetaMap` | Et Futurum Requiem `78a5744dfd33`: `compat.CompatMisc.runModHooksInit` | Two direct `ButtonPart.setOrientation(int, ForgeDirection)` calls; [mapping and lifecycle guide](../api/BUTTON_ORIENTATIONS.md) | FMP API/example complete; consumer source patch and first released version pending | Retain both public mutable arrays until the migrated release is in the target pack and a fresh scan confirms no legacy access |
-| Reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `modcompat.fmp.IguanaFMPCompat.postInit` | Read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP API/example complete; consumer source/lifecycle patch and first released version pending | Retain the private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
+| `MicroblockProxy$.MODULE$` saw access and reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `ClientFMPProxy.updateSawRenderers`, `IguanaFMPCompat.postInit` | Use static `MicroblockProxy.sawStone()` / `sawIron()` / `sawDiamond()` / `useSawIcons()`; read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP Scala-free API example complete; consumer source/lifecycle patch and first released version pending | Retain the companion and private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | OpenComputers `2c00f79be24b`: `common.block.Cable.canConnectFromSideFMP`, `server.network.Network.canConnectFromSideFMP` | `NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)`; `otherBounds` already comes from Java `getOcclusionBoxes()` | Source patch and release pending; retain side/color/face filtering | No migrated pack version verified; retain the companion and descriptor |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | ForgeRelocationFMP `49a810b8c63b`: `FramePart.occlusionTest` | `NormalOcclusionTest.testBoxes(boxes.asJava, getOcclusionBoxes)`; retain combined normal/partial/collision boxes and caller order | Source patch and release pending; preserve temporary face bounds and replacement protocol | No migrated pack version verified; retain the companion and descriptor |
 
@@ -797,6 +797,26 @@ The installed GTNH daily `2026-09-04+719` rescan scanned 241 jars, excluding FMP
 all 386 full member/type/reflection rows from `+678`: 35 inherited types, 255 members, 76 other types and 20
 reflection strings. Source revisions above identify inspected checkouts, not guaranteed parity with newer jars.
 The ledger records no completed consumer releases or pack adoption; update those columns only with actual artifacts.
+
+### Consumer-specific migration traps
+
+- UtilitiesInExcess writes and loads its material name under `mat`, while `Content.createPart(String,
+  NBTTagCompound)` reads `material`. Fix the consumer factory before testing save/load or replacement adoption. FMP
+  must not add a fallback that hides the consumer's inconsistent persistent format.
+- Galacticraft selects the first public `MicroMaterialRegistry.registerMaterial` method by name without checking its
+  parameters. Keep exactly one compatible public method with that name until Galacticraft migrates; the reflection
+  compatibility test pins this constraint.
+- AE2's `FMPPlacementHelper.getPart` scans the whole part list and retains the last matching `CableBusPart`. Replacing
+  that loop with a first-match helper changes behavior. Iterate `jPartList()` and preserve the original selection and
+  removal rules.
+- MatterManipulator and ForgeRelocationFMP both move the same live `TileMultipart`, but they own different validation,
+  render, lighting and packet policies. A future common move coordinator belongs in `MultipartHelper`, which already
+  owns cross-tile NBT and description-packet operations; `TileMultipart.onMoved()` remains the per-tile callback. Add
+  such a coordinator only when both consumers can express their existing synchronization policy through it.
+- Waila and AE2 Fluid Craft use `Class.forName` as an optional-mod loading boundary. That class lookup is intentional;
+  replacing it with a direct FMP type would make their otherwise optional integration load eagerly.
+- No supplied consumer source or frozen installed-jar ABI entry calls `BlockMultipart.reduceMOP`. Do not add a named
+  result replacement until a real consumer needs that operation.
 
 - FMP's own `ItemMicroPart` and `MicroRecipe$` still use legacy material arrays. Internal tuple paths also remain
   in the generator and placement code, including `MicroblockPlacement.gtile()`. External adoption does not retire them.
