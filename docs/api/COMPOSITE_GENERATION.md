@@ -54,6 +54,10 @@ that must set state between generation and loading.
 
 ## Schematica and GuideNH migration
 
+For saved-NBT client previews, prefer the complete [client preview helper](CLIENT_PREVIEW.md). It owns client part
+construction, generation, loading and local render preparation. Use this lower-level generator for reconstruction
+flows that need to prepare or reuse a candidate tile themselves.
+
 Prefer the direct call `MultipartGenerator.generateCompositeTile(candidate, parts, client)`, as in the compiling
 example. Gate optional typed integration code as described in the [API index](../API.md#direct-calls-and-optional-integration).
 For temporary interoperability with an existing reflective integration, the method can also be resolved with:
@@ -67,10 +71,10 @@ TileMultipart tile = (TileMultipart) generate.invoke(null, candidate, parts, cli
 An optional integration can obtain the owner through `Class.forName("codechicken.multipart.MultipartGenerator")`.
 Pass a Java list directly and cache the method during integration initialization.
 
-- **Schematica:** remove `JavaConversions.collectionAsScalaIterable` from generation; keep material resolution,
+- **Older Schematica integrations:** remove `JavaConversions.collectionAsScalaIterable` from generation; keep material resolution,
   [factory lookup](FACTORY_LOOKUP.md), side-specific microblock construction, per-part NBT loading and rejection when
   any part is missing. Preserve its following tile `readFromNBT`, `loadPartList(parts)` and per-part notification order.
-- **GuideNH:** keep promotion of parts to their client variants, then use a Java list for generation. Preserve its
+- **Older GuideNH integrations:** keep promotion of parts to their client variants, then use a Java list for generation. Preserve its
   same-instance branch, copying of coordinates/world/block state, storage assignment where required, loading,
   `notifyTileChange` and `markRender`. Generation does not perform any of those steps automatically.
 

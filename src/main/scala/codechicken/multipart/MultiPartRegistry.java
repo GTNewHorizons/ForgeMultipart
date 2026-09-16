@@ -69,6 +69,19 @@ public final class MultiPartRegistry {
          *               true) passes null.
          */
         TMultiPart createPart(String name, MCDataInput packet);
+
+        /**
+         * Creates a client part from saved NBT for an off-world preview. The returned part must be fresh and unbound;
+         * the preview loader subsequently calls {@link TMultiPart#load(NBTTagCompound)} and binds it to a generated
+         * client tile. Return null when this factory cannot construct its client variant without a description packet.
+         *
+         * <p>
+         * The preview loader calls this only for client construction. Existing factories remain binary compatible and
+         * opt out by default. Do not consume or mutate the supplied tag.
+         */
+        default TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+            return null;
+        }
     }
 
     /**
@@ -131,6 +144,11 @@ public final class MultiPartRegistry {
             public TMultiPart createPart(String name, NBTTagCompound nbt) {
                 return partFactory.createPart(name, false);
             }
+
+            @Override
+            public TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+                return partFactory.createPart(name, true);
+            }
         }, types);
     }
 
@@ -152,6 +170,11 @@ public final class MultiPartRegistry {
             @Override
             public TMultiPart createPart(String name, NBTTagCompound nbt) {
                 return partFactory.apply(name, Boolean.FALSE);
+            }
+
+            @Override
+            public TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+                return partFactory.apply(name, Boolean.TRUE);
             }
         }, types);
     }

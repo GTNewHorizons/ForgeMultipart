@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
@@ -27,6 +28,9 @@ import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TileMultipart;
+import codechicken.multipart.TileMultipartClient;
+import codechicken.multipart.examples.PartRegistrationExample;
+import codechicken.multipart.examples.PartRegistrationExample.ExamplePart;
 import codechicken.multipart.handler.MultipartSPH;
 import codechicken.multipart.handler.MultipartSaveLoad;
 import codechicken.multipart.minecraft.ButtonPart;
@@ -82,6 +86,30 @@ class MultipartHelperFunctionalTest {
         assertSame(tile.jPartList().get(0), tile.partMap(0));
         assertSame(tile.jPartList().get(1), tile.partMap(4));
         assertSame(world, MultipartSaveLoad.loadingWorld());
+    }
+
+    @Test
+    void buildsAWorldlessClientPreviewFromSavedNbt() {
+        NBTTagCompound tag = previewTag(37);
+
+        TileMultipart tile = MultipartHelper.createPreviewTileFromNBT(null, tag);
+
+        assertTrue(tile instanceof TileMultipartClient);
+        assertNull(tile.getWorldObj());
+        assertEquals(31, tile.xCoord);
+        assertEquals(72, tile.yCoord);
+        assertEquals(-9, tile.zCoord);
+        assertEquals(1, tile.jPartList().size());
+        ExamplePart part = assertInstanceOf(ExamplePart.class, tile.jPartList().get(0));
+        assertSame(tile, part.tile());
+        assertEquals(37, part.value());
+    }
+
+    @Test
+    void rejectsServerWorldsBeforeConstructingPreviewParts() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> MultipartHelper.createPreviewTileFromNBT(world(), previewTag(37)));
     }
 
     @Test
@@ -150,6 +178,22 @@ class MultipartHelperFunctionalTest {
 
     private static TileMultipart mixedTile() {
         return MultipartHelper.createTileFromParts(Arrays.asList(new TorchPart(5), new ButtonPart(1)));
+    }
+
+    private static NBTTagCompound previewTag(int value) {
+        NBTTagCompound part = new NBTTagCompound();
+        part.setString("id", PartRegistrationExample.PART_TYPE);
+        part.setInteger("value", value);
+        NBTTagList parts = new NBTTagList();
+        parts.appendTag(part);
+
+        NBTTagCompound tile = new NBTTagCompound();
+        tile.setString("id", "savedMultipart");
+        tile.setInteger("x", 31);
+        tile.setInteger("y", 72);
+        tile.setInteger("z", -9);
+        tile.setTag("parts", parts);
+        return tile;
     }
 
     /** Matches only its own tile class, so registering it cannot affect any real chunk load. */

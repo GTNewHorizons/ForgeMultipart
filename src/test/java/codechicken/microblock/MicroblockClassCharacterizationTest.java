@@ -41,6 +41,8 @@ class MicroblockClassCharacterizationTest {
             "createPart(Ljava/lang/String;Lcodechicken/lib/data/MCDataInput;)Lcodechicken/multipart/TMultiPart;",
             "createPart(Ljava/lang/String;Lnet/minecraft/nbt/NBTTagCompound;)Lcodechicken/microblock/Microblock;",
             "createPart(Ljava/lang/String;Lnet/minecraft/nbt/NBTTagCompound;)Lcodechicken/multipart/TMultiPart;",
+            "createPartForClientPreview(Ljava/lang/String;Lnet/minecraft/nbt/NBTTagCompound;)Lcodechicken/microblock/Microblock;",
+            "createPartForClientPreview(Ljava/lang/String;Lnet/minecraft/nbt/NBTTagCompound;)Lcodechicken/multipart/TMultiPart;",
             "getName()Ljava/lang/String;",
             "getResistanceFactor()F",
             "register()V");

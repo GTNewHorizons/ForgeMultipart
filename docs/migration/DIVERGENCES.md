@@ -91,6 +91,7 @@ Other retained `$class` bridges and `MODULE$` companions are not covered by this
 | `TileMultipart` | `hasDynamicParts` (false by default), `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
 | `MultipartMixinFactory` | Four additional static forwarders: `onCompiled`, `autoCompleteJavaTrait` and the two mangled `ASMMixinFactory` parent helpers. Scala emitted them when the base became Java with its original public JVM access; the Java facade retains them. Existing facade entries are unchanged. |
 | `MultipartEventHandler` / `MultipartEventHandler$` | Public `playerLoggedOut(PlayerLoggedOutEvent)` and `playerCloned(PlayerEvent.Clone)` event handlers for placement-modifier state cleanup and transfer |
+| `MultipartHelper` | `createPreviewTileFromNBT(World, NBTTagCompound)` builds an uninstalled client composite directly from saved multipart NBT and rejects unsupported parts as a whole |
 
 Previously abstract JVM interface methods now have Java defaults, allowing inheritance without Scala forwarders:
 
@@ -105,6 +106,7 @@ Previously abstract JVM interface methods now have Java defaults, allowing inher
 | `MicroMaterialRegistry.IMicroMaterial` | `loadIcons`, `canRenderInPass`, `isSolid` |
 | `TScheduledPacketPart` | `writeScheduled`, `readScheduled` |
 | `PlacementGrid` | `render`, `drawLines`, `glTransformFace` |
+| `MultiPartRegistry.IPartFactory2` | `createPartForClientPreview`; defaults to unsupported, while legacy Boolean/function adapters and built-in microblock factories construct their client variant |
 
 `ItemSaw` consequently no longer declares `getMaxCuttingStrength`; ordinary calls still resolve to the default,
 but declared-member reflection differs. The same distinction applies to the two `MissingMicroMaterial$` methods above.

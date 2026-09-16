@@ -65,4 +65,9 @@ public abstract class MicroblockClass implements IPartFactory2 {
     public Microblock createPart(String name, NBTTagCompound nbt) {
         return create(false, MicroMaterialRegistry.materialID(nbt.getString("material")));
     }
+
+    @Override
+    public Microblock createPartForClientPreview(String name, NBTTagCompound nbt) {
+        return create(true, MicroMaterialRegistry.materialID(nbt.getString("material")));
+    }
 }

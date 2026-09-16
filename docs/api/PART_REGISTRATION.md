@@ -12,7 +12,8 @@ Schematica's replacement for private registry-map reflection.
 ## Example and timing
 
 The [complete compiling example](../../src/functionalTest/java/codechicken/multipart/examples/PartRegistrationExample.java)
-implements both `IPartFactory2.createPart` methods and registers one persistent type:
+implements both required `IPartFactory2.createPart` methods, opts into saved-NBT client previews, and registers one
+persistent type:
 
 ```java
 MultiPartRegistry.registerPartFactory(new PartRegistrationExample(), PartRegistrationExample.PART_TYPE);
@@ -29,12 +30,14 @@ Both single IDs and arrays are accepted. Multiple names can share a factory that
 
 ## Factory and payload ownership
 
-`IPartFactory2` has two methods, so it is not a single-method lambda interface:
+`IPartFactory2` has two abstract methods, so it is not a single-method lambda interface. Its third method is an
+optional default:
 
 | Construction path | Factory input | What happens next |
 | --- | --- | --- |
 | Server/NBT | `createPart(String, NBTTagCompound)` receives the original tag object | Normal reconstruction calls `part.load` with that same tag |
 | Client/description | `createPart(String, MCDataInput)` receives the original input, after the registry ID | Normal reconstruction calls `part.readDesc` with that same input at its current cursor |
+| Client preview/NBT | `createPartForClientPreview(String, NBTTagCompound)` receives the original tag object | [Preview reconstruction](CLIENT_PREVIEW.md) calls `part.load` with that same tag; the default returns null |
 
 A factory may inspect NBT or consume a packet discriminator to choose a class. There is no packet copy or rewind;
 coordinate any consumed prefix with the part's `writeDesc` and `readDesc` protocol. FMP's microblock factory consumes
@@ -64,7 +67,8 @@ factory results or promise that a later NBT/packet will be accepted.
 ## Migrating old callers
 
 - `IPartFactory2` callers: retain the factory and IDs, then call `registerPartFactory`. ProjectRed can keep its existing
-  server/NBT and client/packet methods. Scala code can pass a `String[]`/`Array[String]` as Java varargs using `: _*`.
+  server/NBT and client/packet methods. Override `createPartForClientPreview` only when saved NBT can select a fresh
+  client variant. Scala code can pass a `String[]`/`Array[String]` as Java varargs using `: _*`.
 - `IPartFactory` or Scala `(String, Boolean) => TMultiPart` callers: implement `IPartFactory2`; route the NBT method to
   the old constructor with `false` and the packet method with `true`. Keep any side-specific class selection. A factory
   that ignores the old Boolean, such as ForgeRelocationFMP's frame factory, can construct the same part class in both.

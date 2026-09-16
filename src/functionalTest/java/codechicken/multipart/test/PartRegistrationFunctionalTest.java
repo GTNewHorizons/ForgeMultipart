@@ -209,6 +209,12 @@ class PartRegistrationFunctionalTest {
             assertEquals(name, client.getType());
             assertEquals(17, packet.readUByte(), "Legacy adapters must not consume the description payload");
             assertEquals(23, packet.readUByte());
+
+            Part preview = (Part) MultiPartRegistry.getPartFactory(name)
+                    .createPartForClientPreview(name, new NBTTagCompound());
+            assertTrue(preview.client);
+            assertNull(preview.nbt);
+            assertNull(preview.packet);
         }
     }
 

@@ -83,6 +83,14 @@ class MultiPartRegistryCharacterizationTest {
     }
 
     @Test
+    void packetAwareFactoriesOptInToNbtPreviewConstruction() {
+        TestFactory factory = new TestFactory(new TestPart());
+
+        assertNull(factory.createPartForClientPreview("test:preview", new NBTTagCompound()));
+        assertEquals(0, factory.calls);
+    }
+
+    @Test
     void unknownModContainerThrowsRatherThanReturningNull() {
         assertThrows(NoSuchElementException.class, () -> MultiPartRegistry.getModContainer("test:nosuchpart"));
     }

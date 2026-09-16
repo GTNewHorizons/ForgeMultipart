@@ -12,6 +12,8 @@ loader itself does not choose traits, promote a tile or install it in the world.
 
 For separate client/server generation before world/NBT setup and loading, use the
 [staged composite-generation API](COMPOSITE_GENERATION.md).
+For an uninstalled client tile reconstructed from saved multipart NBT, use the complete
+[client preview helper](CLIENT_PREVIEW.md) instead of assembling these steps.
 
 ## Loading a prepared tile
 
@@ -85,11 +87,11 @@ The Java loader has a distinct name deliberately: the initially planned `loadPar
 `loadPartList` lets the example compile without Scala on the consumer compile classpath, while retaining the legacy
 hook and its name. This changes the planned Java name, not any existing entry point.
 
-For GuideNH's migration, use a Java list of the promoted client parts, retain its existing world/position setup,
+For an older GuideNH-compatible path, use a Java list of the promoted client parts, retain its existing world/position setup,
 replace the raw setter with `setPartList`, and call the Collection loader. Preserve its following `notifyTileChange`
 and `markRender` steps. Its tile generator now has a [static Java replacement](COMPOSITE_GENERATION.md); other
-reflective dependencies remain. Schematica can select the Collection loader and pass its existing Java list directly,
-using the separate [factory lookup](FACTORY_LOOKUP.md) and generation entries to remove those Scala dependencies.
+reflective dependencies remain. Schematica can select the Collection loader and pass its existing Java list directly.
+New versions of both integrations should use the [client preview helper](CLIENT_PREVIEW.md).
 
 ## Validation and release gates
 

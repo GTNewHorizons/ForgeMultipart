@@ -111,6 +111,10 @@ Direct typed calls are the intended end state. Reflection snippets in older guid
 options, not the migration target. For optional integration, isolate FMP-typed code in a compatibility class loaded
 only after mod-presence and version checks, and test both the absent and present cases.
 
+Saved multipart client previews can use `MultipartHelper.createPreviewTileFromNBT` plus the existing
+`MultipartRenderer.renderWorldBlock`; see the [client preview guide](api/CLIENT_PREVIEW.md). Custom `IPartFactory2`
+implementations opt in through `createPartForClientPreview` when they can build their client variant from saved NBT.
+
 ## Will I have to migrate again?
 
 No, if you migrate to the documented Java surface. That is the point of shipping it alongside the old one.

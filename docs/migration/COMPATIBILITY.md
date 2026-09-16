@@ -170,10 +170,10 @@ These fail at runtime, not at link time, so ABI tooling will not catch a break. 
 Note that both the class and its `$` companion are named in several cases, so renaming or removing a companion
 object breaks these even where no bytecode reference exists.
 
-The branch now offers `MultiPartRegistry.getPartFactory(String): IPartFactory2` to replace Schematica's private
-registry-map reflection, with a [migration guide](../api/FACTORY_LOOKUP.md). Its old companion field retains the
-exact private Scala mutable-map shape and live backing; the public addition does not authorize removing that field
-before consumer release/adoption. Generator reflection and preview lifecycle remain separate contracts.
+The branch now offers `MultipartHelper.createPreviewTileFromNBT` to replace Schematica's private registry map,
+microblock construction, Scala collection, generator and loader reflection as one all-or-nothing preview operation.
+The lower-level `MultiPartRegistry.getPartFactory(String): IPartFactory2` remains available for specialized callers.
+Existing private fields, companions and descriptors remain for released consumers until adoption.
 
 `ButtonPart.setOrientation(int, ForgeDirection): void` now replaces Et Futurum's four reflective array writes and
 keeps the two direction maps consistent; [guide](../api/BUTTON_ORIENTATIONS.md). The existing public mutable static
@@ -763,7 +763,7 @@ behavior:
 
 This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
 Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
-tile occlusion and box queries, render-ID accessors and named tile conversion results are implemented on
+client preview reconstruction, tile occlusion and box queries, render-ID accessors and named tile conversion results are implemented on
 `algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
 tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
 
@@ -780,11 +780,11 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | `TileMultipart.partList(): scala.collection.Seq` | OpenComputers `2c00f79be24b`: cable/print/network searches and aggregation | `jPartList()` with the same search/aggregation semantics | Source patch and release pending | No migrated pack version verified; retain the getter |
 | `TileMultipart.partList(): scala.collection.Seq` | AE2 `87f2b3817c2a`: `FMPPlacementHelper.getPart` and `removePart` | Iterate `jPartList()`; retain last-match lookup and removal/break behavior | Source patch and release pending | No migrated pack version verified; retain the getter |
 | `TileMultipart.partList(): scala.collection.Seq` | Extra Utilities 1.2.12: multipart renderer iterators | Iterate `jPartList()` without adding detached-part filtering | Retirement/replacement pending | Confirm absence or migration in the target pack before retiring the getter |
-| `TileMultipart.partList(): scala.collection.Seq` plus reflective getter/setter/loading | GuideNH `7d8fb44e77b9`: `Ae2ForgeMultipartBridge`, `ForgeMultipartHelpers` | `jPartList()` for reads, `setPartList(List)` for staging, `loadPartList(Collection)` for binding/cache reconstruction | Source patch and release pending; preserve world/position setup and following tile/render notifications | Retain the legacy getter/setter/loader until adoption; companion-only generator migration is separate |
-| `TileMultipart.loadParts(scala.collection.Iterable)` exact reflection | Schematica `3b03ee937953`: `nbt.ForgeMultipart` | Call `loadPartList(parts)` directly with its existing Java part list | Source patch and release pending; registry lookup and Java tile generation available separately | No migrated pack version verified; retain the Scala loader descriptor |
-| Private `MultiPartRegistry$` Scala `typeMap` field and `Map.get` / `Option` | Schematica `3b03ee937953`: `nbt.ForgeMultipart.init` and `createPart` | Call public static `MultiPartRegistry.getPartFactory(partID)` directly; keep material lookup, `MicroblockClass.create(client, materialId)` and whole-preview rejection | Source patch/release pending; lookup and Java tile generation implemented | No migrated pack version verified; retain the exact private live Scala-map field |
-| `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` | Schematica `3b03ee937953` exact reflection; GuideNH `7d8fb44e77b9` static-first assignability matcher | Static `MultipartGenerator.generateCompositeTile(TileEntity, java.lang.Iterable, boolean)` with Java parts; retain subsequent state setup/loading | Source patches/releases pending; preserve client part construction, candidate-reuse branch and notification order | No migrated pack version verified; retain the companion and Scala descriptor |
-| `MicroblockGenerator$.create(MicroblockClass, int, boolean)` exact reflection and private shape copy | GuideNH `7d8fb44e77b9`: `getMicroblockGeneratorCreate`, `promoteMicroblockToClient` | Existing static `MicroblockGenerator.create` with the same parameter types/order; recreate family/material and restore encoded shape through public API | Source patch/release pending; guide/example tested on server, physical client and custom shape-setter overrides require adoption checks | No migrated pack version verified; retain companion singleton and exact descriptor |
+| `TileMultipart.partList(): scala.collection.Seq` plus reflective getter/setter/loading | GuideNH `7d8fb44e77b9`: `Ae2ForgeMultipartBridge`, `ForgeMultipartHelpers` | `createPreviewTileFromNBT` for preview reconstruction; `jPartList()` for later read-only traversal | Source patch and release pending; material export and part statistics still use their separate typed APIs | Retain the legacy getter/setter/loader until released adoption |
+| `TileMultipart.loadParts(scala.collection.Iterable)` exact reflection | Schematica `3b03ee937953`: `nbt.ForgeMultipart` | `MultipartHelper.createPreviewTileFromNBT`; [complete preview contract](../api/CLIENT_PREVIEW.md) | Source patch and release pending; replace the whole reconstruction chain rather than one reflected method | No migrated pack version verified; retain the Scala loader descriptor |
+| Private `MultiPartRegistry$` Scala `typeMap` field and `Map.get` / `Option` | Schematica `3b03ee937953`: `nbt.ForgeMultipart.init` and `createPart` | `MultipartHelper.createPreviewTileFromNBT`; factories opt in through `createPartForClientPreview` | Source patch/release pending; all-or-nothing lookup, client construction and loading are implemented | No migrated pack version verified; retain the exact private live Scala-map field |
+| `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` | Schematica `3b03ee937953` exact reflection; GuideNH `7d8fb44e77b9` static-first assignability matcher | `createPreviewTileFromNBT` for saved previews; static `MultipartGenerator.generateCompositeTile` for other staged reconstruction | Source patches/releases pending; preview helper preserves saved order and owns client construction/loading | No migrated pack version verified; retain the companion and Scala descriptor |
+| `MicroblockGenerator$.create(MicroblockClass, int, boolean)` exact reflection and private shape copy | GuideNH `7d8fb44e77b9`: `getMicroblockGeneratorCreate`, `promoteMicroblockToClient` | `createPreviewTileFromNBT` for whole previews; existing static `MicroblockGenerator.create` for individual unbound parts | Source patch/release pending; physical client and custom preview factories require adoption checks | No migrated pack version verified; retain companion singleton and exact descriptor |
 | Private `BlockMicroMaterial.block` / `meta` accessor mixin and reflective material query | GuideNH `7d8fb44e77b9`: `AccessorBlockMicroMaterial`, `resolvePrimaryMicroblockId` | Direct `jPartList()`, `Microblock.material()`, `getMaterial(int)`, `BlockMicroMaterial.block()` / `meta()`; [typed example](../api/MATERIAL_ACCESS.md) | Source patch/release pending; remove mixin, retain export filtering/failure policy, validate getter overrides and optional loading | No migrated pack version verified; retain private fields |
 | Reflective mutation of `ButtonPart.metaSideMap` / `sideMetaMap` | Et Futurum Requiem `78a5744dfd33`: `compat.CompatMisc.runModHooksInit` | Two direct `ButtonPart.setOrientation(int, ForgeDirection)` calls; [mapping and lifecycle guide](../api/BUTTON_ORIENTATIONS.md) | FMP API/example complete; consumer source patch and first released version pending | Retain both public mutable arrays until the migrated release is in the target pack and a fresh scan confirms no legacy access |
 | Reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `modcompat.fmp.IguanaFMPCompat.postInit` | Read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP API/example complete; consumer source/lifecycle patch and first released version pending | Retain the private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
@@ -814,12 +814,11 @@ The ledger records no completed consumer releases or pack adoption; update those
   ownership, partial-registration failure policy, and both NBT/packet construction paths. All legacy registration
   entries remain; Schematica's private live Scala map is a separate dependency. See [registration](../api/PART_REGISTRATION.md).
 - No supplied direct legacy render-ID or tuple-result caller was found. Existing tile-only `getOrConvertTile` users
-  need no rename. New [render-ID](../api/RENDER_ID.md) accessors do not allocate/register a renderer or replace
-  GuideNH renderer reflection; [conversion results](../api/TILE_CONVERSION.md) still describe uninstalled placeholders.
-- [Staged generation](../api/COMPOSITE_GENERATION.md) does not copy/load/install parts automatically. Preserve exact
-  candidate reuse and subsequent setup. GuideNH must change both its cached companion singleton and method owner
-  when adopting [static microblock creation](../api/MICROBLOCK_CREATION.md). Capture factory, material and shape
-  before generation callbacks; restoring shape through public setters can invoke overrides that raw field writes bypassed.
+  need no rename. New [render-ID](../api/RENDER_ID.md) accessors do not allocate/register a renderer;
+  [conversion results](../api/TILE_CONVERSION.md) still describe uninstalled placeholders.
+- Saved client previews should use the complete [preview helper](../api/CLIENT_PREVIEW.md). The lower-level
+  [staged generator](../api/COMPOSITE_GENERATION.md) still does not copy/load/install parts automatically and remains
+  available for reconstruction flows that need candidate reuse or custom setup.
 - GuideNH's [typed material getters](../api/MATERIAL_ACCESS.md) likewise honor overrides that raw mixin fields
   bypassed. Preserve first-usable-part order, export filtering and failure behavior; validate custom overrides and
   optional-mod loading. Physical-client construction and GPU previews remain release checks.

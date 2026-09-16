@@ -24,12 +24,13 @@ Most consumers should continue using `loadPart(name, nbt)` or `readPart(input)`.
 NBT/server or packet/client method. Their caller still invokes `part.load(nbt)` or `part.readDesc(input)`, respectively,
 and later binds/places the part. See [factory and payload contracts](PART_REGISTRATION.md).
 
-Factory lookup is useful when a supported factory subtype provides a specialized construction method. Schematica
+Factory lookup is useful when a supported factory subtype provides a specialized construction method. Older Schematica
 looks up a `MicroblockClass` and calls `create(client, materialId)` before loading the saved microblock NBT. Calling
 `loadPart` instead would select the server/NBT construction path, even for a client preview. Passing a null packet or
 using deprecated `createPart(name, true)` is also unsuitable: microblock packet factories read a material ID from it.
 
-See [microblock creation](MICROBLOCK_CREATION.md) for side selection, material traits and caller-owned shape/NBT state.
+New preview integrations should use the complete [client preview helper](CLIENT_PREVIEW.md). See
+[microblock creation](MICROBLOCK_CREATION.md) when a caller specifically needs an unbound microblock.
 
 The [compiling Java example](../../src/functionalTest/java/codechicken/multipart/examples/PartFactoryLookupExample.java)
 checks for `MicroblockClass` and creates a fresh unbound microblock. The caller must resolve a valid material ID,
@@ -58,10 +59,8 @@ Cache the `Method` during integration initialization as Schematica already does.
 Not every registered factory is a microblock class: keep the existing rejection of an unsupported factory, or check
 the reflected microblock class's `isInstance(factory)` explicitly before invoking. Do not silently produce a partial preview.
 
-This removes the registry-map Scala dependency. It does not finish Schematica's migration: use the
-[Java loading API](PART_LOADING.md#overrides-and-reflection) for its part collection and the
-[static Java composite generator](COMPOSITE_GENERATION.md). Material lookup, saved part order,
-shape/material loading, tile NBT and subsequent notifications remain unchanged.
+This removes only the registry-map Scala dependency. The [client preview helper](CLIENT_PREVIEW.md) replaces the
+complete Schematica reconstruction path when the minimum FMP version can require it.
 
 The private `MultiPartRegistry$.codechicken$multipart$MultiPartRegistry$$typeMap` field keeps its exact name, modifiers,
 Scala mutable-map type and live backing. Existing binary/reflection callers remain supported until a migrated consumer

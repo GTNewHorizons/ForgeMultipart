@@ -36,10 +36,13 @@ class MultipartHelperCharacterizationTest {
     @Test
     void aTagThatIsNotASavedMultipartReturnsNullBeforeTouchingTheLoader() {
         assertNull(MultipartHelper.createTileFromNBT(null, new NBTTagCompound()));
+        assertNull(MultipartHelper.createPreviewTileFromNBT(null, null));
+        assertNull(MultipartHelper.createPreviewTileFromNBT(null, new NBTTagCompound()));
 
         NBTTagCompound wrongId = new NBTTagCompound();
         wrongId.setString("id", "somethingElse");
         assertNull(MultipartHelper.createTileFromNBT(null, wrongId));
+        assertNull(MultipartHelper.createPreviewTileFromNBT(null, wrongId));
     }
 
     /** The other half of the same probe: the matching branch does reach the loader. */
@@ -116,6 +119,11 @@ class MultipartHelperCharacterizationTest {
                 .getDeclaredMethod("sendDescPacket", World.class, TileEntity.class);
         assertSame(void.class, sendDescPacket.getReturnType());
         assertPublicStatic(sendDescPacket);
+
+        Method createPreviewTileFromNBT = MultipartHelper.class
+                .getDeclaredMethod("createPreviewTileFromNBT", World.class, NBTTagCompound.class);
+        assertSame(TileMultipart.class, createPreviewTileFromNBT.getReturnType());
+        assertPublicStatic(createPreviewTileFromNBT);
 
         Class<?> companion = Class.forName("codechicken.multipart.MultipartHelper$");
         Field module = companion.getField("MODULE$");

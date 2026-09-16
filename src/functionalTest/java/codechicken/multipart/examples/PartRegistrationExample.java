@@ -31,6 +31,11 @@ public final class PartRegistrationExample implements IPartFactory2 {
         return new ExamplePart();
     }
 
+    @Override
+    public TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+        return new ExamplePart();
+    }
+
     /** Call from the server-side item/action after choosing the target position. */
     public static TileMultipart place(World world, BlockCoord pos, int value) {
         ExamplePart part = new ExamplePart(value);

@@ -48,6 +48,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Run callbacks only on parts still owned by the tile | `forEachPart(Consumer)` - [callback and override behavior](api/PART_TRAVERSAL.md#callback-behavior) |
 | Rebuild parts on an already prepared composite tile | `loadPartList(Collection)` - [part loading](api/PART_LOADING.md) |
 | Select client/server tile capabilities before preparing state and loading | `MultipartGenerator.generateCompositeTile(TileEntity, Iterable, boolean)` - [staged generation and reflection migration](api/COMPOSITE_GENERATION.md) |
+| Build and render an uninstalled client tile from saved multipart NBT | `MultipartHelper.createPreviewTileFromNBT(World, NBTTagCompound)` - [client preview lifecycle and reflection migration](api/CLIENT_PREVIEW.md) |
 | Assign stored parts during reconstruction, without binding or notifications | `setPartList(List)` - [storage assignment](api/PART_LOADING.md#storage-assignment) |
 | Test a candidate against a selected collection of parts | `testOcclusion(Collection, candidate)` - [occlusion queries and generated hooks](api/OCCLUSION.md) |
 | Test two groups of bounding boxes directly | `NormalOcclusionTest.testBoxes(Iterable, Iterable)` - [box-versus-box queries](api/OCCLUSION.md#box-versus-box-queries) |

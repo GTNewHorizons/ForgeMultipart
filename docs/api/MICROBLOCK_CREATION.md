@@ -27,7 +27,8 @@ using geometry or rendering and before [preparing/loading a composite tile](COMP
 Resolve the intended material before construction. A later `part.load(tag)` or `material_$eq` updates stored material
 but does not regenerate the class's material traits. For NBT reconstruction, resolve `tag.getString("material")`,
 create the correctly sided part with that ID, then call `load(tag)`. Ordinary `MultiPartRegistry.loadPart` selects the
-server/NBT path; it does not provide client preview construction.
+server/NBT path. The complete [client preview helper](CLIENT_PREVIEW.md) selects the registered factory's preview path
+and performs the remaining tile reconstruction.
 
 Call after factory/trait registration and material-map initialization, on the initialization/game thread. Numeric IDs
 belong to the active map and may change across sessions or a multiplayer handshake; persist material names, not IDs.
@@ -49,6 +50,9 @@ injection and generated behavior; this does not replace the planned representati
 or authorize removing Scala-signature support before consumer release/adoption.
 
 ## GuideNH migration
+
+GuideNH preview reconstruction should use the complete [client preview helper](CLIENT_PREVIEW.md). The direct
+generator remains useful when code specifically needs to create or transform one unbound microblock.
 
 GuideNH `7d8fb44e77b9` explicitly resolves the companion's `create(MicroblockClass, int, boolean)` and invokes it on
 `MODULE$`. It does not automatically discover the existing static method. Prefer the direct typed creation example
