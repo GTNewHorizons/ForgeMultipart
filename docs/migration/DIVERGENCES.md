@@ -23,6 +23,8 @@ of the later upstream rename, not a divergence from the `1.7.12` reference.
 | `BlockMicroMaterial.createAndRegister(Block, Seq, String)` | Registers every supplied metadata value instead of only zero, including dark-oak logs and leaves and their legacy-name remaps. This fixes a pre-existing Scala bug; material IDs are rebuilt through the existing registry mapping. |
 | Chunk scheduled-tick restoration | Reactivates chunks with restored scheduled ticks so their callbacks resume at the saved deadlines. The Scala implementation restored entries without activating their chunk. NBT layout and duplicate-scheduling behavior are unchanged. |
 | World scheduler clock loading | Retains successfully loaded `schedTime` instead of overwriting it with total world time. Missing or unreadable files still fall back to world time. This fixes a pre-existing Scala bug and preserves the clock used by saved absolute tick deadlines; the file format is unchanged. |
+| Converted tile loading | Copies the source tile coordinates to a replacement produced by `MultipartSaveLoad.loadTiles` before assigning its world and validating it. The Scala implementation left converted replacements at their default coordinates. |
+| Placement-modifier player lifecycle | Removes cached control-key state when a player logs out and transfers it from the old player object to its replacement on clone. The Scala implementation retained entries until server shutdown. |
 | `IDWriter` before `setMax` | `read`/`write` throw `IllegalStateException` instead of `NullPointerException`. Uninitialized use is unsupported. |
 | `PacketScheduler` invalid `maskWidth` | Throws `IllegalArgumentException` instead of `scala.MatchError`. Valid widths remain 1, 2, 4 and 8. |
 | `NormalOcclusionTest.apply(Traversable, Traversable)` | Materializes both inputs into Java lists before testing instead of nested Scala `forall`. Finite, side-effect-free collections give the same result; eager traversal can change side effects, failure timing and termination for unusual inputs. |
@@ -88,6 +90,7 @@ Other retained `$class` bridges and `MODULE$` companions are not covered by this
 | `PacketScheduler` / `TScheduledPacketPart` | Static `sendScheduled()` on the facade and `readMask(part, packet)` on the interface |
 | `TileMultipart` | `hasDynamicParts` (false by default), `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
 | `MultipartMixinFactory` | Four additional static forwarders: `onCompiled`, `autoCompleteJavaTrait` and the two mangled `ASMMixinFactory` parent helpers. Scala emitted them when the base became Java with its original public JVM access; the Java facade retains them. Existing facade entries are unchanged. |
+| `MultipartEventHandler` / `MultipartEventHandler$` | Public `playerLoggedOut(PlayerLoggedOutEvent)` and `playerCloned(PlayerEvent.Clone)` event handlers for placement-modifier state cleanup and transfer |
 
 Previously abstract JVM interface methods now have Java defaults, allowing inheritance without Scala forwarders:
 
