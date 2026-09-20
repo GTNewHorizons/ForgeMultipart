@@ -24,6 +24,8 @@ import java.io.DataOutputStream
 import java.io.ByteArrayOutputStream
 import net.minecraft.world.ChunkCoordIntPair
 import MultipartProxy._
+import com.gtnewhorizon.gtnhlib.api.world.WorldContextRegistry
+import com.gtnewhorizon.gtnhlib.api.world.WorldContextRegistry.WorldAddress
 import codechicken.multipart.PacketScheduler
 import java.util.LinkedList
 import scala.collection.JavaConversions._
@@ -35,6 +37,22 @@ import net.minecraft.network.NetHandlerPlayServer
 class MultipartPH {
   val channel = MultipartMod
   val registryChannel = "ForgeMultipart"
+
+  /** Writes the address of a world into the ForgeMultipart payload. */
+  def writeWorld(packet: PacketCustom, world: World): PacketCustom = {
+    val address = WorldContextRegistry.addressOf(world)
+    packet.writeInt(address.hostDimensionId)
+    packet.writeInt(address.subId)
+    packet.writeString(address.namespace)
+    packet
+  }
+
+  def readWorldAddress(packet: PacketCustom): WorldAddress = {
+    val hostDimensionId = packet.readInt
+    val subId = packet.readInt
+    val namespace = packet.readString()
+    new WorldAddress(hostDimensionId, namespace, subId)
+  }
 }
 
 object MultipartCPH extends MultipartPH with IClientPacketHandler {
@@ -46,8 +64,16 @@ object MultipartCPH extends MultipartPH with IClientPacketHandler {
     try {
       packet.getType match {
         case 1 => handlePartRegistration(packet, netHandler)
-        case 2 => handleCompressedTileDesc(packet, mc.theWorld)
-        case 3 => handleCompressedTileData(packet, mc.theWorld)
+        case 2 =>
+          handleCompressedTileDesc(
+            packet,
+            WorldContextRegistry.getClientWorld(readWorldAddress(packet))
+          )
+        case 3 =>
+          handleCompressedTileData(
+            packet,
+            WorldContextRegistry.getClientWorld(readWorldAddress(packet))
+          )
       }
     } catch {
       case e: RuntimeException
@@ -170,7 +196,10 @@ object MultipartSPH
       updateMap.get(p.worldObj) match {
         case Some(m) if !m.isEmpty =>
           val chunks = chunkWatchers(p.getEntityId)
-          val packet = new PacketCustom(channel, 3).compress()
+          val packet = writeWorld(
+            new PacketCustom(channel, 3).compress(),
+            p.worldObj
+          )
           var send = false
           for (
             (pos, stream) <- m
@@ -232,8 +261,7 @@ object MultipartSPH
       }
     }
     if (num != 0) {
-      return new PacketCustom(channel, 2)
-        .compress()
+      return writeWorld(new PacketCustom(channel, 2).compress(), chunk.worldObj)
         .writeInt(chunk.xPosition)
         .writeInt(chunk.zPosition)
         .writeShort(num)
