@@ -2,18 +2,13 @@ package codechicken.multipart.handler
 
 import codechicken.multipart.{BlockMultipart, TileCache, TileMultipart}
 import cpw.mods.fml.common.eventhandler.{EventPriority, SubscribeEvent}
-import cpw.mods.fml.common.gameevent.TickEvent
+import cpw.mods.fml.common.gameevent.{PlayerEvent, TickEvent}
 import cpw.mods.fml.relauncher.{Side, SideOnly}
-import net.minecraft.entity.player.EntityPlayerMP
-import net.minecraft.server.MinecraftServer
 import net.minecraft.tileentity.TileEntity
 import net.minecraft.util.MovingObjectPosition.MovingObjectType
 import net.minecraft.world.ChunkPosition
 import net.minecraftforge.client.event.DrawBlockHighlightEvent
 import net.minecraftforge.event.world._
-
-import java.util.List
-import scala.collection.JavaConverters._
 
 object MultipartEventHandler {
   @SubscribeEvent(priority = EventPriority.HIGHEST)
@@ -71,12 +66,13 @@ object MultipartEventHandler {
   }
 
   @SubscribeEvent
+  def playerLogout(event: PlayerEvent.PlayerLoggedOutEvent) {
+    MultipartSPH.onPlayerLogout(event.player)
+  }
+
+  @SubscribeEvent
   def serverTick(event: TickEvent.ServerTickEvent) {
     if (event.phase == TickEvent.Phase.END)
-      MultipartSPH.onTickEnd(
-        MinecraftServer.getServer.getConfigurationManager.playerEntityList
-          .asInstanceOf[List[EntityPlayerMP]]
-          .asScala
-      )
+      MultipartSPH.onTickEnd()
   }
 }

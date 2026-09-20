@@ -27,7 +27,6 @@ import MultipartProxy._
 import com.gtnewhorizon.gtnhlib.api.world.WorldContextRegistry
 import com.gtnewhorizon.gtnhlib.api.world.WorldContextRegistry.WorldAddress
 import codechicken.multipart.PacketScheduler
-import java.util.LinkedList
 import scala.collection.JavaConversions._
 import net.minecraft.network.play.{INetHandlerPlayServer, INetHandlerPlayClient}
 import net.minecraft.network.play.server.S40PacketDisconnect
@@ -142,12 +141,20 @@ object MultipartSPH
 
   private val updateMap = Map[World, Map[BlockCoord, MCByteStream]]()
 
-  /** These maps are keyed by entityID so that new player instances with the
-    * same entity id don't conflict world references
+  private type WatchMap = HashMap[EntityPlayerMP, Set[ChunkCoordIntPair]]
+    with MultiMap[EntityPlayerMP, ChunkCoordIntPair]
+
+  private def newWatchMap: WatchMap =
+    new HashMap[EntityPlayerMP, Set[ChunkCoordIntPair]]
+      with MultiMap[EntityPlayerMP, ChunkCoordIntPair]
+
+  /** Watches are separated by world first, because a chunk coordinate only
+    * means something inside one world, and the same player may watch chunks in
+    * a host world and in virtual worlds inside it. The world is recorded when
+    * the watch happens and never re-derived from the player afterwards.
     */
-  private val chunkWatchers = new HashMap[Int, Set[ChunkCoordIntPair]]
-    with MultiMap[Int, ChunkCoordIntPair]
-  private val newWatchers = Map[Int, LinkedList[ChunkCoordIntPair]]()
+  private val chunkWatchers = Map[World, WatchMap]()
+  private val newWatchers = Map[World, WatchMap]()
 
   def handlePacket(
       packet: PacketCustom,
@@ -166,8 +173,11 @@ object MultipartSPH
   }
 
   def onWorldUnload(world: World) {
-    if (!world.isRemote)
+    if (!world.isRemote) {
       updateMap.remove(world)
+      chunkWatchers.remove(world)
+      newWatchers.remove(world)
+    }
   }
 
   def getTileStream(world: World, pos: BlockCoord) =
@@ -189,61 +199,81 @@ object MultipartSPH
         }
       )
 
-  def onTickEnd(players: Seq[EntityPlayerMP]) {
+  def onTickEnd() {
     PacketScheduler.sendScheduled()
 
-    for (p <- players if chunkWatchers.containsKey(p.getEntityId)) {
-      updateMap.get(p.worldObj) match {
-        case Some(m) if !m.isEmpty =>
-          val chunks = chunkWatchers(p.getEntityId)
-          val packet = writeWorld(
-            new PacketCustom(channel, 3).compress(),
-            p.worldObj
-          )
-          var send = false
-          for (
-            (pos, stream) <- m
-            if chunks(new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4))
-          ) {
-            send = true
-            packet.writeByteArray(stream.getBytes)
-            packet.writeByte(255) // terminator
-          }
-          if (send) {
-            packet.writeInt(Int.MaxValue) // terminator
-            packet.sendToPlayer(p)
-          }
-        case _ =>
+    for (
+      (world, m) <- updateMap if !m.isEmpty;
+      watchers <- chunkWatchers.get(world);
+      (p, chunks) <- watchers
+    ) {
+      val packet = writeWorld(new PacketCustom(channel, 3).compress(), world)
+      var send = false
+      for (
+        (pos, stream) <- m
+        if chunks(new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4))
+      ) {
+        send = true
+        packet.writeByteArray(stream.getBytes)
+        packet.writeByte(255) // terminator
+      }
+      if (send) {
+        packet.writeInt(Int.MaxValue) // terminator
+        packet.sendToPlayer(p)
       }
     }
     updateMap.foreach(_._2.clear())
-    for (p <- players if newWatchers.containsKey(p.getEntityId)) {
-      for (c <- newWatchers(p.getEntityId)) {
-        val chunk = p.worldObj.getChunkFromChunkCoords(c.chunkXPos, c.chunkZPos)
-        val pkt = getDescPacket(
-          chunk,
-          chunk.chunkTileEntityMap
-            .asInstanceOf[JMap[_, TileEntity]]
-            .values
-            .iterator
-        )
-        if (pkt != null) pkt.sendToPlayer(p)
-        chunkWatchers.addBinding(p.getEntityId, c)
-      }
+
+    for (
+      (world, watchers) <- newWatchers;
+      (p, chunks) <- watchers;
+      c <- chunks
+    ) {
+      val chunk = world.getChunkFromChunkCoords(c.chunkXPos, c.chunkZPos)
+      val pkt = getDescPacket(
+        chunk,
+        chunk.chunkTileEntityMap
+          .asInstanceOf[JMap[_, TileEntity]]
+          .values
+          .iterator
+      )
+      if (pkt != null) pkt.sendToPlayer(p)
+      chunkWatchers.getOrElseUpdate(world, newWatchMap).addBinding(p, c)
     }
     newWatchers.clear()
   }
 
-  def onChunkWatch(p: EntityPlayer, c: ChunkCoordIntPair) {
-    newWatchers.getOrElseUpdate(p.getEntityId, new LinkedList).add(c)
+  def onChunkWatch(p: EntityPlayerMP, c: ChunkCoordIntPair) {
+    newWatchers.getOrElseUpdate(p.worldObj, newWatchMap).addBinding(p, c)
   }
 
-  def onChunkUnWatch(p: EntityPlayer, c: ChunkCoordIntPair) {
-    newWatchers.get(p.getEntityId) match {
-      case Some(chunks) => chunks.remove(c)
-      case _            =>
+  def onChunkUnWatch(p: EntityPlayerMP, c: ChunkCoordIntPair) {
+    removeBinding(newWatchers, p.worldObj, p, c)
+    removeBinding(chunkWatchers, p.worldObj, p, c)
+  }
+
+  private def removeBinding(
+      map: Map[World, WatchMap],
+      world: World,
+      p: EntityPlayerMP,
+      c: ChunkCoordIntPair
+  ) {
+    map.get(world) match {
+      case Some(watchers) =>
+        watchers.removeBinding(p, c)
+        if (watchers.isEmpty) map.remove(world)
+      case _ =>
     }
-    chunkWatchers.removeBinding(p.getEntityId, c)
+  }
+  def onPlayerLogout(p: EntityPlayer) = p match {
+    case mp: EntityPlayerMP =>
+      for (map <- Seq(chunkWatchers, newWatchers)) {
+        for ((world, watchers) <- map.toSeq) {
+          watchers.remove(mp)
+          if (watchers.isEmpty) map.remove(world)
+        }
+      }
+    case _ =>
   }
 
   def getDescPacket(chunk: Chunk, it: Iterator[TileEntity]): PacketCustom = {
