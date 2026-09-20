@@ -202,13 +202,27 @@ object MultipartSPH
   def onTickEnd() {
     PacketScheduler.sendScheduled()
 
-    for ((world, m) <- updateMap if !m.isEmpty)
-      sendUpdates(
-        world,
-        m,
-        world,
-        pos => new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4)
-      )
+    for ((world, m) <- updateMap if !m.isEmpty) {
+      if (chunkWatchers.contains(world))
+        sendUpdates(
+          world,
+          m,
+          world,
+          pos => new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4)
+        )
+      else
+        // The world is not watched directly, it is embedded in a host world.
+        sendUpdates(
+          world,
+          m,
+          WorldContextRegistry.getHostWorld(world),
+          pos =>
+            WorldContextRegistry.getHostChunk(
+              world,
+              new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4)
+            )
+        )
+    }
     updateMap.foreach(_._2.clear())
 
     for (
@@ -218,6 +232,12 @@ object MultipartSPH
     ) {
       sendDescription(world, p, c)
       chunkWatchers.getOrElseUpdate(world, newWatchMap).addBinding(p, c)
+      // Chunks embedded in this one become visible with it.
+      for (
+        (subWorld, subChunks) <- WorldContextRegistry
+          .getVisibleChunks(world, c);
+        sc <- subChunks
+      ) sendDescription(subWorld, p, sc)
     }
     newWatchers.clear()
   }
