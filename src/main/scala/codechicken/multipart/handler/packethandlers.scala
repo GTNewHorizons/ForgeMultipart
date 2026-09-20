@@ -229,18 +229,26 @@ object MultipartSPH
       (p, chunks) <- watchers;
       c <- chunks
     ) {
-      val chunk = world.getChunkFromChunkCoords(c.chunkXPos, c.chunkZPos)
-      val pkt = getDescPacket(
-        chunk,
-        chunk.chunkTileEntityMap
-          .asInstanceOf[JMap[_, TileEntity]]
-          .values
-          .iterator
-      )
-      if (pkt != null) pkt.sendToPlayer(p)
+      sendDescription(world, p, c)
       chunkWatchers.getOrElseUpdate(world, newWatchMap).addBinding(p, c)
     }
     newWatchers.clear()
+  }
+
+  private def sendDescription(
+      world: World,
+      p: EntityPlayerMP,
+      c: ChunkCoordIntPair
+  ) {
+    val chunk = world.getChunkFromChunkCoords(c.chunkXPos, c.chunkZPos)
+    val pkt = getDescPacket(
+      chunk,
+      chunk.chunkTileEntityMap
+        .asInstanceOf[JMap[_, TileEntity]]
+        .values
+        .iterator
+    )
+    if (pkt != null) pkt.sendToPlayer(p)
   }
 
   def onChunkWatch(p: EntityPlayerMP, c: ChunkCoordIntPair) {
