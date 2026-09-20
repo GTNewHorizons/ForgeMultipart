@@ -202,26 +202,13 @@ object MultipartSPH
   def onTickEnd() {
     PacketScheduler.sendScheduled()
 
-    for (
-      (world, m) <- updateMap if !m.isEmpty;
-      watchers <- chunkWatchers.get(world);
-      (p, chunks) <- watchers
-    ) {
-      val packet = writeWorld(new PacketCustom(channel, 3).compress(), world)
-      var send = false
-      for (
-        (pos, stream) <- m
-        if chunks(new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4))
-      ) {
-        send = true
-        packet.writeByteArray(stream.getBytes)
-        packet.writeByte(255) // terminator
-      }
-      if (send) {
-        packet.writeInt(Int.MaxValue) // terminator
-        packet.sendToPlayer(p)
-      }
-    }
+    for ((world, m) <- updateMap if !m.isEmpty)
+      sendUpdates(
+        world,
+        m,
+        world,
+        pos => new ChunkCoordIntPair(pos.x >> 4, pos.z >> 4)
+      )
     updateMap.foreach(_._2.clear())
 
     for (
@@ -233,6 +220,33 @@ object MultipartSPH
       chunkWatchers.getOrElseUpdate(world, newWatchMap).addBinding(p, c)
     }
     newWatchers.clear()
+  }
+
+  private def sendUpdates(
+      world: World,
+      updates: Map[BlockCoord, MCByteStream],
+      watchWorld: World,
+      hostChunk: BlockCoord => ChunkCoordIntPair
+  ) {
+    for (
+      watchers <- chunkWatchers.get(watchWorld);
+      (p, chunks) <- watchers
+    ) {
+      val packet = writeWorld(new PacketCustom(channel, 3).compress(), world)
+      var send = false
+      for ((pos, stream) <- updates) {
+        val c = hostChunk(pos)
+        if (c != null && chunks(c)) {
+          send = true
+          packet.writeByteArray(stream.getBytes)
+          packet.writeByte(255) // terminator
+        }
+      }
+      if (send) {
+        packet.writeInt(Int.MaxValue) // terminator
+        packet.sendToPlayer(p)
+      }
+    }
   }
 
   private def sendDescription(
