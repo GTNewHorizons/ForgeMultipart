@@ -286,12 +286,16 @@ object MultipartSPH
   }
 
   def onChunkWatch(p: EntityPlayerMP, c: ChunkCoordIntPair) {
-    newWatchers.getOrElseUpdate(p.worldObj, newWatchMap).addBinding(p, c)
+    val hostPlayer = WorldContextRegistry.getHostPlayer(p.worldObj, p)
+    newWatchers
+      .getOrElseUpdate(p.worldObj, newWatchMap)
+      .addBinding(hostPlayer, c)
   }
 
   def onChunkUnWatch(p: EntityPlayerMP, c: ChunkCoordIntPair) {
-    removeBinding(newWatchers, p.worldObj, p, c)
-    removeBinding(chunkWatchers, p.worldObj, p, c)
+    val hostPlayer = WorldContextRegistry.getHostPlayer(p.worldObj, p)
+    removeBinding(newWatchers, p.worldObj, hostPlayer, c)
+    removeBinding(chunkWatchers, p.worldObj, hostPlayer, c)
   }
 
   private def removeBinding(
