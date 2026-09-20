@@ -71,6 +71,11 @@ object MultipartEventHandler {
   }
 
   @SubscribeEvent
+  def playerChangedDimension(event: PlayerEvent.PlayerChangedDimensionEvent) {
+    MultipartSPH.onPlayerChangedDimension(event.player, event.fromDim)
+  }
+
+  @SubscribeEvent
   def serverTick(event: TickEvent.ServerTickEvent) {
     if (event.phase == TickEvent.Phase.END)
       MultipartSPH.onTickEnd()

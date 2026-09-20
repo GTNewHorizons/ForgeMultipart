@@ -322,6 +322,23 @@ object MultipartSPH
     case _ =>
   }
 
+  def onPlayerChangedDimension(p: EntityPlayer, fromDimension: Int) = p match {
+    case mp: EntityPlayerMP =>
+      for (map <- Seq(chunkWatchers, newWatchers)) {
+        for (
+          (world, watchers) <- map.toSeq
+          if WorldContextRegistry
+            .getHostWorld(world)
+            .provider
+            .dimensionId == fromDimension
+        ) {
+          watchers.remove(mp)
+          if (watchers.isEmpty) map.remove(world)
+        }
+      }
+    case _ =>
+  }
+
   def getDescPacket(chunk: Chunk, it: Iterator[TileEntity]): PacketCustom = {
     val s = new MCByteStream(new ByteArrayOutputStream)
 
