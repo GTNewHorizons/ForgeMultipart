@@ -55,6 +55,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Read FMP's global render registration ID | `TileMultipart.getRenderID()` - [render-ID meaning, lifecycle and setter](api/RENDER_ID.md) |
 | Inspect an existing tile or converted placeholder with a named result | `getOrConvertTileResult(World, BlockCoord)` - [conversion outcomes and placement lifecycle](api/TILE_CONVERSION.md) |
 | Add or remap multipart button attachment orientations | `ButtonPart.setOrientation(int, ForgeDirection)` - [metadata, face mapping and Et Futurum migration](api/BUTTON_ORIENTATIONS.md) |
+| Read a custom button's orientation metadata from its attachment face | `ButtonPart.metaForSide(int)` - [live inverse lookup and ProjectRed migration](api/BUTTON_ORIENTATIONS.md#reading-orientation-metadata) |
 
 Each guide explains ownership, lifecycle, legacy replacements and limitations, and links to a compiling Java example
 exercised by the test suite. The loading/setter APIs are advanced reconstruction operations; ordinary placement and

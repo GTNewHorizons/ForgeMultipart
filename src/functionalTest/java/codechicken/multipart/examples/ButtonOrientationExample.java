@@ -14,4 +14,9 @@ public final class ButtonOrientationExample {
         ButtonPart.setOrientation(0, ForgeDirection.UP);
         ButtonPart.setOrientation(5, ForgeDirection.DOWN);
     }
+
+    /** Looks up a custom button's metadata without changing its placement or construction policy. */
+    public static int metadataForClickedFace(int side) {
+        return ButtonPart.metaForSide(side ^ 1);
+    }
 }

@@ -25,7 +25,8 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
     public static int[] metaSideMap = new int[] { -1, 4, 5, 2, 3, -1, -1, -1 };
 
     /**
-     * Legacy mutable inverse mapping retained for existing integrations; new code should use {@link #setOrientation}.
+     * Legacy mutable inverse mapping retained for existing integrations; use {@link #metaForSide} to read and
+     * {@link #setOrientation} to configure it.
      */
     public static int[] sideMetaMap = new int[] { -1, -1, 3, 4, 1, 2 };
     public static Cuboid6[] cuboidRegions = setupCuboids();
@@ -82,6 +83,17 @@ public class ButtonPart extends McSidedMetaPart implements IFaceRedstonePart {
         }
         metaSideMap[metadata] = side;
         sideMetaMap[side] = metadata;
+    }
+
+    /**
+     * Returns the current orientation metadata for an attachment face, or -1 if that face is unmapped. Reads the live
+     * mapping, including changes made by legacy integrations. Does not check support or construct a part.
+     *
+     * @param side attachment face index, from 0 through 5; for a clicked face use {@code side ^ 1}
+     * @throws IndexOutOfBoundsException if the index is outside the mapping
+     */
+    public static int metaForSide(int side) {
+        return sideMetaMap[side];
     }
 
     public static BlockButton getButton(int meta) {

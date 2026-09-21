@@ -23,6 +23,35 @@ class ButtonOrientationFunctionalTest {
     private static final BlockCoord BUTTON = new BlockCoord(64, 200, 48);
 
     @Test
+    void inverseLookupReadsLiveMappingsWithoutPlacementValidation() {
+        int[] originalMetaSideMap = ButtonPart.metaSideMap;
+        int[] originalSideMetaMap = ButtonPart.sideMetaMap;
+        try {
+            ButtonPart.metaSideMap = new int[] { -1, 4, 5, 2, 3, -1, -1, -1 };
+            ButtonPart.sideMetaMap = new int[] { -1, -1, 3, 4, 1, 2 };
+            for (int side = 0; side < 6; side++) {
+                assertEquals(ButtonPart.sideMetaMap[side], ButtonPart.metaForSide(side));
+                assertEquals(ButtonPart.sideMetaMap[side ^ 1], ButtonOrientationExample.metadataForClickedFace(side));
+            }
+            assertEquals(-1, ButtonPart.metaForSide(0));
+            ButtonPart.setOrientation(5, ForgeDirection.DOWN);
+            assertEquals(5, ButtonPart.metaForSide(0));
+            ButtonPart.setOrientation(5, ForgeDirection.UP);
+            assertEquals(-1, ButtonPart.metaForSide(0));
+            assertEquals(5, ButtonPart.metaForSide(1));
+            ButtonPart.sideMetaMap[2] = 7;
+            assertEquals(7, ButtonPart.metaForSide(2));
+            ButtonPart.sideMetaMap = new int[] { 5, 0, 3, 4, 1, 2 };
+            assertEquals(3, ButtonPart.metaForSide(2));
+            assertThrows(IndexOutOfBoundsException.class, () -> ButtonPart.metaForSide(-1));
+            assertThrows(IndexOutOfBoundsException.class, () -> ButtonPart.metaForSide(6));
+        } finally {
+            ButtonPart.metaSideMap = originalMetaSideMap;
+            ButtonPart.sideMetaMap = originalSideMetaMap;
+        }
+    }
+
+    @Test
     void etFuturumArrayMutationEnablesFloorAndCeilingPlacement() {
         World world = MinecraftServer.getServer().worldServers[0];
         world.getChunkFromBlockCoords(BUTTON.x, BUTTON.z);
