@@ -54,9 +54,9 @@ or authorize removing Scala-signature support before consumer release/adoption.
 GuideNH preview reconstruction should use the complete [client preview helper](CLIENT_PREVIEW.md). The direct
 generator remains useful when code specifically needs to create or transform one unbound microblock.
 
-GuideNH `7d8fb44e77b9` explicitly resolves the companion's `create(MicroblockClass, int, boolean)` and invokes it on
-`MODULE$`. It does not automatically discover the existing static method. Prefer the direct typed creation example
-below, with [gated optional integration](../API.md#direct-calls-and-optional-integration). The following cache is only
+GuideNH at `16f142417df1` directly calls `MicroblockGenerator$.MODULE$.create(MicroblockClass, int, boolean)`;
+its older `7d8fb44e77b9` revision resolved that same call reflectively. It has not switched to the existing static
+method. Prefer the typed creation example, with [gated optional integration](../API.md#direct-calls-and-optional-integration). The following cache is only
 a temporary interoperability option for consumers retaining reflection:
 
 ```java
@@ -75,10 +75,12 @@ implements that core-data policy through `setShape(size, slot)`, preserving all 
 is only the slot nibble, while `shape()` returns the complete byte. The example leaves source bindings untouched and
 returns an unbound replacement. It is not a clone of arbitrary custom-part state or a shape-validity check.
 
-Factory, material and shape are captured before construction, as in GuideNH. Material callbacks can have side effects;
-capturing shape after creation could copy a callback-modified value instead of the original one.
+The example captures factory, material and shape before construction. Current GuideNH reads the source shape after
+creation; material callbacks can have side effects, so that ordering can copy a callback-modified value. Preserve or
+explicitly validate that policy when migrating custom materials.
 
-Public `setShape` uses the virtual shape setter; GuideNH's old private-field write bypassed that dispatch. Validate
+Public `setShape` uses the virtual shape setter; current GuideNH already calls `shape_$eq` directly, while its older
+private-field write bypassed that dispatch. Validate
 custom traits overriding these hooks before adopting the change. Preserve its existing missing/failed-promotion
 handling, part order, Java collection migration, tile state setup and subsequent loading/notifications. Do not copy
 the source tile binding to the new part. Private material-field access has a separate [typed query guide](MATERIAL_ACCESS.md).

@@ -79,12 +79,13 @@ Pass a Java list directly and cache the method during integration initialization
   `notifyTileChange` and `markRender`. Generation does not perform any of those steps automatically.
 
 The old companion's `generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` keeps its descriptor and
-body, deprecated for callers in favor of the static Java entry. Existing internal calls remain unchanged. GuideNH's
-argument-assignability matcher still rejects the Java parameter for a Scala sequence and falls back to the companion;
-Schematica's exact old reflective lookup remains valid. Consumer source patches/releases and pack adoption remain pending.
+body, deprecated for callers in favor of the static Java entry. Existing internal calls remain unchanged. GuideNH at
+`16f142417df1` directly calls the companion with a Scala sequence; older releases reached it through an
+argument-assignability matcher. Schematica's exact old reflective lookup remains valid. Java generator/preview
+migration and pack adoption remain pending for both consumers.
 GuideNH's separate microblock-generator call has an [existing Java replacement](MICROBLOCK_CREATION.md).
-Private-material access has a separate [typed material query](MATERIAL_ACCESS.md); neither consumer adoption contract
-is closed by this tile API alone.
+GuideNH's private-material access has already migrated in source to the [typed material query](MATERIAL_ACCESS.md);
+that does not migrate its tile reconstruction or establish pack adoption.
 
 ## Validation
 

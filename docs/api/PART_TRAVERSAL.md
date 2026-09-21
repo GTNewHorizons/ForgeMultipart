@@ -94,9 +94,10 @@ ProjectRed's illumination calculations and packet/render indices, and OpenComput
 must retain their original order, filters and aggregation. Those mods can remain Scala internally while calling Java
 collection methods. Existing Java consumers already using `jPartList()` need no rename.
 
-GuideNH also reflects `partList`, `partList_$eq` and `loadParts` while reconstructing client tiles. Moving read-only
-uses to the Java getter does not migrate its setter/loading contracts. Their [Java replacements](PART_LOADING.md)
-are implemented; the consumer patch, release and pack adoption remain separate work. No reference checkout was edited.
+GuideNH at `16f142417df1` uses `jPartList()` for material export and statistics. Preview reconstruction and its AE2
+bridge still use Scala `partList`; preview loading directly calls `loadParts`. Reflection and the raw setter call
+were removed in `4a0cd02e`. The remaining [Java loading](PART_LOADING.md)/preview migration and pack adoption are
+separate work; older supported jars still require the setter and reflective contracts.
 
 The [adoption ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records inspected revisions and
 the remaining release gates. JVM checks cover both getter forms, mutable storage, callback mutation/reentrancy,

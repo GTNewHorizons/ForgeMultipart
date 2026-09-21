@@ -66,6 +66,32 @@ class TileMultipartLoadingTest {
     }
 
     @Test
+    void compositeReplacementRefreshesConsumerHostThroughBindWithoutRestartingParts() {
+        List<String> events = new ArrayList<>();
+        List<TileMultipart> hosts = new ArrayList<>();
+        Part part = new Part("cable", events) {
+
+            @Override
+            public void bind(TileMultipart host) {
+                super.bind(host);
+                // AE2 refreshes its hosted parts from tile() after calling super.bind.
+                hosts.add(tile());
+            }
+        };
+        TileMultipart original = new TileMultipart();
+        original.loadPartList(Arrays.asList(part));
+        TileMultipart expanded = new TileMultipart();
+        expanded.from(original);
+        TileMultipart reduced = new TileMultipart();
+        reduced.from(expanded);
+
+        assertEquals(Arrays.asList(original, expanded, reduced), hosts);
+        assertSame(reduced, part.tile());
+        assertEquals(Arrays.asList(part), reduced.jPartList());
+        assertEquals(Arrays.asList("bind:cable", "bind:cable", "bind:cable"), events);
+    }
+
+    @Test
     void legacyLoadingFailuresLeaveClearedOrPartiallyLoadedState() {
         List<String> events = new ArrayList<>();
         LoadingTile tile = new LoadingTile(events);

@@ -77,7 +77,8 @@ Dispatch is `setPartList(List)` → virtual `partList_$eq(Seq)` and `loadPartLis
 `loadParts(scala.collection.Iterable)`. Internal reconstruction and storage writes continue using the legacy hooks.
 Keep existing overrides there; overriding just the new Java sibling does not intercept all internal calls.
 
-GuideNH's existing assignability-based reflection still selects the Scala loader for a Scala sequence. Schematica's
+GuideNH at `16f142417df1` calls the Scala loader directly; older releases select it with assignability-based reflection.
+Schematica's
 exact `loadParts(scala.collection.Iterable)` lookup also remains valid. Java reflection can now request
 `getMethod("setPartList", List.class)` or `getMethod("loadPartList", Collection.class)`. Select by parameter type, not
 by the first method with the right name.
@@ -89,8 +90,9 @@ hook and its name. This changes the planned Java name, not any existing entry po
 
 For an older GuideNH-compatible path, use a Java list of the promoted client parts, retain its existing world/position setup,
 replace the raw setter with `setPartList`, and call the Collection loader. Preserve its following `notifyTileChange`
-and `markRender` steps. Its tile generator now has a [static Java replacement](COMPOSITE_GENERATION.md); other
-reflective dependencies remain. Schematica can select the Collection loader and pass its existing Java list directly.
+and `markRender` steps. Current GuideNH no longer uses the raw setter or reflection, but still needs to migrate its
+Scala parts and companion generator to the [static Java replacement](COMPOSITE_GENERATION.md).
+Schematica can select the Collection loader and pass its existing Java list directly.
 New versions of both integrations should use the [client preview helper](CLIENT_PREVIEW.md).
 
 ## Validation and release gates
@@ -101,4 +103,5 @@ plus Java assignment/loading on a generated client tile and explicit render-cach
 a real client world or GPU rendering; GuideNH/Schematica previews and full-pack adoption remain manual release gates.
 
 The [consumer ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records the inspected source
-revisions and pending consumer changes/releases. The supplied reference checkouts are unchanged.
+revisions and pending consumer changes/releases. The September 21 refresh records upstream source changes;
+no consumer migration patch was made by this audit.

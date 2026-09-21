@@ -2,7 +2,8 @@
 
 Use the existing public `BlockMicroMaterial.block()` and `meta()` methods. Neither reflection nor an accessor mixin
 is needed. The [compiling Java example](../../src/functionalTest/java/codechicken/multipart/examples/MaterialAccessExample.java)
-implements GuideNH's complete primary-material query using typed calls:
+implements the primary-material query using GuideNH's filtering and metadata convention, with the failure and
+accessor-order differences documented below:
 
 1. Traverse `TileMultipart.jPartList()` in its stored order.
 2. For each `Microblock`, resolve `material()` through `MicroMaterialRegistry.getMaterial(int)`.
@@ -29,10 +30,10 @@ not a general material serialization format. The example preserves positive valu
 
 ## GuideNH migration
 
-Replace `resolvePrimaryMicroblockId`'s reflective part traversal, material lookup and `AccessorBlockMicroMaterial`
-field reads with the typed example. Remove that mixin and its configuration entry when the consumer migrates. Keep
-FMP's private fields unchanged until the migrated consumer release is adopted; this branch does not edit the
-reference consumer checkout or claim adoption.
+GuideNH at `16f142417df1` already uses direct part traversal, material lookup and public getters in
+`resolvePrimaryMicroblockId`. Commit `4a0cd02e` (2026-09-16, included in tags `1.3.33` onward) removed
+`AccessorBlockMicroMaterial` and its configuration entry. Keep FMP's private fields unchanged for older supported
+jars until migrated pack adoption is verified. Source tags are not evidence of installed-artifact adoption.
 
 The old mixin reads constructor fields directly, bypassing overrides. The old reflection fallback already calls
 the public virtual getters. The supported typed path follows those getters too, so custom materials that override
@@ -40,9 +41,11 @@ them may produce a different export from the mixin. Validate those materials in 
 accessors to preserve an implementation detail that disagrees with the material's public behavior.
 
 The example returns null for a null/non-multipart tile or no usable block. Invalid material IDs and exceptions from
-custom accessors propagate. GuideNH currently logs query failures and returns null from its outer integration
-boundary; retain that policy around the typed call. Do not catch a broken material and silently select a later part.
-Metadata is read before the null/air check, preserving accessor order even for a skipped block.
+custom accessors propagate. Current GuideNH instead catches runtime failures during material lookup, logs and
+continues to the next part; getter failures propagate. It reads metadata only after accepting the block and registry
+name, and calls `meta()` twice for positive values. The example reads metadata once, before the null/air check.
+These differences matter for failing or stateful custom getters; the example is not a drop-in copy of current
+GuideNH's failure/accessor-order policy. Validate any intentional change during migration.
 
 For optional FMP support, isolate typed code in a compatibility class and load it only after checking mod presence
 and the supported dependency version. Keep FMP types out of classes loaded unconditionally when FMP is absent.
