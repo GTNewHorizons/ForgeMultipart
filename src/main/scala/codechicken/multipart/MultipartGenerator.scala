@@ -81,12 +81,14 @@ object MultipartGenerator extends ScratchBitSet {
       pos: BlockCoord,
       part: TMultiPart
   ): TileMultipart = {
-    val (tile, converted) = TileMultipart.getOrConvertTile2(world, pos)
+    val (tile, converted) =
+      if (world.isRemote) (TileMultipart.getTile(world, pos), false)
+      else TileMultipart.getOrConvertTile2(world, pos)
     val bitset = setTraits(part, world.isRemote)
 
     var ntile = tile
     if (ntile != null) {
-      if (converted) { // perform client conversion
+      if (converted) { // server-side conversion, then tell the clients
         ntile.partList(0).invalidateConvertedTile()
         world.setBlock(pos.x, pos.y, pos.z, MultipartProxy.block, 0, 0)
         silentAddTile(world, pos, ntile)
