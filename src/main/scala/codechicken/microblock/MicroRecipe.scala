@@ -199,7 +199,7 @@ object MicroRecipe extends IRecipe {
   def findMaterial(item: ItemStack): Int =
     MicroMaterialRegistry.getIdMap.find { m =>
       val mitem = m._2.getItem
-      item.getItem == mitem.getItem &&
+      m._2 != MissingMicroMaterial && item.getItem == mitem.getItem &&
       item.getItemDamage == mitem.getItemDamage &&
       ItemStack.areItemStackTagsEqual(item, mitem)
     } match {
