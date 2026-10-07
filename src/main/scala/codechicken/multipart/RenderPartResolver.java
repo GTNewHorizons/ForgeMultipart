@@ -1,5 +1,7 @@
 package codechicken.multipart;
 
+import java.util.List;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.world.IBlockAccess;
@@ -7,13 +9,10 @@ import net.minecraft.world.IBlockAccess;
 import codechicken.lib.raytracer.ExtendedMOP;
 import scala.Tuple2;
 
-/**
- * A helper class for resolving parts so we don't do a double look up
- */
+/** Resolves the multipart selected by Minecraft's current hit result. */
 public final class RenderPartResolver {
 
     public static TMultiPart resolve(IBlockAccess world, int x, int y, int z) {
-
         if (world == null) {
             return null;
         }
@@ -35,25 +34,16 @@ public final class RenderPartResolver {
             return null;
         }
 
-        int index = (Integer) indexObject;
-        TileMultipartClient tile = getMultipartTile(world, x, y, z);
+        TileMultipart tile = TileMultipart.class.cast(BlockMultipart.getClientTile(world, x, y, z));
         if (tile == null) {
             return null;
         }
 
-        // Needed because scala is stupid and the client tile doesn't expose what we need.
-        TileMultipart multipart = (TileMultipart) tile;
-
-        if (index < 0 || index >= multipart.jPartList().size()) {
+        List<TMultiPart> parts = tile.jPartList();
+        int index = (Integer) indexObject;
+        if (index < 0 || index >= parts.size()) {
             return null;
         }
-        return multipart.jPartList().get(index);
-    }
-
-    private static TileMultipartClient getMultipartTile(IBlockAccess world, int x, int y, int z) {
-        if (world.getTileEntity(x, y, z) instanceof TileMultipartClient) {
-            return (TileMultipartClient) world.getTileEntity(x, y, z);
-        }
-        return null;
+        return parts.get(index);
     }
 }

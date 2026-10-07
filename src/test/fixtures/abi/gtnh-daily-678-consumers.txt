@@ -1,0 +1,811 @@
+Scanned 240 jars (1 excluded as ForgeMultipart itself)
+
+== CONSUMERS ==
+  141	ProjRed-4.12.41-GTNH.jar
+  38	extrautilities-1.2.12.jar
+  19	OpenComputers-1.12.55-GTNH.jar
+  18	ProjectBlue-1.2.10-GTNH.jar
+  7	appliedenergistics2-rv3-beta-1032-GTNH.jar
+  7	buildcraft-compat-7.1.22.jar
+  5	ForgeRelocationFMP-0.2.0.jar
+  4	Galacticraft-3.4.33-GTNH.jar
+  4	ThaumicTinkerer-2.12.29.jar
+  4	WR-CBE-1.7.12.jar
+  4	chisel-2.17.32-GTNH.jar
+  3	IguanaTweaksTConstruct-2.7.12.jar
+  3	WitchingGadgets-1.8.49-GTNH.jar
+  3	guidenh-1.3.20.jar
+  2	BloodArsenal-1.5.12.jar
+  2	Botania-1.13.33-GTNH.jar
+  2	Waila-1.19.31.jar
+  2	matter-manipulator-0.1.53-GTNH.jar
+  1	BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar
+  1	BloodMagic-1.9.12.jar
+  1	Natura-2.8.23.jar
+  1	Schematica-1.12.6-GTNH.jar
+  1	TConstruct-1.14.97-GTNH.jar
+  1	ae2fc-1.5.102-gtnh.jar
+  1	endercore-0.5.14.jar
+  1	etfuturum-2.6.52-GTNH.jar
+  1	gregtech-5.09.54.88.jar
+
+== INHERITED TYPES (downstream extends/implements - abstract method descriptors are load-bearing) == (35)
+  codechicken/multipart/MultiPartRegistry$IPartFactory
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/MultiPartRegistry$IPartConverter
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ThaumicTinkerer-2.12.29.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TFacePart
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TMultiPart
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TSlottedPart
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/IRandomDisplayTick
+      <- ProjRed-4.12.41-GTNH.jar, ThaumicTinkerer-2.12.29.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TCuboidPart
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial
+      <- ProjRed-4.12.41-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/ISidedHollowConnect
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/IRedstonePart
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/JCuboidPart
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JNormalOcclusion
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TIconHitEffects
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TNormalOcclusion
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart
+      <- ThaumicTinkerer-2.12.29.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/IFaceRedstonePart
+      <- ProjRed-4.12.41-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/IMaskedRedstonePart
+      <- ProjRed-4.12.41-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/INeighborTileChange
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JIconHitEffects
+      <- WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JPartialOcclusion
+      <- WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/IMicroMaterialRender
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/JMicroShrinkRender
+      <- WR-CBE-1.7.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroHighlightRenderer
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockGenerator$IGeneratedMaterial
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/Saw
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IRedstoneConnector
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IRedstoneConnectorBlock
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/JItemMultiPart
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/MultiPartRegistry$IPartFactory2
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TEdgePart
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TItemMultiPart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/ButtonPart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/McSidedMetaPart
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/minecraft/PartMetaAccess
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/TorchPart
+      <- chisel-2.17.32-GTNH.jar
+
+== REFERENCED MEMBERS (exact descriptors that must keep linking) == (255)
+  codechicken/microblock/BlockMicroMaterial.<init> (Lnet/minecraft/block/Block;I)V
+      <- BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar, BloodArsenal-1.5.12.jar, Botania-1.13.33-GTNH.jar, Natura-2.8.23.jar, ProjRed-4.12.41-GTNH.jar, ThaumicTinkerer-2.12.29.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.registerMaterial (Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;Ljava/lang/String;)V
+      <- BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar, BloodArsenal-1.5.12.jar, Botania-1.13.33-GTNH.jar, Natura-2.8.23.jar, ThaumicTinkerer-2.12.29.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/MultiPartRegistry.registerParts (Lcodechicken/multipart/MultiPartRegistry$IPartFactory;[Ljava/lang/String;)V
+      <- ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.addPart (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;Lcodechicken/multipart/TMultiPart;)Lcodechicken/multipart/TileMultipart;
+      <- ProjectBlue-1.2.10-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.jPartList ()Ljava/util/List;
+      <- ProjectBlue-1.2.10-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, buildcraft-compat-7.1.22.jar, extrautilities-1.2.12.jar, gregtech-5.09.54.88.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.remPart (Lcodechicken/multipart/TMultiPart;)Lcodechicken/multipart/TileMultipart;
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/MultiPartRegistry.registerConverter (Lcodechicken/multipart/MultiPartRegistry$IPartConverter;)V
+      <- ThaumicTinkerer-2.12.29.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TMultiPart.<init> ()V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.canAddPart (Lcodechicken/multipart/TMultiPart;)Z
+      <- OpenComputers-1.12.55-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.func_70296_d ()V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.notifyPartChange (Lcodechicken/multipart/TMultiPart;)V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.partList ()Lscala/collection/Seq;
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar, guidenh-1.3.20.jar
+  codechicken/multipart/TileMultipart.partMap (I)Lcodechicken/multipart/TMultiPart;
+      <- ForgeRelocationFMP-0.2.0.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/BlockMicroMaterial.createAndRegister (Lnet/minecraft/block/Block;I)V
+      <- Natura-2.8.23.jar, TConstruct-1.14.97-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JNormalOcclusion.getOcclusionBoxes ()Ljava/lang/Iterable;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TCuboidPart$class.$init$ (Lcodechicken/multipart/TCuboidPart;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TCuboidPart$class.drawBreaking (Lcodechicken/multipart/TCuboidPart;Lnet/minecraft/client/renderer/RenderBlocks;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TCuboidPart$class.getCollisionBoxes (Lcodechicken/multipart/TCuboidPart;)Ljava/lang/Iterable;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TCuboidPart$class.getSubParts (Lcodechicken/multipart/TCuboidPart;)Ljava/lang/Iterable;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.getType ()Ljava/lang/String;
+      <- ThaumicTinkerer-2.12.29.jar, buildcraft-compat-7.1.22.jar, extrautilities-1.2.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.canReplacePart (Lcodechicken/multipart/TMultiPart;Lcodechicken/multipart/TMultiPart;)Z
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/microblock/MicroMaterialRegistry.getMaterial (Ljava/lang/String;)Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;
+      <- ProjectBlue-1.2.10-GTNH.jar, buildcraft-compat-7.1.22.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/IRedstonePart.strongPowerLevel (I)I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/IRedstonePart.weakPowerLevel (I)I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/JCuboidPart.<init> ()V
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JIconHitEffects$class.$init$ (Lcodechicken/multipart/JIconHitEffects;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/JIconHitEffects$class.getBreakingIcon (Lcodechicken/multipart/JIconHitEffects;Ljava/lang/Object;I)Lnet/minecraft/util/IIcon;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.MODULE$ Lcodechicken/multipart/MultiPartRegistry$;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultipartGenerator.registerPassThroughInterface (Ljava/lang/String;)V
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/NormalOcclusionTest.apply (Lcodechicken/multipart/JNormalOcclusion;Lcodechicken/multipart/TMultiPart;)Z
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TFacePart$class.$init$ (Lcodechicken/multipart/TFacePart;)V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TIconHitEffects$class.$init$ (Lcodechicken/multipart/TIconHitEffects;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TIconHitEffects$class.addDestroyEffects (Lcodechicken/multipart/TIconHitEffects;Lnet/minecraft/client/particle/EffectRenderer;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TIconHitEffects$class.addHitEffects (Lcodechicken/multipart/TIconHitEffects;Lnet/minecraft/util/MovingObjectPosition;Lnet/minecraft/client/particle/EffectRenderer;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.getCollisionBoxes ()Ljava/lang/Iterable;
+      <- ForgeRelocationFMP-0.2.0.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TMultiPart.load (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- OpenComputers-1.12.55-GTNH.jar, buildcraft-compat-7.1.22.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TMultiPart.occlusionTest (Lcodechicken/multipart/TMultiPart;)Z
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.save (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- OpenComputers-1.12.55-GTNH.jar, buildcraft-compat-7.1.22.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TNormalOcclusion$class.$init$ (Lcodechicken/multipart/TNormalOcclusion;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TNormalOcclusion$class.occlusionTest (Lcodechicken/multipart/TNormalOcclusion;Lcodechicken/multipart/TMultiPart;)Z
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart$.MODULE$ Lcodechicken/multipart/TileMultipart$;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart.canPlacePart (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;Lcodechicken/multipart/TMultiPart;)Z
+      <- ProjectBlue-1.2.10-GTNH.jar, buildcraft-compat-7.1.22.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.field_145848_d I
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.field_145849_e I
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.field_145851_c I
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.func_145831_w ()Lnet/minecraft/world/World;
+      <- ProjRed-4.12.41-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.getOrConvertTile (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;)Lcodechicken/multipart/TileMultipart;
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.markRender ()V
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.<init> (I)V
+      <- ThaumicTinkerer-2.12.29.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getItem ()Lnet/minecraft/item/ItemStack;
+      <- ProjectBlue-1.2.10-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getStrength (Lnet/minecraft/entity/player/EntityPlayer;)F
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/Microblock.getSize ()I
+      <- ForgeRelocationFMP-0.2.0.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/Microblock.shape ()B
+      <- ProjRed-4.12.41-GTNH.jar, buildcraft-compat-7.1.22.jar
+  codechicken/microblock/Saw.getCuttingStrength (Lnet/minecraft/item/ItemStack;)I
+      <- IguanaTweaksTConstruct-2.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/handler/MicroblockProxy$.MODULE$ Lcodechicken/microblock/handler/MicroblockProxy$;
+      <- IguanaTweaksTConstruct-2.7.12.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/handler/MicroblockProxy.sawDiamond ()Lnet/minecraft/item/Item;
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/IconHitEffects.addHitEffects (Lcodechicken/multipart/JIconHitEffects;Lnet/minecraft/util/MovingObjectPosition;Lnet/minecraft/client/particle/EffectRenderer;)V
+      <- WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JPartialOcclusion.getPartialOcclusionBoxes ()Ljava/lang/Iterable;
+      <- ForgeRelocationFMP-0.2.0.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.registerConverter (Lcodechicken/multipart/MultiPartRegistry$IPartConverter;)V
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.registerParts (Lcodechicken/multipart/MultiPartRegistry$IPartFactory;[Ljava/lang/String;)V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry.loadPart (Ljava/lang/String;Lnet/minecraft/nbt/NBTTagCompound;)Lcodechicken/multipart/TMultiPart;
+      <- buildcraft-compat-7.1.22.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/MultipartGenerator.registerPassThroughInterface (Ljava/lang/String;ZZ)V
+      <- WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/MultipartHelper.sendDescPacket (Lnet/minecraft/world/World;Lnet/minecraft/tileentity/TileEntity;)V
+      <- BloodMagic-1.9.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/NormalOcclusionTest$.MODULE$ Lcodechicken/multipart/NormalOcclusionTest$;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/NormalOcclusionTest$.apply (Lscala/collection/Traversable;Lscala/collection/Traversable;)Z
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/PartMap.edgeBetween (II)I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/RedstoneInteractions.getPowerTo (Lcodechicken/multipart/TMultiPart;I)I
+      <- ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/TFacePart$class.redstoneConductionMap (Lcodechicken/multipart/TFacePart;)I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TFacePart$class.solid (Lcodechicken/multipart/TFacePart;I)Z
+      <- OpenComputers-1.12.55-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.activate (Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/MovingObjectPosition;Lnet/minecraft/item/ItemStack;)Z
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.getDrops ()Ljava/lang/Iterable;
+      <- buildcraft-compat-7.1.22.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TMultiPart.onWorldJoin ()V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.readDesc (Lcodechicken/lib/data/MCDataInput;)V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.tile ()Lcodechicken/multipart/TileMultipart;
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.world ()Lnet/minecraft/world/World;
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.writeDesc (Lcodechicken/lib/data/MCDataOutput;)V
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.x ()I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.y ()I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TMultiPart.z ()I
+      <- ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TileMultipart$.addPart (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;Lcodechicken/multipart/TMultiPart;)Lcodechicken/multipart/TileMultipart;
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TileMultipart.dropItem (Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lcodechicken/lib/vec/Vector3;)V
+      <- WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.dropItems (Ljava/lang/Iterable;)V
+      <- ProjectBlue-1.2.10-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TileMultipart.func_145838_q ()Lnet/minecraft/block/Block;
+      <- ForgeRelocationFMP-0.2.0.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart.notifyNeighborChange (I)V
+      <- ProjRed-4.12.41-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/TileMultipart.onMoved ()V
+      <- ForgeRelocationFMP-0.2.0.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.<init> ()V
+      <- ThaumicTinkerer-2.12.29.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/McMetaPart.load (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- ProjRed-4.12.41-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.meta B
+      <- ProjRed-4.12.41-GTNH.jar, buildcraft-compat-7.1.22.jar
+  codechicken/multipart/minecraft/McMetaPart.readDesc (Lcodechicken/lib/data/MCDataInput;)V
+      <- ProjRed-4.12.41-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.save (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- ProjRed-4.12.41-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.writeDesc (Lcodechicken/lib/data/MCDataOutput;)V
+      <- ProjRed-4.12.41-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/PartMetaAccess.<init> (Lcodechicken/multipart/minecraft/IPartMeta;)V
+      <- WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/BlockMicroMaterial$.MODULE$ Lcodechicken/microblock/BlockMicroMaterial$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial$.createAndRegister (Lnet/minecraft/block/Block;I)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial$.materialKey (Lnet/minecraft/block/Block;I)Ljava/lang/String;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial.block ()Lnet/minecraft/block/Block;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial.createAndRegister (Lnet/minecraft/block/Block;ILjava/lang/String;)V
+      <- TConstruct-1.14.97-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial.getSound ()Lnet/minecraft/block/Block$SoundType;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial.meta ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/BlockMicroMaterial.renderMicroFace (Lcodechicken/lib/vec/Vector3;ILcodechicken/lib/vec/Cuboid6;)V
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/CommonMicroClass.getClassId ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/CommonMicroblock.getBounds ()Lcodechicken/lib/vec/Cuboid6;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/CommonMicroblock.getMaterial ()I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/CornerMicroClass$.MODULE$ Lcodechicken/microblock/CornerMicroClass$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/CornerMicroClass$.getClassId ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/EdgeMicroClass$.MODULE$ Lcodechicken/microblock/EdgeMicroClass$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/EdgeMicroClass$.getClassId ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroClass$.MODULE$ Lcodechicken/microblock/FaceMicroClass$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroClass$.aBounds ()[Lcodechicken/lib/vec/Cuboid6;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroClass$.getClassId ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroClass.aBounds ()[Lcodechicken/lib/vec/Cuboid6;
+      <- WR-CBE-1.7.12.jar
+  codechicken/microblock/FacePlacementGrid.getHitSlot (Lcodechicken/lib/vec/Vector3;I)I
+      <- ProjectBlue-1.2.10-GTNH.jar
+  codechicken/microblock/FacePlacementGrid.render (Lcodechicken/lib/vec/Vector3;I)V
+      <- ProjectBlue-1.2.10-GTNH.jar
+  codechicken/microblock/HollowMicroClass$.MODULE$ Lcodechicken/microblock/HollowMicroClass$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/HollowMicroClass$.getClassId ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/HollowMicroblock.getHollowSize ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ISidedHollowConnect.getHollowSize (I)I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/ItemMicroPart$.MODULE$ Lcodechicken/microblock/ItemMicroPart$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ItemMicroPart$.create (II)Lnet/minecraft/item/ItemStack;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ItemMicroPart$.create (ILjava/lang/String;)Lnet/minecraft/item/ItemStack;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ItemMicroPart$.getMaterial (Lnet/minecraft/item/ItemStack;)Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ItemMicroPart$.getMaterialID (Lnet/minecraft/item/ItemStack;)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/ItemMicroPart.getMaterialID (Lnet/minecraft/item/ItemStack;)I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MaterialRenderHelper$.blockColour (I)Lcodechicken/microblock/MaterialRenderHelper$;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MaterialRenderHelper$.lighting ()Lcodechicken/microblock/MaterialRenderHelper$;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MaterialRenderHelper$.render ()V
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MaterialRenderHelper.start (Lcodechicken/lib/vec/Vector3;ILcodechicken/lib/render/uv/UVTransformation;)Lcodechicken/microblock/MaterialRenderHelper$;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$.MODULE$ Lcodechicken/microblock/MicroMaterialRegistry$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.getMaterial (I)Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.materialID (Ljava/lang/String;)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.materialName (I)Ljava/lang/String;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.readMaterialID (Lcodechicken/lib/data/MCDataInput;)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.registerHighlightRenderer (Lcodechicken/microblock/MicroMaterialRegistry$IMicroHighlightRenderer;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.registerMaterial (Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;Ljava/lang/String;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$.writeMaterialID (Lcodechicken/lib/data/MCDataOutput;I)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.canRenderInPass (I)Z
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getBreakingIcon (I)Lnet/minecraft/util/IIcon;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getCutterStrength ()I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getLightValue ()I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getLocalizedName ()Ljava/lang/String;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.getSound ()Lnet/minecraft/block/Block$SoundType;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.isTransparent ()Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial.renderMicroFace (Lcodechicken/lib/vec/Vector3;ILcodechicken/lib/vec/Cuboid6;)V
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.getIdMap ()[Lscala/Tuple2;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.getMaterial (I)Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.getMaxCuttingStrength ()I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.materialID (Ljava/lang/String;)I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry.materialName (I)Ljava/lang/String;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroOcclusion.recalcBounds (Lcodechicken/microblock/JMicroShrinkRender;Lcodechicken/lib/vec/Cuboid6;)I
+      <- WR-CBE-1.7.12.jar
+  codechicken/microblock/MicroRecipe.create (IIII)Lnet/minecraft/item/ItemStack;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroRecipe.findMaterial (Lnet/minecraft/item/ItemStack;)I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroRecipe.getCraftingResult (Lnet/minecraft/inventory/InventoryCrafting;)Lnet/minecraft/item/ItemStack;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/Microblock.getBounds ()Lcodechicken/lib/vec/Cuboid6;
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/Microblock.getIMaterial ()Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/Microblock.getMaterial ()I
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/Microblock.getShape ()I
+      <- buildcraft-compat-7.1.22.jar
+  codechicken/microblock/Microblock.shape_$eq (B)V
+      <- buildcraft-compat-7.1.22.jar
+  codechicken/microblock/MicroblockGenerator$.MODULE$ Lcodechicken/microblock/MicroblockGenerator$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockGenerator$.registerTrait (Ljava/lang/Class;)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockRender$.MODULE$ Lcodechicken/microblock/MicroblockRender$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockRender$.renderCuboid (Lcodechicken/lib/vec/Vector3;Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;ILcodechicken/lib/vec/Cuboid6;I)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockRender.renderCuboid (Lcodechicken/lib/vec/Vector3;Lcodechicken/microblock/MicroMaterialRegistry$IMicroMaterial;ILcodechicken/lib/vec/Cuboid6;I)V
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/Saw$class.$init$ (Lcodechicken/microblock/Saw;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/Saw$class.getMaxCuttingStrength (Lcodechicken/microblock/Saw;)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/handler/MicroblockProxy$.itemMicro ()Lcodechicken/microblock/ItemMicroPart;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/handler/MicroblockProxy$.sawDiamond ()Lnet/minecraft/item/Item;
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/microblock/handler/MicroblockProxy$.sawIron ()Lnet/minecraft/item/Item;
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/microblock/handler/MicroblockProxy$.sawStone ()Lnet/minecraft/item/Item;
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/microblock/handler/MicroblockProxy$.useSawIcons ()Z
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/microblock/handler/MicroblockProxy.createSaw (Lcodechicken/lib/config/ConfigFile;Ljava/lang/String;I)Lnet/minecraft/item/Item;
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/multipart/IFaceRedstonePart.getFace ()I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IFaceRedstonePart.strongPowerLevel (I)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IFaceRedstonePart.weakPowerLevel (I)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/INeighborTileChange.onNeighborTileChanged (IZ)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/INeighborTileChange.weakTileChanges ()Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IRedstonePart.canConnectRedstone (I)Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IconHitEffects.addDestroyEffects (Lcodechicken/multipart/JIconHitEffects;Lnet/minecraft/client/particle/EffectRenderer;)V
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/IconHitEffects.addDestroyEffects (Lcodechicken/multipart/JIconHitEffects;Lnet/minecraft/client/particle/EffectRenderer;Z)V
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/JCuboidPart.harvest (Lnet/minecraft/util/MovingObjectPosition;Lnet/minecraft/entity/player/EntityPlayer;)V
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/JCuboidPart.load (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/JCuboidPart.onAdded ()V
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/JCuboidPart.onWorldJoin ()V
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/JCuboidPart.read (Lcodechicken/lib/data/MCDataInput;)V
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/JCuboidPart.save (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/JItemMultiPart.<init> ()V
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/JItemMultiPart.func_77658_a ()Ljava/lang/String;
+      <- WR-CBE-1.7.12.jar
+  codechicken/multipart/MultiPartRegistry$.createPart (Ljava/lang/String;Z)Lcodechicken/multipart/TMultiPart;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.registerParts (Lcodechicken/multipart/MultiPartRegistry$IPartFactory2;Lscala/collection/Seq;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.registerParts (Lcodechicken/multipart/MultiPartRegistry$IPartFactory2;[Ljava/lang/String;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$.registerParts (Lscala/Function2;Lscala/collection/Seq;)V
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/MultipartGenerator$.MODULE$ Lcodechicken/multipart/MultipartGenerator$;
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/MultipartGenerator$.registerPassThroughInterface (Ljava/lang/String;)V
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/MultipartHelper.createTileFromNBT (Lnet/minecraft/world/World;Lnet/minecraft/nbt/NBTTagCompound;)Lnet/minecraft/tileentity/TileEntity;
+      <- BloodMagic-1.9.12.jar
+  codechicken/multipart/NormallyOccludedPart.<init> (Lcodechicken/lib/vec/Cuboid6;)V
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/PartMap.face (I)Lcodechicken/multipart/PartMap;
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/PartMap.i I
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/PartMap.mask I
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/PartMap.values ()[Lcodechicken/multipart/PartMap;
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$.MODULE$ Lcodechicken/multipart/RedstoneInteractions$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$.connectionMask (Lcodechicken/multipart/TMultiPart;I)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$.getPowerTo (Lcodechicken/multipart/TMultiPart;I)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$.getPowerTo (Lnet/minecraft/world/World;IIIII)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$.otherConnectionMask (Lnet/minecraft/world/IBlockAccess;IIIIZ)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/RedstoneInteractions.getPowerTo (Lnet/minecraft/world/World;IIIII)I
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/TCuboidPart.getCollisionBoxes ()Ljava/lang/Iterable;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TEdgePart$class.$init$ (Lcodechicken/multipart/TEdgePart;)V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TFacePart.getSlotMask ()I
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TFacePart.solid (I)Z
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TItemMultiPart$class.$init$ (Lcodechicken/multipart/TItemMultiPart;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TItemMultiPart$class.getHitDepth (Lcodechicken/multipart/TItemMultiPart;Lcodechicken/lib/vec/Vector3;I)D
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TItemMultiPart$class.onItemUse (Lcodechicken/multipart/TItemMultiPart;Lnet/minecraft/item/ItemStack;Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/world/World;IIIIFFF)Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.getWriteStream ()Lcodechicken/lib/data/MCDataOutput;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.invalidateConvertedTile ()V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TMultiPart.onAdded ()V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.onNeighborChanged ()V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TMultiPart.onPartChanged (Lcodechicken/multipart/TMultiPart;)V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TMultiPart.onRemoved ()V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TMultiPart.onWorldSeparate ()V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TMultiPart.update ()V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart$.canPlacePart (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;Lcodechicken/multipart/TMultiPart;)Z
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/TileMultipart$.dropItem (Lnet/minecraft/item/ItemStack;Lnet/minecraft/world/World;Lcodechicken/lib/vec/Vector3;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart$.getOrConvertTile (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;)Lcodechicken/multipart/TileMultipart;
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TileMultipart$.getTile (Lnet/minecraft/world/World;Lcodechicken/lib/vec/BlockCoord;)Lcodechicken/multipart/TileMultipart;
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/TileMultipart.bindPart (Lcodechicken/multipart/TMultiPart;)V
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TileMultipart.func_145829_t ()V
+      <- matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TileMultipart.func_145837_r ()Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart.internalPartChange (Lcodechicken/multipart/TMultiPart;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart.multiPartChange (Ljava/util/Collection;)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartProxy$.MODULE$ Lcodechicken/multipart/handler/MultipartProxy$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartProxy$.block ()Lcodechicken/multipart/BlockMultipart;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartProxy.block ()Lcodechicken/multipart/BlockMultipart;
+      <- buildcraft-compat-7.1.22.jar
+  codechicken/multipart/handler/MultipartProxy.config ()Lcodechicken/lib/config/ConfigFile;
+      <- IguanaTweaksTConstruct-2.7.12.jar
+  codechicken/multipart/handler/MultipartSaveLoad$.MODULE$ Lcodechicken/multipart/handler/MultipartSaveLoad$;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartSaveLoad$.loadingWorld ()Lnet/minecraft/world/World;
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/ButtonPart.<init> (I)V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/ButtonPart.activate (Lnet/minecraft/entity/player/EntityPlayer;Lnet/minecraft/util/MovingObjectPosition;Lnet/minecraft/item/ItemStack;)Z
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/ButtonPart.sideMetaMap [I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/IPartMeta.getPos ()Lcodechicken/lib/vec/BlockCoord;
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/IPartMeta.getWorld ()Lnet/minecraft/world/World;
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/McMetaPart.invalidateConvertedTile ()V
+      <- WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/McMetaPart.update ()V
+      <- WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/McSidedMetaPart.<init> (I)V
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/minecraft/McSidedMetaPart.onNeighborChanged ()V
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/PartMetaAccess.func_147438_o (III)Lnet/minecraft/tileentity/TileEntity;
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/TorchPart.<init> ()V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.<init> (I)V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.load (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.readDesc (Lcodechicken/lib/data/MCDataInput;)V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.save (Lnet/minecraft/nbt/NBTTagCompound;)V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.sideMetaMap [I
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart.writeDesc (Lcodechicken/lib/data/MCDataOutput;)V
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/scalatraits/TIInventoryTile.rebuildSlotMap ()V
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/scalatraits/TRedstoneTile.openConnections (I)I
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/scalatraits/TRedstoneTile.weakPowerLevel (I)I
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/scalatraits/TSlottedTile.v_partMap ()[Lcodechicken/multipart/TMultiPart;
+      <- OpenComputers-1.12.55-GTNH.jar
+
+== OTHER REFERENCED TYPES (new/cast/instanceof/field descriptors) == (76)
+  codechicken/multipart/TileMultipart
+      <- BloodMagic-1.9.12.jar, ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar, gregtech-5.09.54.88.jar, guidenh-1.3.20.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/TMultiPart
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar, gregtech-5.09.54.88.jar, guidenh-1.3.20.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/MultiPartRegistry
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry
+      <- BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar, BloodArsenal-1.5.12.jar, Botania-1.13.33-GTNH.jar, Natura-2.8.23.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroMaterial
+      <- BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar, BloodArsenal-1.5.12.jar, Botania-1.13.33-GTNH.jar, Natura-2.8.23.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar, ThaumicTinkerer-2.12.29.jar, buildcraft-compat-7.1.22.jar, chisel-2.17.32-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/BlockMicroMaterial
+      <- BiomesOPlenty-1.7.10-2.1.0.2308-universal.jar, BloodArsenal-1.5.12.jar, Botania-1.13.33-GTNH.jar, Natura-2.8.23.jar, ProjRed-4.12.41-GTNH.jar, TConstruct-1.14.97-GTNH.jar, ThaumicTinkerer-2.12.29.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/Microblock
+      <- ForgeRelocationFMP-0.2.0.jar, ProjRed-4.12.41-GTNH.jar, buildcraft-compat-7.1.22.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JNormalOcclusion
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, WitchingGadgets-1.8.49-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/MultipartGenerator
+      <- WR-CBE-1.7.12.jar, WitchingGadgets-1.8.49-GTNH.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TCuboidPart$class
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/microblock/ItemSaw
+      <- IguanaTweaksTConstruct-2.7.12.jar, ProjectBlue-1.2.10-GTNH.jar, endercore-0.5.14.jar
+  codechicken/microblock/handler/MicroblockProxy
+      <- IguanaTweaksTConstruct-2.7.12.jar, ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JIconHitEffects$class
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/NormalOcclusionTest
+      <- WR-CBE-1.7.12.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/PartMap
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/RedstoneInteractions
+      <- ProjectBlue-1.2.10-GTNH.jar, WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/TFacePart$class
+      <- OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar, ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/TIconHitEffects$class
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TNormalOcclusion$class
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TileMultipart$
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/CommonMicroblock
+      <- ForgeRelocationFMP-0.2.0.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/ItemMicroPart
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/Saw
+      <- IguanaTweaksTConstruct-2.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/handler/MicroblockProxy$
+      <- IguanaTweaksTConstruct-2.7.12.jar, ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IRedstonePart
+      <- ProjRed-4.12.41-GTNH.jar, WR-CBE-1.7.12.jar
+  codechicken/multipart/IconHitEffects
+      <- WR-CBE-1.7.12.jar, extrautilities-1.2.12.jar
+  codechicken/multipart/JPartialOcclusion
+      <- ForgeRelocationFMP-0.2.0.jar, WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/MultipartHelper
+      <- BloodMagic-1.9.12.jar, matter-manipulator-0.1.53-GTNH.jar
+  codechicken/multipart/NormalOcclusionTest$
+      <- ForgeRelocationFMP-0.2.0.jar, OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/handler/MultipartProxy
+      <- IguanaTweaksTConstruct-2.7.12.jar, buildcraft-compat-7.1.22.jar
+  codechicken/multipart/minecraft/McMetaPart
+      <- ProjRed-4.12.41-GTNH.jar, buildcraft-compat-7.1.22.jar
+  codechicken/multipart/scalatraits/TRedstoneTile
+      <- ProjRed-4.12.41-GTNH.jar, extrautilities-1.2.12.jar
+  codechicken/microblock/BlockMicroMaterial$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/CommonMicroClass
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/CornerMicroClass$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/EdgeMicroClass$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroClass
+      <- WR-CBE-1.7.12.jar
+  codechicken/microblock/FaceMicroClass$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/FaceMicroblockClient
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/FacePlacementGrid
+      <- ProjectBlue-1.2.10-GTNH.jar
+  codechicken/microblock/HollowMicroClass$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/HollowMicroblock
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/HollowMicroblockClient
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/ISidedHollowConnect
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/ItemMicroPart$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MaterialRenderHelper
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MaterialRenderHelper$
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroMaterialRegistry$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroMaterialRegistry$IMicroHighlightRenderer
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroOcclusion
+      <- WR-CBE-1.7.12.jar
+  codechicken/microblock/MicroRecipe
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroblockGenerator
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockGenerator$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/MicroblockRender
+      <- extrautilities-1.2.12.jar
+  codechicken/microblock/MicroblockRender$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/microblock/Saw$class
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/IFaceRedstonePart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/MultiPartRegistry$IPartConverter
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/MultiPartRegistry$IPartFactory
+      <- ProjectBlue-1.2.10-GTNH.jar
+  codechicken/multipart/MultipartGenerator$
+      <- ForgeRelocationFMP-0.2.0.jar
+  codechicken/multipart/NormallyOccludedPart
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/RedstoneInteractions$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TCuboidPart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/TEdgePart$class
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TFacePart
+      <- OpenComputers-1.12.55-GTNH.jar
+  codechicken/multipart/TItemMultiPart$class
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartProxy$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/handler/MultipartSaveLoad$
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/ButtonPart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/IPartMeta
+      <- extrautilities-1.2.12.jar
+  codechicken/multipart/minecraft/McSidedMetaPart
+      <- ProjRed-4.12.41-GTNH.jar
+  codechicken/multipart/minecraft/PartMetaAccess
+      <- WitchingGadgets-1.8.49-GTNH.jar
+  codechicken/multipart/minecraft/TorchPart
+      <- chisel-2.17.32-GTNH.jar
+  codechicken/multipart/scalatraits/TIInventoryTile
+      <- appliedenergistics2-rv3-beta-1032-GTNH.jar
+  codechicken/multipart/scalatraits/TSlottedTile
+      <- OpenComputers-1.12.55-GTNH.jar
+
+== STRING CONSTANTS (reflection / registration candidates) == (20)
+  codechicken.multipart.TileMultipart
+      <- Galacticraft-3.4.33-GTNH.jar, Schematica-1.12.6-GTNH.jar, ae2fc-1.5.102-gtnh.jar, appliedenergistics2-rv3-beta-1032-GTNH.jar, guidenh-1.3.20.jar
+  codechicken.microblock.MicroMaterialRegistry
+      <- Galacticraft-3.4.33-GTNH.jar, Schematica-1.12.6-GTNH.jar, guidenh-1.3.20.jar
+  codechicken.microblock.BlockMicroMaterial
+      <- Galacticraft-3.4.33-GTNH.jar, guidenh-1.3.20.jar
+  codechicken.microblock.MicroblockClass
+      <- Schematica-1.12.6-GTNH.jar, guidenh-1.3.20.jar
+  codechicken.multipart.BlockMultipart
+      <- Waila-1.19.31.jar, guidenh-1.3.20.jar
+  codechicken.multipart.MultipartGenerator$
+      <- Schematica-1.12.6-GTNH.jar, guidenh-1.3.20.jar
+  codechicken.microblock.BlockMicroMaterial$
+      <- guidenh-1.3.20.jar
+  codechicken.microblock.MicroMaterialRegistry$
+      <- guidenh-1.3.20.jar
+  codechicken.microblock.Microblock
+      <- guidenh-1.3.20.jar
+  codechicken.microblock.MicroblockClient
+      <- guidenh-1.3.20.jar
+  codechicken.microblock.MicroblockGenerator$
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.MultiPartRegistry$
+      <- Schematica-1.12.6-GTNH.jar
+  codechicken.multipart.MultipartGenerator
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.MultipartHelper
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.MultipartHelper$
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.MultipartRenderer
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.MultipartRenderer$
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.TMultiPart
+      <- Schematica-1.12.6-GTNH.jar
+  codechicken.multipart.TileMultipartClient
+      <- guidenh-1.3.20.jar
+  codechicken.multipart.minecraft.ButtonPart
+      <- etfuturum-2.6.52-GTNH.jar
+

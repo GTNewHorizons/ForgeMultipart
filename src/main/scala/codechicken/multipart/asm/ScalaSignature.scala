@@ -1,13 +1,5 @@
 package codechicken.multipart.asm
 
-import org.objectweb.asm.tree.ClassNode
-import org.objectweb.asm.tree.AnnotationNode
-import org.objectweb.asm.tree.FieldNode
-import org.objectweb.asm.tree.MethodNode
-import java.util.{List => JList}
-import scala.collection.JavaConverters._
-import scala.collection.JavaConversions._
-
 import ScalaSignature._
 
 object ScalaSignature {
@@ -17,7 +9,7 @@ object ScalaSignature {
 
   case class Bytes(arr: Array[Byte], pos: Int, len: Int) {
     def reader = new ByteCodeReader(this)
-    def section = arr.drop(pos).take(len)
+    def section = ScalaSignatureParser.section(this)
   }
 
   trait Flags {
@@ -42,16 +34,8 @@ object ScalaSignature {
 class ScalaSignature(val bytes: Bytes) {
   val major = bytes.arr(0).toInt
   val minor = bytes.arr(1).toInt
-  val table = {
-    val bcr = bytes.reader
-    bcr.pos = 2
-    Array.tabulate(bcr.readNat) { i =>
-      val start = bcr.pos
-      val tpe = bcr.readByte
-      val len = bcr.readNat
-      bcr.advance(len)(new SigEntry(i, start, Bytes(bytes.arr, bcr.pos, len)))
-    }
-  }
+  val table =
+    ScalaSignatureParser.readTable(this, bytes).asInstanceOf[Array[SigEntry]]
 
   trait SymbolRef extends Flags {
     def full: String
@@ -65,14 +49,13 @@ class ScalaSignature(val bytes: Bytes) {
     def flags: Int
     def infoId: Int
 
-    def full = owner.full + "." + name
-    override def toString = getClass.getName.replaceAll(".+\\$", "") +
-      "(" + name + "," + owner + "," + flags.toHexString + "," + infoId + ")"
+    def full = ScalaSignatureParser.classSymbolFull(this)
+    override def toString = ScalaSignatureParser.classSymbolString(this)
 
     def isObject = false
     def info: ClassType = evalT(infoId)
-    def jParent = info.parent.jName
-    def jInterfaces = info.interfaces.map(_.jName)
+    def jParent = ScalaSignatureParser.classParentName(this)
+    def jInterfaces = ScalaSignatureParser.interfaceNames(this)
   }
 
   case class ClassSymbol(
@@ -97,12 +80,14 @@ class ScalaSignature(val bytes: Bytes) {
       flags: Int,
       infoId: Int
   ) extends SymbolRef {
-    override def toString =
-      "MethodSymbol(" + name + "," + owner + "," + flags.toHexString + "," + infoId + ")"
-    def full = owner.full + "." + name
+    override def toString = ScalaSignatureParser.methodSymbolString(this)
+    def full = ScalaSignatureParser.methodSymbolFull(this)
 
-    def info: TMethodType = evalT(infoId)
-    def jDesc = info.jDesc
+    def info: TMethodType =
+      ScalaSignatureParser
+        .methodSymbolInfo(ScalaSignature.this, this)
+        .asInstanceOf[TMethodType]
+    def jDesc = ScalaSignatureParser.methodSymbolDescriptor(this)
   }
 
   case class ExternalSymbol(name: String) extends SymbolRef {
@@ -117,9 +102,7 @@ class ScalaSignature(val bytes: Bytes) {
   }
 
   trait TMethodType {
-    def jDesc = "(" + params
-      .map(m => m.info.returnType.jDesc)
-      .mkString + ")" + returnType.jDesc
+    def jDesc = ScalaSignatureParser.methodDescriptor(this)
     def returnType: TypeRef
     def params: List[MethodSymbol]
   }
@@ -140,23 +123,9 @@ class ScalaSignature(val bytes: Bytes) {
     def sym: SymbolRef
     def name = sym.full
 
-    def jName = name.replace('.', '/') match {
-      case "scala/AnyRef" | "scala/Any" => "java/lang/Object"
-      case s                            => s
-    }
+    def jName = ScalaSignatureParser.typeName(name)
 
-    def jDesc = name match {
-      case "scala.Array"   => null
-      case "scala.Long"    => "J"
-      case "scala.Int"     => "I"
-      case "scala.Short"   => "S"
-      case "scala.Byte"    => "B"
-      case "scala.Double"  => "D"
-      case "scala.Float"   => "F"
-      case "scala.Boolean" => "Z"
-      case "scala.Unit"    => "V"
-      case _               => "L" + jName + ";"
-    }
+    def jDesc = ScalaSignatureParser.typeDescriptor(this)
   }
 
   case class TypeRefType(owner: TypeRef, sym: SymbolRef, typArgs: List[TypeRef])
@@ -166,10 +135,7 @@ class ScalaSignature(val bytes: Bytes) {
 
     def returnType = this
 
-    override def jDesc = name match {
-      case "scala.Array" => "[" + typArgs(0).jDesc
-      case _             => super.jDesc
-    }
+    override def jDesc = ScalaSignatureParser.appliedTypeDescriptor(this)
   }
 
   case class ThisType(sym: SymbolRef) extends TypeRef
@@ -217,70 +183,25 @@ class ScalaSignature(val bytes: Bytes) {
     def getValue[T](name: String) = values(name).asInstanceOf[T]
   }
 
-  def evalS(i: Int): String = {
-    val e = table(i)
-    val bc = e.bytes
-    val bcr = bc.reader
-    e.id match {
-      case 1 | 2 => bcr.readString(bc.len)
-      case 3     => NoSymbol.full
-      case 9 | 10 =>
-        var s = evalS(bcr.readNat)
-        if (bc.pos + bc.len > bcr.pos)
-          s = evalS(bcr.readNat) + "." + s
-        s
-    }
-  }
+  def evalS(i: Int): String = ScalaSignatureParser.evalS(this, i)
 
   def evalT[T](i: Int) = eval(i).asInstanceOf[T]
 
-  def evalList[T](bcr: ByteCodeReader) = {
-    val l = List.newBuilder
-    while (bcr.more)
-      l += evalT(bcr.readNat)
-    l.result()
-  }
+  def evalList[T](bcr: ByteCodeReader): List[Nothing] =
+    ScalaSignatureParser.evalList(this, bcr).asInstanceOf[List[Nothing]]
 
   def eval(i: Int): Any = {
-    // only parse the ones that matter for this project
     val e = table(i)
     val bcr = e.bytes.reader
-
-    def nat = bcr.readNat
-    def evalS = this.evalS(nat)
-    def evalT[T] = this.evalT[T](nat)
+    val id = e.id
+    def evalT[T] = this.evalT[T](bcr.readNat)
     def evalList[T] = this.evalList[T](bcr)
 
-    e.id match {
-      case 1 | 2   => this.evalS(i)
-      case 3       => NoSymbol
-      case 6       => ClassSymbol(evalS, evalT, nat, nat)
-      case 7       => ObjectSymbol(evalS, evalT, nat, nat)
-      case 8       => MethodSymbol(evalS, evalT, nat, nat)
-      case 9 | 10  => ExternalSymbol(this.evalS(i))
-      case 11 | 12 => NoType // 12 is actually NoPrefixType (no lower bound)
-      case 13      => ThisType(evalT)
-      case 14      => SingleType(evalT, evalT)
-      case 16      => TypeRefType(evalT, evalT, evalList)
-      case 19      => ClassType(evalT, evalList)
-      case 20      => MethodType(evalT, evalList)
-      case 21 | 48 =>
-        ParameterlessType(
-          evalT
-        ) // 48 is actually a bounded super type, but it should work fine for this project
-      case 25 => BooleanLiteral(bcr.readLong != 0)
-      case 26 => ByteLiteral(bcr.readLong.toByte)
-      case 27 => ShortLiteral(bcr.readLong.toShort)
-      case 28 => CharLiteral(bcr.readLong.toChar)
-      case 29 => IntLiteral(bcr.readLong.toInt)
-      case 30 => LongLiteral(bcr.readLong)
-      case 31 =>
-        FloatLiteral(java.lang.Float.intBitsToFloat(bcr.readLong.toInt))
-      case 32 => DoubleLiteral(java.lang.Double.longBitsToDouble(bcr.readLong))
-      case 33 => StringLiteral(evalS)
-      case 34 => NullLiteral
-      case 35 => TypeLiteral(evalT)
-      case 36 => EnumLiteral(evalT)
+    // Java misreads the outer parameter in these Scala 2.11 generic constructors.
+    id match {
+      case 16 => TypeRefType(evalT, evalT, evalList)
+      case 19 => ClassType(evalT, evalList)
+      case 20 => MethodType(evalT, evalList)
       case 40 =>
         AnnotationInfo(
           evalT,
@@ -288,82 +209,17 @@ class ScalaSignature(val bytes: Bytes) {
           evalList.grouped(2).map(g => (g(0), g(1))).toMap
         )
       case 44 => ArrayLiteral(evalList)
-      case _  => e
+      case _  => ScalaSignatureParser.eval(this, i, e, bcr, id)
     }
   }
 
-  def collect[T](id: Int) = (0 until table.length).collect {
-    case i if table(i).id == id => evalT(i): T
-  }
+  def collect[T](id: Int): scala.collection.immutable.IndexedSeq[T] =
+    ScalaSignatureParser.collect[T](this, id)
 
-  def findObject(name: String) = collect[ObjectSymbol](7).find(_.full == name)
-  def findClass(name: String) =
-    collect[ClassSymbol](6).find(c => !c.isModule && c.full == name)
-}
-
-class ByteCodeReader(val bc: Bytes) {
-  var pos = bc.pos
-
-  def more = pos < bc.pos + bc.len
-
-  def readString(len: Int) =
-    advance(len)(new String(bc.arr.drop(pos).take(len)))
-
-  def readByte = advance(1)(bc.arr(pos))
-
-  def readNat = {
-    var r = 0
-    var b = 0
-    do {
-      b = readByte
-      r = r << 7 | b & 0x7f
-    } while ((b & 0x80) != 0)
-    r
-  }
-
-  def readLong = {
-    var l = 0L
-    while (more) {
-      l <<= 8
-      l |= readByte & 0xff
-    }
-    l
-  }
-
-  def advance[A](len: Int)(r: A) = {
-    if (pos + len > bc.pos + bc.len)
-      throw new IllegalArgumentException("Ran off the end of bytecode")
-    pos += len
-    r
-  }
-}
-
-object ScalaSigReader {
-  def decode(s: String) = {
-    val bytes = s.getBytes
-    bytes take ByteCodecs.decode(bytes)
-  }
-
-  def encode(b: Array[Byte]) = {
-    val bytes = ByteCodecs.encode8to7(b)
-    var i = 0
-    while (i < bytes.length) {
-      bytes(i) = ((bytes(i) + 1) & 0x7f).toByte
-      i += 1
-    }
-    new String(bytes.take(bytes.length - 1), "UTF-8")
-  }
-
-  def read(ann: AnnotationNode): ScalaSignature = new ScalaSignature(
-    Bytes(decode(ann.values.get(1).asInstanceOf[String]))
-  )
-
-  def write(sig: ScalaSignature, ann: AnnotationNode) =
-    ann.values.set(1, encode(sig.bytes.arr))
-
-  def ann(cnode: ClassNode): Option[AnnotationNode] =
-    cnode.visibleAnnotations match {
-      case null => None
-      case a => a.find(ann => ann.desc.equals("Lscala/reflect/ScalaSignature;"))
-    }
+  def findObject(name: String): Option[ObjectSymbol] =
+    ScalaSignatureParser
+      .findObject(this, name)
+      .asInstanceOf[Option[ObjectSymbol]]
+  def findClass(name: String): Option[ClassSymbol] =
+    ScalaSignatureParser.findClass(this, name).asInstanceOf[Option[ClassSymbol]]
 }

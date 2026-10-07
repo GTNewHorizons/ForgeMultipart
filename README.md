@@ -6,7 +6,10 @@ An API for dynamically handling different functional parts in the one block spac
 Requirements:
 * The latest version of CCL (files.minecraftforge.net/CodeChickenLib/)
 * Forge
-* A scala compatible IDE and project (For eclipse, download the scala eclipse plugin and right click on the project -> Add Scala Nature)
+* JDK 8. The mod compiles directly for Java 8.
+* A scala compatible IDE and project (For eclipse, download the scala eclipse plugin and right click on the project -> Add Scala Nature).
+  Most of the codebase is Java now; the Java sources live under `src/main/scala` so they can be joint-compiled
+  with the Scala files that remain.
 
 If you only want to use the API and not modify it:
  * Download the latest dev version from files.minecraftforge.net/ForgeMultipart/
@@ -14,3 +17,6 @@ If you only want to use the API and not modify it:
  * Place both mods in your /libs/ folder and link them as libraries in your IDE.
 
 Implementation of all parts of the API should be clean and easy in Java. The minecraft multipart mod is implemented in java as a test case.
+
+See the [Java API index](docs/API.md) for supported entry points, compiling examples, ownership/lifecycle contracts
+and migration status. It links to factory registration, material enumeration, part traversal, tile loading and occlusion guides.
