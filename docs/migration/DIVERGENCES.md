@@ -19,7 +19,8 @@ of the later upstream rename, not a divergence from the `1.7.12` reference.
 
 | Area | Difference and consequence |
 | --- | --- |
-| Raw microblock recipe material lookup | Skips `MissingMicroMaterial`, whose recovery item is stone, so sawing stone selects the real stone material. Existing missing-material microblocks retain their recovery behavior. This fixes a pre-existing Scala bug. |
+| Raw microblock recipe material lookup | Skips `MissingMicroMaterial`, whose recovery item is stone, so sawing stone selects the real stone material. Existing missing-material microblocks retain their recovery behavior. This fixes a pre-existing Scala bug, also fixed upstream in PR #61. |
+| Client part additions | Reuses an existing multipart tile or creates one without converting the stale client block. Conversion and its outgoing packets remain server-side, avoiding duplicate parts and client disconnects. Matches upstream PR #62. |
 | `BlockMicroMaterial.createAndRegister(Block, Seq, String)` | Registers every supplied metadata value instead of only zero, including dark-oak logs and leaves and their legacy-name remaps. This fixes a pre-existing Scala bug; material IDs are rebuilt through the existing registry mapping. |
 | Chunk scheduled-tick restoration | Reactivates chunks with restored scheduled ticks so their callbacks resume at the saved deadlines. The Scala implementation restored entries without activating their chunk. NBT layout and duplicate-scheduling behavior are unchanged. |
 | World scheduler clock loading | Retains successfully loaded `schedTime` instead of overwriting it with total world time. Missing or unreadable files still fall back to world time. This fixes a pre-existing Scala bug and preserves the clock used by saved absolute tick deadlines; the file format is unchanged. |

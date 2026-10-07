@@ -28,6 +28,7 @@ import codechicken.multipart.MultipartGenerator;
 import codechicken.multipart.MultipartGenerator$;
 import codechicken.multipart.TMultiPart;
 import codechicken.multipart.TSlottedPart;
+import codechicken.multipart.TileCache;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.TileMultipartClient;
 import codechicken.multipart.asm.MultipartMixinFactory;
@@ -172,6 +173,39 @@ public class MultipartGeneratorFunctionalTest {
         } finally {
             world.setBlockToAir(pos.x, pos.y, pos.z);
             world.setBlockToAir(pos.x, pos.y - 1, pos.z);
+        }
+    }
+
+    @Test
+    void clientAdditionsReplaceStaleConvertibleBlocksWithoutConvertingThem() {
+        World world = MinecraftServer.getServer().worldServers[0];
+        BlockCoord pos = new BlockCoord(51, 200, 48);
+        world.getChunkFromBlockCoords(pos.x, pos.z);
+        world.setBlock(pos.x, pos.y - 1, pos.z, Blocks.stone, 0, 0);
+        world.setBlock(pos.x, pos.y, pos.z, Blocks.torch, 5, 0);
+        boolean wasRemote = world.isRemote;
+        TileCache.FlaggedTile cached = TileCache.map().get(pos);
+        try {
+            // The server-started test event is synchronous; restore the side before any server tick.
+            world.isRemote = true;
+            PlainPart first = new PlainPart();
+            TileMultipart tile = MultipartGenerator$.MODULE$.addPart(world, pos, first);
+            assertTrue(tile instanceof TileMultipartClient);
+            assertSame(MultipartProxy.block(), world.getBlock(pos.x, pos.y, pos.z));
+            assertSame(tile, world.getTileEntity(pos.x, pos.y, pos.z));
+            assertEquals(Collections.singletonList(first), tile.jPartList());
+            assertSame(tile, first.tile());
+
+            PlainPart second = new PlainPart();
+            assertSame(tile, MultipartGenerator$.MODULE$.addPart(world, pos, second));
+            assertEquals(Arrays.asList(first, second), tile.jPartList());
+            assertSame(tile, second.tile());
+        } finally {
+            world.isRemote = wasRemote;
+            world.setBlockToAir(pos.x, pos.y, pos.z);
+            world.setBlockToAir(pos.x, pos.y - 1, pos.z);
+            if (cached == null) TileCache.map().remove(pos);
+            else TileCache.map().put(pos, cached);
         }
     }
 

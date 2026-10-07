@@ -105,14 +105,16 @@ public final class MultipartGenerator$ implements ScratchBitSet {
 
     /** Replaces the tile if the new part requires additional interfaces, then adds the part. */
     public TileMultipart addPart(World world, BlockCoord pos, TMultiPart part) {
-        Tuple2<TileMultipart, Object> convertedTile = TileMultipart.getOrConvertTile2(world, pos);
+        Tuple2<TileMultipart, Object> convertedTile = world.isRemote
+                ? new Tuple2<>(TileMultipart.getTile(world, pos), Boolean.FALSE)
+                : TileMultipart.getOrConvertTile2(world, pos);
         TileMultipart tile = convertedTile._1();
         boolean converted = (Boolean) convertedTile._2();
         BitSet bitset = setTraits(part, world.isRemote);
 
         TileMultipart next = tile;
         if (next != null) {
-            if (converted) {
+            if (converted) { // Server-side conversion, then tell the clients.
                 next.partList().apply(0).invalidateConvertedTile();
                 world.setBlock(pos.x, pos.y, pos.z, MultipartProxy.block(), 0, 0);
                 silentAddTile(world, pos, next);
