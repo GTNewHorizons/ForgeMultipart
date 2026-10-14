@@ -15,14 +15,17 @@ import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import net.minecraft.block.Block;
 import net.minecraft.block.material.Material;
 import net.minecraft.init.Blocks;
 import net.minecraft.util.IIcon;
+import net.minecraft.util.RegistrySimple;
 import net.minecraft.world.IBlockAccess;
 
 import org.junit.jupiter.api.Test;
@@ -166,7 +169,10 @@ class BlockMicroMaterialCharacterizationTest {
         assertField(BlockMicroMaterial.class, "blockKey", String.class, false, true);
         Field icons = assertField(BlockMicroMaterial.class, "icont", MultiIconTransformation.class, false, false);
         assertSideOnly(icons.getAnnotation(SideOnly.class));
-        assertEquals(4, BlockMicroMaterial.class.getDeclaredFields().length);
+        Field stale = assertField(BlockMicroMaterial.class, "iconsStale", boolean.class, false, false);
+        assertSideOnly(stale.getAnnotation(SideOnly.class));
+        assertTrue(Modifier.isVolatile(stale.getModifiers()));
+        assertEquals(5, BlockMicroMaterial.class.getDeclaredFields().length);
 
         assertClass(BlockMicroMaterial$.class, Object.class, true, MATERIAL_COMPANION_METHODS);
         assertModule(BlockMicroMaterial$.class, BlockMicroMaterial$.MODULE$);
@@ -353,6 +359,56 @@ class BlockMicroMaterialCharacterizationTest {
         assertSame(icon, material.getBreakingIcon(2));
         assertSame(icon, material.codechicken$microblock$BlockMicroMaterial$$safeIcon$1(block, 4));
         assertEquals(Arrays.asList(2, 23, 4, 23), reads);
+    }
+
+    @Test
+    void firstIconReadAfterStitchPicksUpIconsFinishedByLaterPostHandlers() throws Exception {
+        IIcon early = stubIcon();
+        IIcon late = stubIcon();
+        AtomicReference<IIcon> current = new AtomicReference<>(early);
+        Block block = new Block(Material.rock) {
+
+            @Override
+            public IIcon getIcon(int side, int metadata) {
+                return current.get();
+            }
+        };
+        String key = "fmptest:late_icon_block";
+        Field objects = RegistrySimple.class.getDeclaredField("registryObjects");
+        objects.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        Map<Object, Object> registry = (Map<Object, Object>) objects.get(Block.blockRegistry);
+        registry.put(key, block);
+        try {
+            BlockMicroMaterial material = new BlockMicroMaterial(block, 0) {
+
+                @Override
+                public String blockKey() {
+                    return key;
+                }
+            };
+            material.loadIcons();
+            // Another mod's TextureStitchEvent.Post handler replaces the block's icon after FMP's ran.
+            current.set(late);
+            MultiIconTransformation resolved = material.icont();
+            assertSame(late, resolved.icons[0]);
+            assertSame(late, resolved.icons[5]);
+            assertSame(resolved, material.icont(), "Icons are re-resolved once per stitch, not on every read");
+
+            MultiIconTransformation assigned = new MultiIconTransformation(early);
+            material.loadIcons();
+            material.icont_$eq(assigned);
+            assertSame(assigned, material.icont(), "Explicitly assigned icons are not overwritten");
+        } finally {
+            registry.remove(key);
+        }
+    }
+
+    private static IIcon stubIcon() {
+        return (IIcon) Proxy.newProxyInstance(
+                IIcon.class.getClassLoader(),
+                new Class<?>[] { IIcon.class },
+                (proxy, method, arguments) -> method.getName().equals("toString") ? "stubIcon" : null);
     }
 
     @Test

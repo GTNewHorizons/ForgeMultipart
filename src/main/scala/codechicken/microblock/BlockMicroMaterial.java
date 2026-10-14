@@ -31,6 +31,10 @@ public class BlockMicroMaterial implements IMicroMaterial {
     @SideOnly(Side.CLIENT)
     private MultiIconTransformation icont;
 
+    /** Set by {@link #loadIcons()} so the next {@link #icont()} read re-resolves the block's icons. */
+    @SideOnly(Side.CLIENT)
+    private volatile boolean iconsStale;
+
     public BlockMicroMaterial(Block block, int meta) {
         this.block = block;
         this.meta = meta;
@@ -111,23 +115,40 @@ public class BlockMicroMaterial implements IMicroMaterial {
         return blockKey;
     }
 
+    /**
+     * Returns the side icons. The first read after a texture stitch rebuilds them from the block: {@link #loadIcons()}
+     * runs inside {@code TextureStitchEvent.Post}, possibly before another mod's Post handler finishes its own icons
+     * (Chisel's CTMLib submaps create their sub-icons there), and the cached copy would otherwise keep missing or
+     * previous-stitch icons until the next stitch.
+     */
     public MultiIconTransformation icont() {
+        if (iconsStale) {
+            icont = buildIcons();
+            iconsStale = false;
+        }
         return icont;
     }
 
+    /** Explicitly assigned icons are kept as-is and are not re-resolved on the next {@link #icont()} read. */
     public void icont_$eq(MultiIconTransformation icont) {
         this.icont = icont;
+        iconsStale = false;
     }
 
     @Override
     @SideOnly(Side.CLIENT)
     public void loadIcons() {
+        icont_$eq(buildIcons());
+        iconsStale = true;
+    }
+
+    private MultiIconTransformation buildIcons() {
         Block currentBlock = Block.getBlockFromName(blockKey());
         IIcon[] icons = new IIcon[6];
         for (int side = 0; side < icons.length; side++) {
             icons[side] = codechicken$microblock$BlockMicroMaterial$$safeIcon$1(currentBlock, side);
         }
-        icont_$eq(new MultiIconTransformation(icons));
+        return new MultiIconTransformation(icons);
     }
 
     public final IIcon codechicken$microblock$BlockMicroMaterial$$safeIcon$1(Block block, int side) {
