@@ -1,6 +1,6 @@
 package codechicken.microblock.handler
 
-import cpw.mods.fml.common.eventhandler.SubscribeEvent
+import cpw.mods.fml.common.eventhandler.{EventPriority, SubscribeEvent}
 import cpw.mods.fml.relauncher.SideOnly
 import cpw.mods.fml.relauncher.Side
 import net.minecraftforge.client.event.TextureStitchEvent
@@ -14,7 +14,7 @@ import cpw.mods.fml.common.LoaderState
 import net.minecraft.util.MovingObjectPosition.MovingObjectType
 
 object MicroblockEventHandler {
-  @SubscribeEvent
+  @SubscribeEvent(priority = EventPriority.LOW)
   @SideOnly(Side.CLIENT)
   def postTextureStitch(event: TextureStitchEvent.Post) {
     if (event.map.getTextureType == 0)
