@@ -4,16 +4,12 @@ Start here when integrating with ForgeMultipart for **Minecraft 1.7.10 / Forge**
 migration branch. Its new APIs are implemented and tested but do not yet have a minimum published dependency version.
 Use a dev artifact containing the methods you need; source Javadocs are packaged with the sources artifact.
 
-Consumers can use the Java surface without importing Scala types. FMP still retains Scala storage, runtime and
-compatibility bridges, and some extension contracts still need migration. A Scala-authored mod can adopt the Java API
-without converting the rest of its code to Java.
+Consumers can use the Java surface without importing Scala types. FMP itself still needs Scala at runtime. A
+Scala-authored mod can adopt the Java API without converting the rest of its code to Java.
 
-Run `./gradlew compileJavaApiExamples` (or `gradlew.bat compileJavaApiExamples` on Windows) to compile the existing
-Java examples with a Java 8 compiler against the packaged dev jar and dependencies excluding `scala-*` libraries.
-This also runs through `check`. It covers every Java file in the test and functional-test `examples` packages,
-including their supporting types; add new documented examples there to extend coverage. Main/test class outputs,
-annotation processors and source lookup are not used to supply FMP classes. This is a compile-time API check only:
-FMP still needs Scala at runtime, and generated-trait behavior remains covered separately by Forge functional tests.
+Every guide links a compiling example. `./gradlew compileJavaApiExamples` (also run by `check`) compiles all of them
+as Java 8 against the packaged dev jar with no `scala-*` library on the classpath, so a documented example that
+needs Scala fails the build. Add new documented examples to the test or functional-test `examples` packages.
 
 **Rebuilding an existing mod against this branch? Read the [release notes](RELEASE_NOTES.md) first.** Shipped binaries
 keep working, but recompiling has three classes of break, and the trait-composition one compiles cleanly and changes
@@ -57,8 +53,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Add or remap multipart button attachment orientations | `ButtonPart.setOrientation(int, ForgeDirection)` - [metadata, face mapping and Et Futurum migration](api/BUTTON_ORIENTATIONS.md) |
 | Read a custom button's orientation metadata from its attachment face | `ButtonPart.metaForSide(int)` - [live inverse lookup and ProjectRed migration](api/BUTTON_ORIENTATIONS.md#reading-orientation-metadata) |
 
-Each guide explains ownership, lifecycle, legacy replacements and limitations, and links to a compiling Java example
-exercised by the test suite. The loading/setter APIs are advanced reconstruction operations; ordinary placement and
+Each guide explains ownership, lifecycle, legacy replacements and limitations. The loading/setter APIs are advanced reconstruction operations; ordinary placement and
 removal should use the existing world APIs below.
 
 ## Existing Java entry points
@@ -119,27 +114,13 @@ contracts and Java replacements; neither receives an internal-only marker. Remov
 consumer and internal migration gates. The [consumer audit](migration/COMPATIBILITY.md#api-boundary-audit)
 records the checked source calls and validation.
 
-## Compatibility and remaining work
+## Legacy entry points and project status
 
 Deprecated Scala-facing entry points remain callable, with their descriptors and supported override dispatch retained.
 Follow the method-specific guide: a Java sibling is not automatically a replacement override hook, and reflection
 must select the intended parameter types when a method is overloaded.
 
-An [illuminated Java microblock extension](api/MICROBLOCK_EXTENSIONS.md) now covers registration, material traits,
-light aggregation and halo geometry, with compiling examples and Forge coverage. Its physical-client rendering and
-ProjectRed adoption remain open. [Converter registration and lifecycle](api/BLOCK_CONVERTERS.md) are documented and
-tested. [Stable tile capability access](api/TILE_TRAIT_ACCESS.md) covers safe Java calls, ProjectRed redstone queries
-and OpenComputers slot refresh. [Custom Java tile-trait authoring](api/CUSTOM_TILE_TRAITS.md) covers registration,
-stable capabilities, lifecycle/state rules and transformer constraints with generated Forge coverage. Supported
-[button orientation mapping](api/BUTTON_ORIENTATIONS.md) replaces Et Futurum's reflective array mutation. Supported
-[saw-strength mutation](api/SAW_STRENGTH.md) replaces Iguana's private-field access. ProjectRed's existing Scala
-traits remain supported until adoption.
-
-The audited Scala-typed API gaps have Java replacements linked above; broader extension validation and
-consumer adoption remain open in the [migration status](migration/README.md).
-
-FMP-side implementation is separate from consumer releases and target-pack adoption. Retiring legacy bridges or the
-Scala dependency requires those gates and removal of FMP's remaining internal Scala users.
+Remaining work, consumer adoption and the Scala-removal gates are tracked in the [migration status](migration/README.md).
 
 | Need | Document |
 | --- | --- |

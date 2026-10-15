@@ -2,11 +2,10 @@
 
 [API index](../API.md)
 
-The `algent/java` branch adds `TileMultipart.testOcclusion(Collection<? extends TMultiPart>, TMultiPart)`.
-It tests a supplied collection of parts through the tile's existing occlusion hook, including generated
-partial-occlusion checks. This addition is not yet tied to a minimum published dependency version.
-For raw geometry, `NormalOcclusionTest.testBoxes(Iterable<? extends Cuboid6>, Iterable<? extends Cuboid6>)` tests
-two groups of bounding boxes without constructing parts. See [box-versus-box queries](#box-versus-box-queries).
+`TileMultipart.testOcclusion(Collection<? extends TMultiPart>, TMultiPart)` tests a supplied collection of parts
+through the tile's existing occlusion hook, including generated partial-occlusion checks. For raw geometry,
+`NormalOcclusionTest.testBoxes(Iterable<? extends Cuboid6>, Iterable<? extends Cuboid6>)` tests two groups of bounding
+boxes without constructing parts. See [box-versus-box queries](#box-versus-box-queries).
 
 ## Example
 
@@ -18,10 +17,8 @@ public static boolean fitsShape(TileMultipart tile, Collection<? extends TMultiP
 }
 ```
 
-The [complete Java example](../../src/test/java/codechicken/multipart/examples/OcclusionExample.java) compiles and runs
-in the test suite. It also compiles with Scala excluded from its classpath and has no Scala bytecode references.
-FMP still retains its Scala runtime internally. Collections of part subclasses, such as `List<NormallyOccludedPart>`,
-are accepted without a cast.
+See the [complete Java example](../../src/test/java/codechicken/multipart/examples/OcclusionExample.java).
+Collections of part subclasses, such as `List<NormallyOccludedPart>`, are accepted without a cast.
 
 Pass `tile.jPartList()` to test against the tile's currently stored parts, or pass a separate collection for a preview
 or selected subset. To exercise a real candidate's custom occlusion behavior, pass that part instead of the shape
@@ -66,7 +63,6 @@ continue to override it. `canAddPart` and `canReplacePart` still call that hook 
 Java method does not intercept their checks. The distinct Java name avoids introducing another Scala/Java overload
 pair, following the [loader compilation finding](PART_LOADING.md#overrides-and-reflection).
 
-No direct consumer calls or overrides of the two-argument tile hook were found in the supplied source/ABI audit.
 Consumers such as ProjectRed and ForgeRelocationFMP already use the Java-typed `canReplacePart` API and need no rename
 for that contract. Part-level `occlusionTest(TMultiPart)` remains supported as-is. The Scala `NormalOcclusionTest.apply`
 box-versus-box entry is a separate, still-used contract with the Java replacement below.
@@ -81,8 +77,8 @@ public static boolean fitsBounds(Iterable<? extends Cuboid6> occupied, Cuboid6 c
 }
 ```
 
-The [complete example](../../src/test/java/codechicken/multipart/examples/BoxOcclusionExample.java) compiles without
-Scala on its classpath. Both arguments accept box subclasses and need only implement Java `Iterable`.
+See the [complete example](../../src/test/java/codechicken/multipart/examples/BoxOcclusionExample.java). Both
+arguments accept box subclasses and need only implement Java `Iterable`.
 
 The query fully consumes the first input, then the second, requesting each input's iterator once. It takes shallow
 snapshots before testing any pairs, even when one input is empty or the first pair will overlap. Iteration failures
@@ -114,18 +110,4 @@ NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)
 
 ForgeRelocationFMP can similarly adapt its assembled Scala `boxes` sequence and pass its existing Java
 `getOcclusionBoxes` iterable directly. Keep its combined normal, partial and collision boxes and caller order intact.
-These are migration directions, not changes to the reference checkouts. Consumer releases and pack adoption remain
-pending, and the new method has no published minimum dependency version yet. Scala consumers can adopt this FMP API
-while keeping their own Scala code.
-
-## Validation
-
-JVM tests cover both directions, early rejection, original exceptions, null boundaries, snapshot ownership, duplicates,
-subtype/non-list collections, override routing and the shape example. A Forge test demonstrates that the generated
-partial trait rejects overlapping partial parts that plain pair tests accept. Existing descriptors, generated output,
-and frozen pre-change callers are checked separately. Actual client previews and full-pack adoption remain covered
-by the [manual release checks](../migration/MANUAL_CHECKS.md).
-
-Box-query tests run the same snapshot, input-failure, ordering, null and exception contracts against both legacy entries
-and the Java entry. The compiling example also covers touching tolerance and containment; frozen pre-change tests
-retain calls to both old descriptors.
+Scala consumers can adopt this FMP API while keeping their own Scala code.

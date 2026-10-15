@@ -2,9 +2,9 @@
 
 [API index](../API.md)
 
-The `algent/java` branch adds `TileMultipart.loadPartList(Collection<TMultiPart>)` and `setPartList(List<TMultiPart>)`.
-They adapt to the existing virtual Scala-parameter hooks. Both legacy entries are deprecated for callers and remain
-supported for existing binaries, subclasses and reflection. No minimum released dependency version is established yet.
+`TileMultipart.loadPartList(Collection<TMultiPart>)` and `setPartList(List<TMultiPart>)` adapt to the existing
+virtual Scala-parameter hooks. Both legacy entries are deprecated for callers and remain supported for existing
+binaries, subclasses and reflection.
 
 These are reconstruction operations, not normal placement/removal. Use `TileMultipart.addPart` / `remPart` for world
 changes. Use `MultipartHelper.createTileFromParts(Iterable<TMultiPart>)` to construct a new server composite tile; the
@@ -68,8 +68,7 @@ most ordinary part queries do not. Use an empty list for ordinary empty storage.
 the exact supplied sequence, including mutable aliasing; the new Java setter deliberately copies a non-null list.
 
 Both operations appear in the [compiling Java example](../../src/test/java/codechicken/multipart/examples/PartLoadingExample.java).
-The example runs in the normal test suite and uses no Scala imports. Its staging method illustrates assignment only,
-not a complete tile-promotion procedure.
+Its staging method illustrates assignment only, not a complete tile-promotion procedure.
 
 ## Overrides and reflection
 
@@ -77,9 +76,8 @@ Dispatch is `setPartList(List)` → virtual `partList_$eq(Seq)` and `loadPartLis
 `loadParts(scala.collection.Iterable)`. Internal reconstruction and storage writes continue using the legacy hooks.
 Keep existing overrides there; overriding just the new Java sibling does not intercept all internal calls.
 
-GuideNH at `16f142417df1` calls the Scala loader directly; older releases select it with assignability-based reflection.
-Schematica's
-exact `loadParts(scala.collection.Iterable)` lookup also remains valid. Java reflection can now request
+GuideNH calls the Scala loader directly; older releases select it with assignability-based reflection.
+Schematica's exact `loadParts(scala.collection.Iterable)` lookup also remains valid. Java reflection can now request
 `getMethod("setPartList", List.class)` or `getMethod("loadPartList", Collection.class)`. Select by parameter type, not
 by the first method with the right name.
 
@@ -94,14 +92,3 @@ and `markRender` steps. Current GuideNH no longer uses the raw setter or reflect
 Scala parts and companion generator to the [static Java replacement](COMPOSITE_GENERATION.md).
 Schematica can select the Collection loader and pass its existing Java list directly.
 New versions of both integrations should use the [client preview helper](CLIENT_PREVIEW.md).
-
-## Validation and release gates
-
-JVM tests pin storage ownership, old and new override dispatch, exact/assignable reflection, ordered non-list inputs,
-callback input mutation and partial-failure behavior. Forge tests cover slot-cache rebuilding and server notifications,
-plus Java assignment/loading on a generated client tile and explicit render-cache rebuilding. The latter does not run
-a real client world or GPU rendering; GuideNH/Schematica previews and full-pack adoption remain manual release gates.
-
-The [consumer ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records the inspected source
-revisions and pending consumer changes/releases. The September 21 refresh records upstream source changes;
-no consumer migration patch was made by this audit.

@@ -5,7 +5,6 @@
 Use the existing `MultiPartRegistry.registerConverter(IPartConverter)` on both sides during common mod initialization,
 after registering the source blocks. It already accepts ordinary Java types; no new wrapper, reflection or Scala
 companion lookup is needed. Register the converted part's persistent factory separately with `registerPartFactory`.
-The latter is a migration-branch addition with no minimum published dependency version yet.
 
 ## Compiling example
 
@@ -67,18 +66,10 @@ These hooks run on the server placement path, not on probes. Clients reconstruct
 placement, check `canPlacePart` first and call `addPart` only on the server. Neither a successful check nor a saved
 placeholder reserves the location. See [conversion results](TILE_CONVERSION.md) for lookup ownership.
 
-## Consumer migration and validation
+## Consumer migration
 
 Chisel copies torch variant/orientation, ForgeRelocationFMP constructs a frame, OpenComputers inspects cable/print
 tiles, and AE2 copies cable-bus state from the original tile. Preserve each consumer's eligibility, state-copy and
 cleanup rules. Existing Java converter registrations need no rename; Scala consumers can retain Scala implementation
 code while returning Java collections and calling the static entry. Their separate factory migration still uses
-`registerPartFactory`. Extra Utilities remains an active supported converter consumer.
-
-The [registry tests](../../src/test/java/codechicken/multipart/MultiPartRegistryCharacterizationTest.java) cover block
-selection, first acceptance, captured lists, duplicates and exception propagation. The
-[Forge tests](../../src/functionalTest/java/codechicken/multipart/test/PartConverterFunctionalTest.java) cover rejected
-probes, original-tile ownership, callback order, repeated conversion, initialized example registration, NBT/packet
-state and normal installation. The example compiles as Java 8 without Scala on its compile classpath. FMP still uses
-Scala internally. Physical-client construction/rendering and real consumer inventory/network conversion remain
-[manual integration checks](../migration/MANUAL_CHECKS.md); the example does not establish consumer adoption.
+`registerPartFactory`.

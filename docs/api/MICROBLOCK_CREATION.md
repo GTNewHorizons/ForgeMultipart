@@ -3,8 +3,7 @@
 [Java API index](../API.md)
 
 Use the existing `MicroblockGenerator.create(MicroblockClass, int material, boolean client)` static Java entry.
-It delegates to the retained companion implementation. This guide describes `algent/java`; it does not establish a
-minimum published dependency version. No additional creation API or production behavior change is introduced here.
+It delegates to the retained companion implementation.
 
 ```java
 Microblock part = MicroblockGenerator.create(microClass, materialId, client);
@@ -45,18 +44,16 @@ Do not retain the set or recursively call this generator from the callback: the 
 and reuses it. On failure, already-performed callback side effects and scratch mutations remain; a later creation
 clears scratch again. Thread-local scratch does not make registry changes or the complete generator thread-safe.
 
-ProjectRed's existing external Scala trait path remains supported. The Forge fixture confirms material-driven trait
-injection and generated behavior; this does not replace the planned representative external Java extension example
-or authorize removing Scala-signature support before consumer release/adoption.
+ProjectRed's existing external Scala trait path remains supported. For a Java trait, see the
+[illuminated microblock extension](MICROBLOCK_EXTENSIONS.md).
 
 ## GuideNH migration
 
 GuideNH preview reconstruction should use the complete [client preview helper](CLIENT_PREVIEW.md). The direct
 generator remains useful when code specifically needs to create or transform one unbound microblock.
 
-GuideNH at `16f142417df1` directly calls `MicroblockGenerator$.MODULE$.create(MicroblockClass, int, boolean)`;
-its older `7d8fb44e77b9` revision resolved that same call reflectively. It has not switched to the existing static
-method. Prefer the typed creation example, with [gated optional integration](../API.md#direct-calls-and-optional-integration). The following cache is only
+GuideNH currently calls `MicroblockGenerator$.MODULE$.create(MicroblockClass, int, boolean)`; older releases resolved
+that same call reflectively. Prefer the typed creation example, with [gated optional integration](../API.md#direct-calls-and-optional-integration). The following cache is only
 a temporary interoperability option for consumers retaining reflection:
 
 ```java
@@ -85,14 +82,8 @@ custom traits overriding these hooks before adopting the change. Preserve its ex
 handling, part order, Java collection migration, tile state setup and subsequent loading/notifications. Do not copy
 the source tile binding to the new part. Private material-field access has a separate [typed query guide](MATERIAL_ACCESS.md).
 
-## Side and validation limits
+## Side limits
 
-Use `client=true` on the physical client for client variants. Unlike generating a client tile container, normal client
-microblock construction cannot run in the dedicated-server harness: Forge strips `MicroblockClass.clientTrait()`.
+Use `client=true` on the physical client for client variants. Unlike generating a client tile container, client
+microblock construction cannot run on a dedicated server: Forge strips `MicroblockClass.clientTrait()`.
 The side parameter selects traits; it does not infer a world side or bypass Forge's side-only filtering.
-
-Server Forge tests cover both exact reflective entries, factory/material identity, fresh instances, shape/NBT
-ownership, material trait injection, callback failures and scratch reuse. The Java example tests all 256 shape-byte
-values without copying bindings or altering the source and compiles without Scala. Archived callers, existing APIs,
-method bodies and generated dumps are checked separately. Physical-client creation and GuideNH preview/GPU output
-remain [manual release checks](../migration/MANUAL_CHECKS.md); reference checkouts and adoption status are unchanged.

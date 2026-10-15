@@ -53,16 +53,7 @@ the generated client microblock before loading its shape and other state.
 
 - Schematica can replace its private registry map, `MicroblockClass.create`, Scala iterable conversion, companion
   generator, reflected loader and per-part refresh loop with this helper.
-- GuideNH at `16f142417df1` can replace its server-tile reconstruction, `TileMultipartClient` promotion, microblock
-  promotion and Scala reload/finalization with this helper. These are now direct calls; reflection and raw part-list
-  assignment were removed in `4a0cd02e`. Material export and part statistics already use typed Java traversal.
+- GuideNH can replace its server-tile reconstruction, `TileMultipartClient` promotion, microblock promotion and
+  Scala reload/finalization with this helper. Its material export and part statistics already use typed Java traversal.
 
-Optional integrations should isolate their FMP-typed client class behind mod-presence and supported-version checks.
 Keep the old reflection fallback only while supporting an older FMP release that lacks this API.
-
-## Validation limits
-
-JVM checks pin the public method and factory opt-in default. Forge coverage checks legacy factory adapters plus ordered
-NBT loading into an unbound generated client tile. The example compiles with Scala excluded. Physical-client checks
-remain required for generated microblock client traits, custom preview factory implementations and GPU rendering; see
-the [manual release checks](../migration/MANUAL_CHECKS.md).

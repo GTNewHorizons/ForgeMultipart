@@ -14,8 +14,7 @@ ButtonPart.setOrientation(5, ForgeDirection.DOWN);
 ```
 
 The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/ButtonOrientationExample.java)
-contains the same two calls. Keep FMP-typed code in an optional compatibility class loaded only after the usual
-mod-presence and supported-version checks.
+contains the same two calls.
 
 ## Metadata and face meaning
 
@@ -51,8 +50,6 @@ val b = getNewInst(ButtonPart.metaForSide(side ^ 1))
 Keep its existing vertical-face rejection, support check, custom factory and `onPlaced` call. Here `side` is the
 clicked face, so `side ^ 1` is the attachment face. `sideForMeta` performs the opposite lookup;
 `ButtonPart.placement` is not a replacement because it constructs an ordinary button and applies its own validation.
-The accessor is additive on this branch; rebuild/publish the development artifact before compiling a consumer
-against it. It is not yet tied to a released minimum FMP version.
 
 ## Migrating Et Futurum Requiem
 
@@ -61,13 +58,4 @@ catch and ignore API failures: an invalid metadata or direction is a configurati
 Keep Et Futurum's existing FMP presence/version gate so older FMP versions never load the typed compatibility class.
 
 The public mutable `metaSideMap` and `sideMetaMap` fields remain binary and reflective compatibility surfaces for old
-releases. New integrations should not read, replace or mutate them directly. Their removal still requires a released
-Et Futurum migration, ProjectRed's inverse-lookup migration, target-pack adoption and a fresh consumer scan.
-
-## Validation
-
-Forge characterization first freezes the old Et Futurum mutation and verifies exact metadata and placement on all six
-faces. API tests verify the two direct calls produce the same arrays, displaced pairs remain one-to-one, invalid input
-is atomic, and the example compiles. Inverse-lookup coverage checks all faces, unmapped results, remapping, legacy
-mutation/replacement and invalid indices. A physical client with Et Futurum must still complete the
-[all-face button check](../migration/MANUAL_CHECKS.md) before release.
+releases. New integrations should not read, replace or mutate them directly.

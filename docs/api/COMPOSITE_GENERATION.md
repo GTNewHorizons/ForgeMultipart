@@ -3,9 +3,8 @@
 [Java API index](../API.md)
 
 `MultipartGenerator.generateCompositeTile(TileEntity, java.lang.Iterable<TMultiPart>, boolean)` selects a tile's
-generated capabilities without loading its parts. It is available on `algent/java`, with no minimum published
-dependency version yet. The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/CompositeGenerationExample.java)
-then assigns world/position and loads the same parts, leaving installation to its caller. It compiles without Scala.
+generated capabilities without loading its parts. The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/CompositeGenerationExample.java)
+then assigns world/position and loads the same parts, leaving installation to its caller.
 
 ```java
 TileMultipart prepared = MultipartGenerator.generateCompositeTile(candidate, parts, client);
@@ -79,21 +78,6 @@ Pass a Java list directly and cache the method during integration initialization
   `notifyTileChange` and `markRender`. Generation does not perform any of those steps automatically.
 
 The old companion's `generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` keeps its descriptor and
-body, deprecated for callers in favor of the static Java entry. Existing internal calls remain unchanged. GuideNH at
-`16f142417df1` directly calls the companion with a Scala sequence; older releases reached it through an
-argument-assignability matcher. Schematica's exact old reflective lookup remains valid. Java generator/preview
-migration and pack adoption remain pending for both consumers.
-GuideNH's separate microblock-generator call has an [existing Java replacement](MICROBLOCK_CREATION.md).
-GuideNH's private-material access has already migrated in source to the [typed material query](MATERIAL_ACCESS.md);
-that does not migrate its tile reconstruction or establish pack adoption.
-
-## Validation
-
-Forge characterization covers client/server tile selection, exact reuse, empty input, duplicates, unbound generation,
-source-state retention, subsequent loading, one input traversal, failure propagation, and old/new reflection.
-The example covers server-world setup and worldless client-tile loading. An exact JVM API inventory includes the new
-method; the archived run excludes only its obsolete pre-addition inventory assertion. The remaining archived JVM tests
-and all archived Forge cases run against the addition, with an independent class/member/body comparison.
-
-Generating a client tile in the Forge server harness does not prove physical-client microblock creation or GPU output.
-Schematica and GuideNH preview rendering remain [manual release checks](../migration/MANUAL_CHECKS.md).
+body, deprecated for callers in favor of the static Java entry. Existing direct calls and Schematica's exact
+reflective lookup remain valid. GuideNH's separate microblock-generator call has an
+[existing Java replacement](MICROBLOCK_CREATION.md).

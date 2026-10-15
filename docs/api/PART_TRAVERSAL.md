@@ -2,9 +2,8 @@
 
 [API index](../API.md)
 
-Use `TileMultipart.jPartList()` for ordered collection access. The `algent/java` branch also adds
-`forEachPart(Consumer<TMultiPart>)` for callbacks that skip detached parts. Consumers using the new method must require
-an FMP release containing it; no minimum released version is established yet. Both methods work on generated tiles.
+Use `TileMultipart.jPartList()` for ordered collection access, and `forEachPart(Consumer<TMultiPart>)` for callbacks
+that skip detached parts. Both methods work on generated tiles.
 
 ## Examples
 
@@ -30,10 +29,8 @@ public static List<String> boundPartTypes(TileMultipart tile) {
 }
 ```
 
-The [complete Java example](../../src/test/java/codechicken/multipart/examples/PartTraversalExample.java) compiles and
-runs in the normal test task. Its imports and compiled references contain no Scala types. FMP still needs its retained
-Scala runtime internally. The example also compiles with Scala excluded from its classpath. The returned name lists
-are independent copies.
+See the [complete Java example](../../src/test/java/codechicken/multipart/examples/PartTraversalExample.java). The
+returned name lists are independent copies.
 
 ## Collection ownership and ordering
 
@@ -94,12 +91,5 @@ ProjectRed's illumination calculations and packet/render indices, and OpenComput
 must retain their original order, filters and aggregation. Those mods can remain Scala internally while calling Java
 collection methods. Existing Java consumers already using `jPartList()` need no rename.
 
-GuideNH at `16f142417df1` uses `jPartList()` for material export and statistics. Preview reconstruction and its AE2
-bridge still use Scala `partList`; preview loading directly calls `loadParts`. Reflection and the raw setter call
-were removed in `4a0cd02e`. The remaining [Java loading](PART_LOADING.md)/preview migration and pack adoption are
-separate work; older supported jars still require the setter and reflective contracts.
-
-The [adoption ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records inspected revisions and
-the remaining release gates. JVM checks cover both getter forms, mutable storage, callback mutation/reentrancy,
-detached/rebound parts, override dispatch and failures. The Forge test removes and adds real parts during traversal
-of a generated slotted tile. Client rendering and full-pack adoption remain manual release checks.
+GuideNH already uses `jPartList()` for material export and statistics. Its preview reconstruction and AE2 bridge
+still use Scala `partList`; those move to the [client preview helper](CLIENT_PREVIEW.md).

@@ -4,7 +4,7 @@ ForgeMultipart's implementation moved from Scala to Java. This page is for mod a
 
 **If you ship a compiled jar and do not rebuild it, nothing here affects you.** Every runtime interface, method
 descriptor and reflective name the audited consumers use was preserved deliberately, and the retained Scala bridges
-still link. The compatibility ledger for what did change is [divergence ledger](migration/DIVERGENCES.md).
+still link. Intentional behavior differences are listed in the [divergence ledger](migration/DIVERGENCES.md).
 
 **If you rebuild against the new dev jar, read on.** Recompiling is the case that breaks, and one class of break is
 silent. There are three kinds, in descending order of how badly they fail. The [consumer migration checklist](api/MIGRATION_CHECKLIST.md)
@@ -28,11 +28,10 @@ Source compiled against the untransformed dev jar is the problem. `javac` and `s
 | `scalatraits.TRandomDisplayTickTile` | `IncompatibleClassChangeError` |
 | `TileMultipartClient` | `IncompatibleClassChangeError` |
 
-**The fix is to target the stable capability interface instead of the raw dev-jar class.** The existing
-`IRedstoneTile.openConnections` and `TileMultipart.partMap` contracts work on both old and new FMP. The new
-`TileMultipart.refreshPartSlots` method requires an FMP release containing this Java API:
-
-Note the package: the types that break are in `codechicken.multipart.scalatraits`, the replacements are not.
+**The fix is to target the stable capability interface instead of the raw dev-jar class.** Note the package: the
+types that break are in `codechicken.multipart.scalatraits`, the replacements are not. The existing
+`IRedstoneTile.openConnections` and `TileMultipart.partMap` contracts work on both old and new FMP; the new
+`TileMultipart.refreshPartSlots` requires an FMP release containing the Java API.
 
 | Instead of | Use |
 | --- | --- |

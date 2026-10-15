@@ -1,5 +1,7 @@
 # Extend generated microblocks from Java
 
+[Java API index](../API.md)
+
 Use `MicroblockGenerator.registerTrait(String)` with a Java source trait, then add its returned ID from an
 `IGeneratedMaterial.addTraits` callback. The existing public API selects the Java compiler path automatically;
 consumers do not need reflection, Scala types, companion lookup or direct compiler calls.
@@ -46,8 +48,6 @@ ordinary capability interface rather than emitting class calls against the trans
 The existing transformer cannot safely handle all inherited field/method accesses in a trait body. Its thin overrides
 therefore delegate to an ordinary helper using an **Object parameter**, then cast to `Microblock` in that helper.
 This forces the required runtime cast and keeps loops, allocation and callbacks outside the transformed input.
-The three example files compile with Scala excluded from the Java classpath; they use Java 8 syntax because that is
-the verified joint-compilation/test boundary. See the [compiler constraints](../migration/MAINTAINERS.md#retained-compiler-constraints).
 
 ## Behavioral contract
 
@@ -70,21 +70,7 @@ the verified joint-compilation/test boundary. See the [compiler constraints](../
 The helper uses common geometry types, allowing headless verification; only the supplied halo renderer needs a client.
 This is a behavior-preserving migration example, not a performance optimization or a replacement rendering engine.
 
-## Validation and adoption
+## Migrating ProjectRed
 
-The separately committed baseline proves the retained external Scala trait composes with face, hollow, corner, edge
-and post shapes, with fresh instances, class reuse, correct material identity and no implicit binding. The Java
-example's Forge tests cover initialization registration, all 16 material variants, both callback-side inputs, all
-five generated shape families, persistence, light aggregation and server stripping of the client override.
-Geometry tests cover ordinary collision-box ownership and hollow halos on all six faces.
-
-A headless compiler probe retains the actual compiled client method in a uniquely named test trait by removing its
-side annotation from the test input. It checks generated dispatch, pass filtering and queued coordinates/colour/bounds.
-That is **not** a physical-client construction, side-selection or GPU test. Existing side-filtering tests cover the
-compiler separately; actual client generation, connector-dependent halos, lighting and previews remain required
-checks in the [manual checklist](../migration/MANUAL_CHECKS.md).
-
-ProjectRed's reference checkout is unchanged. Its migration must preserve registration order/names, wire the existing
-configuration and halo queue, release the consumer, and validate the released jar in the pack. Keep ProjectRed's
-external Scala trait and FMP's Scala-signature support until adoption and removal gates pass; the example does not
-close consumer adoption or every other extension contract. See the [API index](../API.md).
+Preserve ProjectRed's registration order and names, and wire its existing configuration and halo queue into the
+example's hooks. Its existing external Scala trait keeps working until it migrates.

@@ -3,7 +3,7 @@
 [Java API index](../API.md)
 
 `TileMultipart.getOrConvertTileResult(World, BlockCoord)` returns a `TileConversionResult` with `getTile()` and
-`isConverted()` accessors. It is available on `algent/java`, with no minimum published dependency version yet.
+`isConverted()` accessors.
 
 ```java
 TileConversionResult result = TileMultipart.getOrConvertTileResult(world, pos);
@@ -12,7 +12,7 @@ boolean placeholder = result.isConverted();
 ```
 
 The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/TileConversionExample.java) selects a
-converted placeholder for inspection. It also compiles with Scala excluded from the compile classpath.
+converted placeholder for inspection.
 
 ## Outcomes and ownership
 
@@ -48,18 +48,10 @@ replacement. Do not manually install the earlier placeholder, and do not treat i
 Use `getTile(world, pos)` to find only an existing multipart tile. The existing `getOrConvertTile(world, pos)` remains
 supported when only the tile is needed; it has the same placeholder caveat and does not need migration.
 
-## Compatibility and validation
+## Legacy compatibility
 
 Both static and companion `getOrConvertTile2(World, BlockCoord)` tuple entries remain, with unchanged descriptors and
-bodies, deprecated in favor of the named Java result. The new method delegates to that existing path. Internal
-generator and microblock placement callers retain their tuple calls; `MicroblockPlacement.gtile()` remains a separate
-Scala-shaped accessor whose eventual migration belongs to placement/extension guidance.
+bodies, deprecated in favor of the named Java result. The new method delegates to that existing path.
+`MicroblockPlacement.gtile()` remains a separate Scala-shaped accessor.
 
-No direct tuple-method use or new-name collision was found in the supplied consumer sources, and the frozen pack
-inventory has no reference to that tuple method. AE2, Chisel, OpenComputers and Extra Utilities already use the
-tile-only method and need no rename for this contract. Consumer checkouts remain reference-only.
-
-Forge tests run the same scenarios through both legacy entries and the Java entry: existing tile identity, air,
-nonconvertible solid blocks, unrelated tile entities, bound torch placeholders, repeated conversions and subsequent
-normal placement. Archived callers, class/member APIs and generated outputs are checked separately. Actual client
-preview rendering remains a [manual release check](../migration/MANUAL_CHECKS.md).
+AE2, Chisel, OpenComputers and Extra Utilities already use the tile-only method and need no change for this contract.

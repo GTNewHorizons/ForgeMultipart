@@ -33,8 +33,8 @@ artifact inventories should come from the reports for the revision being reviewe
    make only justified changes. Separate FMP implementation gains from consumer API migration gains. Follow the
    [measurement protocol](MAINTAINERS.md#performance-validation); historical focused results are not whole-pack claims.
 4. **Finish repository/release preparation.** Relocate Java sources only where remaining Scala dependencies allow
-   it; reassess the forced Scala compilation/version guard after relocation. Refresh the root contributor README.
-   Validate Java 8 artifacts and packaged/obfuscated artifacts on the supported modern runtime. Modern syntax
+   it; reassess the forced Scala compilation/version guard after relocation, and update the root README's source
+   layout note. Validate Java 8 artifacts and packaged/obfuscated artifacts on the supported modern runtime. Modern syntax
    expansion is optional and must respect the [build boundary](MAINTAINERS.md#build-and-runtime-boundaries).
 5. **Remove FMP's Scala requirement last.** Complete the gates below before retiring bridges, compiler support
    or dependencies. Other mods' independent Scala requirements are outside this target.

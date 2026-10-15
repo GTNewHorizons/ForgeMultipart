@@ -1,5 +1,7 @@
 # Read a microblock's block and metadata
 
+[Java API index](../API.md)
+
 Use the existing public `BlockMicroMaterial.block()` and `meta()` methods. Neither reflection nor an accessor mixin
 is needed. The [compiling Java example](../../src/functionalTest/java/codechicken/multipart/examples/MaterialAccessExample.java)
 implements the primary-material query using GuideNH's filtering and metadata convention, with the failure and
@@ -30,10 +32,9 @@ not a general material serialization format. The example preserves positive valu
 
 ## GuideNH migration
 
-GuideNH at `16f142417df1` already uses direct part traversal, material lookup and public getters in
-`resolvePrimaryMicroblockId`. Commit `4a0cd02e` (2026-09-16, included in tags `1.3.33` onward) removed
-`AccessorBlockMicroMaterial` and its configuration entry. Keep FMP's private fields unchanged for older supported
-jars until migrated pack adoption is verified. Source tags are not evidence of installed-artifact adoption.
+GuideNH 1.3.33 onward already uses direct part traversal, material lookup and public getters in
+`resolvePrimaryMicroblockId`, without the `AccessorBlockMicroMaterial` mixin. FMP's private fields stay unchanged for
+older GuideNH releases.
 
 The old mixin reads constructor fields directly, bypassing overrides. The old reflection fallback already calls
 the public virtual getters. The supported typed path follows those getters too, so custom materials that override
@@ -46,16 +47,3 @@ continues to the next part; getter failures propagate. It reads metadata only af
 name, and calls `meta()` twice for positive values. The example reads metadata once, before the null/air check.
 These differences matter for failing or stateful custom getters; the example is not a drop-in copy of current
 GuideNH's failure/accessor-order policy. Validate any intentional change during migration.
-
-For optional FMP support, isolate typed code in a compatibility class and load it only after checking mod presence
-and the supported dependency version. Keep FMP types out of classes loaded unconditionally when FMP is absent.
-An optional dependency does not itself require reflection. The [API index](../API.md) describes the current
-unreleased branch/version status; pin an artifact containing every method used by the integration.
-
-## Validation
-
-JVM characterization pins constructor identity, every metadata bit, virtual dispatch and the retained private
-fields. Dedicated-server Forge tests cover initialized material lookup, ordered filtering, registry aliases,
-null/air/unregistered blocks, non-block materials, metadata formatting, overridden accessors and failure propagation.
-The example compiles with Scala excluded from its classpath and contains no reflection, companion or Scala calls.
-Actual GuideNH exports and optional-mod absent/present loading remain consumer adoption checks.

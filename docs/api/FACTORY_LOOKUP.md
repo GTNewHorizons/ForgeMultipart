@@ -3,7 +3,7 @@
 [Java API index](../API.md)
 
 `MultiPartRegistry.getPartFactory(String)` returns the registered `IPartFactory2` for an exact part type name, or
-`null` when no factory is mapped. It is available on `algent/java`; no minimum published dependency version exists yet.
+`null` when no factory is mapped.
 
 ```java
 IPartFactory2 factory = MultiPartRegistry.getPartFactory("mcr_face");
@@ -63,18 +63,6 @@ This removes only the registry-map Scala dependency. The [client preview helper]
 complete Schematica reconstruction path when the minimum FMP version can require it.
 
 The private `MultiPartRegistry$.codechicken$multipart$MultiPartRegistry$$typeMap` field keeps its exact name, modifiers,
-Scala mutable-map type and live backing. Existing binary/reflection callers remain supported until a migrated consumer
-release is adopted by the target pack. The reference Schematica checkout was not edited or counted as migrated.
+Scala mutable-map type and live backing, so existing binary/reflection callers keep working.
 
-## Validation
-
-JVM characterization compares legacy reflection and Java lookup for exact factory identity, equal strings, case-sensitive
-misses, replacement/removal visibility and absence of construction callbacks. Test-only registry mutations restore
-their state; they are not a supported consumer API. Forge covers all five built-in microblock factories, exact public
-reflection, server construction, NBT loading, unbound ownership and the Java example. The example also compiles with
-Scala excluded from its classpath. Archived callers and the private field's binary shape are checked separately.
-
-Physical-client microblock construction and Schematica preview rendering remain
-[manual release checks](../migration/MANUAL_CHECKS.md). A dedicated Forge server strips `clientTrait()`, so
-calling client microblock creation there fails before it can exercise a real client preview; the server fixture does
-not claim that coverage.
+Client microblock creation only works on a physical client: a dedicated server strips `clientTrait()`.

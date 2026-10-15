@@ -2,9 +2,8 @@
 
 [API index](../API.md)
 
-The `algent/java` branch adds `MicroMaterialRegistry.materialCount()`. Use it with the existing
-`materialName(int)` and `getMaterial(int)` methods to enumerate materials without importing Scala types.
-This API is not yet tied to a published release; consumers must require an FMP version containing the addition.
+Use `MicroMaterialRegistry.materialCount()` with the existing `materialName(int)` and `getMaterial(int)` methods to
+enumerate materials without importing Scala types.
 
 ## Example
 
@@ -22,9 +21,8 @@ public static List<String> materialNames() {
 ```
 
 Imports and the enclosing class are in the [compiling example](../../src/test/java/codechicken/microblock/examples/MaterialEnumerationExample.java).
-It is compiled and exercised by the normal `test` task. It also compiles with only the FMP dev jar and Java 8 APIs on
-the compile classpath; this does not remove FMP's runtime dependencies. Use `MicroMaterialRegistry.getMaterial(id)` in the loop when
-you also need the `IMicroMaterial`, for example to obtain its item. That returns the registered instance, not a copy.
+Use `MicroMaterialRegistry.getMaterial(id)` in the loop when you also need the `IMicroMaterial`, for example to obtain
+its item. That returns the registered instance, not a copy.
 The example's list is an independent copy; editing it does not change the registry.
 
 ## Timing, order and identity
@@ -61,12 +59,4 @@ filters and material-name NBT. A material object, when needed, is available from
 Extra Utilities' NEI handlers use both tuple fields; both indexed replacements are available.
 
 The static and companion `getIdMap()` methods are deprecated, with their original descriptors and live-array
-behavior retained. This change does not authorize removal of either method. The
-[consumer adoption ledger](../migration/COMPATIBILITY.md#java-api-adoption-ledger) records the migrations and
-released pack versions still needed.
-
-## Validation
-
-The JVM tests cover the legacy array contract, initialization, server ordering, empty maps, unresolved slots, the
-compiled Java example and the frozen Scala consumer. The Forge test checks that the Java enumeration matches the
-initialized registry and the material-ID handshake payload. The public addition does not change packet or NBT formats.
+behavior retained. The addition does not change packet or NBT formats.

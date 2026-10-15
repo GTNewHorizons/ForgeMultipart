@@ -16,8 +16,7 @@ saw.setHarvestLevel(updatedStrength);
 ```
 
 The [compiling example](../../src/test/java/codechicken/microblock/examples/SawStrengthExample.java) contains the
-setter call. Keep FMP-typed code in an optional compatibility class loaded only after the usual mod-presence and
-supported-version checks.
+setter call.
 
 Iguana's client proxy also reads the three built-in saws and the renderer mode through `MicroblockProxy$.MODULE$`.
 The Java facade exposes the same state directly:
@@ -31,8 +30,7 @@ if (!MicroblockProxy.useSawIcons()) {
 }
 ```
 
-The compiling example covers these calls without Scala on its compile classpath. Keep the companion access only for
-already released binaries; rebuilt Java consumers should use the static facade.
+Keep the companion access only for already released binaries; rebuilt Java consumers should use the static facade.
 
 ## State and lifecycle
 
@@ -53,13 +51,3 @@ not promise mutable global strength.
 The private `harvestLevel: int` field remains in place for existing Iguana releases. It is mutable so the supported
 setter and legacy reflection update the same storage. New integrations should use the public getter and setter and
 should not catch and ignore API failures.
-
-Removing the private field still requires a released Iguana migration, target-pack adoption and a fresh consumer
-scan. The source patch, release and pack update are downstream work; the reference checkout was not modified.
-
-## Validation
-
-The baseline test reproduces Iguana's boxed reflective read/write on the untouched implementation. Regression tests
-run both that path and the direct setter, checking the public getter, stack cutting strength, maximum saw strength and
-unchanged durability. The Java API example also compiles the static proxy access with Scala excluded. A pack with
-Iguana still needs the recorded cutting-tier and client renderer checks before release.

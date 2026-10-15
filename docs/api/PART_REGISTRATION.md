@@ -2,9 +2,8 @@
 
 [API index](../API.md)
 
-Use `MultiPartRegistry.registerPartFactory(IPartFactory2, String...)` on the `algent/java` branch. It delegates to the
-existing registry and avoids the Scala types in the `registerParts` overload family. This addition does not yet have
-a minimum published dependency version.
+Use `MultiPartRegistry.registerPartFactory(IPartFactory2, String...)`. It delegates to the existing registry and
+avoids the Scala types in the `registerParts` overload family.
 
 To inspect a registered factory without constructing a part, see [factory lookup](FACTORY_LOOKUP.md), including
 Schematica's replacement for private registry-map reflection.
@@ -77,19 +76,5 @@ factory results or promise that a later NBT/packet will be accepted.
 
 All eight old static/companion registration descriptors remain. Both `IPartFactory2` sequence entries are now
 deprecated; the older Boolean/function entries were already deprecated and now point to the supported replacement.
-The old Java array entries remain callable too. Prefer the new name for consumer Java source: a compiler probe found
-that the old overload family required `scala.collection.Seq` and `scala.Function2` even for Java factory/string inputs.
-The new example compiles with Scala excluded from its classpath. FMP still requires Scala internally.
-
-The consumer ledger records ProjectRed and ForgeRelocationFMP migration directions. Their reference checkouts were
-not changed; consumer releases and target-pack adoption are still required before retiring the old entries.
-
-## Validation
-
-Forge tests register through all old entries during real mod initialization and exercise lazy construction, active
-container ownership, array ownership, partial duplicate registration, failure ordering, both factory paths and shared
-payload objects/cursors. The new entry runs through the same checks, and the example registers during initialization.
-The archived pre-change Forge test mod and JVM fixtures run against the new implementation without recompiling their
-callers. Existing member descriptors, method bodies, Scala signatures and generated output are checked separately.
-The dedicated-server suite invokes the client construction method with a real packet; physical-client rendering and
-full-pack adoption remain [manual release checks](../migration/MANUAL_CHECKS.md).
+The old Java array entries remain callable too. Prefer the new name for consumer Java source: the old overload family
+requires `scala.collection.Seq` and `scala.Function2` on the compile classpath even for Java factory/string inputs.

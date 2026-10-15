@@ -39,7 +39,7 @@ call their generated `$class` helpers as a new integration strategy. Reflection 
 Test the capability when it is optional. Keep using the tile returned by placement/removal because adding or removing
 capabilities can replace the tile instance. These interfaces do not give a snapshot, reserve a tile, or add thread
 safety. Apply the owning method's lifecycle and side rules. Client-only rendering calls remain client-only even when
-a stable base method exists; a headless success does not establish physical-client rendering.
+a stable base method exists.
 
 ## Compiling redstone example
 
@@ -62,8 +62,7 @@ the cast type, preserving the surrounding mask and rotation calculation:
 tile.asInstanceOf[IRedstoneTile].openConnections(absDir)
 ```
 
-That emits an interface call with the stable owner. ProjectRed can remain Scala internally. Keep its legacy
-`TRedstoneTile.openConnections` binary contract until release and pack adoption.
+That emits an interface call with the stable owner. ProjectRed can remain Scala internally.
 
 ## Refreshing a changed slot mask
 
@@ -105,20 +104,5 @@ stable base for existing tile hooks. The [custom tile-trait guide](CUSTOM_TILE_T
 registration, helper, state/lifecycle and access pattern. Pass-through registration remains the smaller choice when
 a tile should only forward one interface to one implementing part.
 
-No transformed compile-stub artifact is introduced here: redstone already has a stable interface and slot refresh is
-available on the stable base tile. Assess remaining trait-only requirements individually before adding build
-machinery. Other audited private/reflection contracts remain open.
-
-## Validation
-
-[Forge fixtures](../../src/functionalTest/java/codechicken/multipart/test/TileTraitAccessFunctionalTest.java) execute
-[actual javac-compiled unsafe callers](../../src/functionalTest/java/codechicken/multipart/test/RawTileTraitCalls.java)
-against transformed traits and assert both linkage failures. Stable interface/base calls succeed on the same tiles,
-and the example checks every five-bit mask, absent capabilities and slot refresh. The slot fixtures compare the new
-entry with the frozen consumer sequence, including equality, current-mask rebinding, unrelated slots, ownership and
-storage. Packaged-jar compilation and bytecode inspection verify that the example uses stable owners without Scala,
-reflection or raw trait-class references. Existing binary APIs remain callable; `refreshPartSlots` is additive.
-
-This is consumer source-access coverage. It does not validate physical-client rendering or establish that any consumer
-has released and adopted a migration. Generated custom tile traits have separate both-side coverage in the
-[authoring guide](CUSTOM_TILE_TRAITS.md#validation-and-adoption).
+[RawTileTraitCalls.java](../../src/functionalTest/java/codechicken/multipart/test/RawTileTraitCalls.java) keeps the two
+unsafe caller shapes above as compiled fixtures, so the linkage failures they produce stay reproducible.

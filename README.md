@@ -1,22 +1,27 @@
 ForgeMultipart
 ==============
 
-An API for dynamically handling different functional parts in the one block space.
+An API for dynamically handling different functional parts in the one block space, for Minecraft 1.7.10 / Forge.
+This is the GT New Horizons fork.
 
-Requirements:
-* The latest version of CCL (files.minecraftforge.net/CodeChickenLib/)
-* Forge
-* JDK 8. The mod compiles directly for Java 8.
-* A scala compatible IDE and project (For eclipse, download the scala eclipse plugin and right click on the project -> Add Scala Nature).
-  Most of the codebase is Java now; the Java sources live under `src/main/scala` so they can be joint-compiled
-  with the Scala files that remain.
+## Using the API
 
-If you only want to use the API and not modify it:
- * Download the latest dev version from files.minecraftforge.net/ForgeMultipart/
- * Download the latest dev version of CCL.
- * Place both mods in your /libs/ folder and link them as libraries in your IDE.
+Depend on the dev artifact, for example `com.github.GTNewHorizons:ForgeMultipart:<version>:dev`, alongside GTNH
+CodeChickenCore. Start at the [Java API index](docs/API.md): it lists the supported entry points with a guide and a
+compiling Java example for each. You do not need Scala in your own mod to use them.
 
-Implementation of all parts of the API should be clean and easy in Java. The minecraft multipart mod is implemented in java as a test case.
+If you are rebuilding an existing integration against the Java port, read the [release notes](docs/RELEASE_NOTES.md)
+first. Already compiled consumer jars keep working.
 
-See the [Java API index](docs/API.md) for supported entry points, compiling examples, ownership/lifecycle contracts
-and migration status. It links to factory registration, material enumeration, part traversal, tile loading and occlusion guides.
+## Building
+
+The codebase is being ported from Scala to Java. Most sources are Java now, but they still live under
+`src/main/scala` so they can be joint-compiled with the Scala files that remain. Everything compiles for Java 8.
+
+```
+./gradlew build
+```
+
+Use `gradlew.bat` on Windows. The [maintainer guide](docs/migration/MAINTAINERS.md) covers the build boundaries,
+the Forge functional tests and the full verification sequence. Port status and remaining work are in the
+[migration status](docs/migration/README.md).

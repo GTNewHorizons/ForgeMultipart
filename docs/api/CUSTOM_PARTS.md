@@ -7,8 +7,7 @@ state and removal. The [compiling example](../../src/functionalTest/java/codechi
 uses one integer as representative state; replace its empty geometry and rendering with the capabilities your part
 needs.
 
-The APIs shown here are available on the `algent/java` branch and do not yet have a minimum published dependency
-version. Existing part binaries remain supported; use the [release notes](../RELEASE_NOTES.md) when rebuilding source.
+Existing part binaries remain supported; use the [release notes](../RELEASE_NOTES.md) when rebuilding source.
 
 ## Register and construct
 
@@ -90,9 +89,3 @@ TileMultipart replacement = current.remPart(part);
 Ordinary placement and removal already perform container synchronization and notifications. The generation,
 `setPartList` and `loadPartList` APIs are for controlled reconstruction and have different ownership rules; see
 [part loading](PART_LOADING.md) and [composite generation](COMPOSITE_GENERATION.md) before using them.
-
-## Validation boundary
-
-`compileJavaApiExamples` compiles this example against the packaged dev jar with Java 8 and without Scala libraries.
-The Forge functional suite covers registration, placement, binding, NBT/description state, updates and final removal.
-Real geometry, interaction and rendering still need a physical-client check for the implementing mod.

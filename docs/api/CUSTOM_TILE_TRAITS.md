@@ -130,14 +130,5 @@ loading with a focused Forge test. Do not use a custom cache unless measurement 
 API directly, prepare world/position or saved state and then call `loadPartList`; ordinary placement performs the
 required transition itself. See the [staged generation guide](COMPOSITE_GENERATION.md) for ownership and failure rules.
 
-## Validation and adoption
-
 [CustomTileTraitFunctionalTest.java](../../src/functionalTest/java/codechicken/multipart/test/CustomTileTraitFunctionalTest.java)
-registers the real example during Forge initialization. It checks server and client selections, transformed capability
-dispatch, mixed-part aggregation, part binding, exact tile reuse and generated-class caching. The four example sources
-also compile as Java 8 against the packaged dev artifact without Scala.
-
-No supplied active consumer directly registers a custom `MultipartGenerator` tile trait; their current generated-tile
-extensions use built-in traits or pass-through interfaces. This guide establishes the supported Java extension pattern
-and does not count any consumer as migrated. Existing Scala trait inputs and binary contracts remain supported until
-their release and target-pack adoption gates pass.
+shows how to register a trait during Forge initialization and assert selection and dispatch on both sides.
