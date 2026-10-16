@@ -80,6 +80,7 @@ entries complete.
 | [ ] | With Iguana harvest-level tweaks enabled, inspect and use the Stone, Iron, Diamond, Ardite, Cobalt and Manyullyn saws against materials spanning their configured tiers | Forge Multipart supplies the first three saws; Iguana Tweaks for Tinkers' Construct supplies **Ardite**, **Cobalt** and **Manyullyn Saws** | Tooltips, saw textures and cutting recipes use the remapped tier; weaker saws do not gain the cached strongest-saw exemption | supported `ItemSaw.setHarvestLevel`; legacy field until consumer adoption |
 | [ ] | Use OpenComputers **3D Printer** to make a **3D Print** with different off/on shapes that both fit beside a cover; place it with the cover and right-click to toggle | OpenComputers **3D Printer**, its resulting **3D Print**, and a Forge Multipart **Stone Cover** | Its slots are rebuilt without losing, hiding or disconnecting either part | external mutation of `TSlottedTile.v_partMap` plus `bindPart` |
 | [ ] | Move the same composite tile using a ProjectRed **Frame Motor** with MCFrames **Frame** blocks, then a **Matter Manipulator MKIII** in move mode | Move the **ME Glass Cable + Stone Cover + Red Alloy Wire** composite with the named ProjectRed, MCFrames and Matter Manipulator items | Coordinates, part-to-tile references, generated interfaces and rendering remain correct after `onMoved` | ForgeRelocationFMP / MatterManipulator live multipart move lifecycle |
+| [ ] | Capture and rebuild a mixed multipart tile with a BuildCraft **Builder**, then with a **Matter Manipulator MKIII** copy/paste | Blueprint and copy the **ME Glass Cable + Stone Cover + Red Alloy Wire** composite plus a Stone Strip, Hollow Cover and FMP torch or button; rebuild it elsewhere, rotated | Every part returns once with its material, shape, orientation and connections; microblocks land before other parts and no extra description packet is needed | Part `save`/`loadPart`, core type IDs and microblock NBT read by BuildCraftCompat and MatterManipulator |
 | [ ] | Inspect a mixed multipart tile with Waila | Waila; inspect the **ME Glass Cable + Stone Cover + Red Alloy Wire** composite | Providers receive every saved part ID and show the expected part data | reflected block identity and tile NBT `parts`/`id` layout |
 | [ ] | Spray ProjectRed wires that share blocks with covers, once normally and once sneaking to chain | GregTech **Spray Can** on ProjectRed **Insulated Wire** and **Bundled Cable** runs, each block also holding a **Stone Cover** placed before the wire | Only the struck wire, and when chaining its same-type neighbours, recolor; the cover is never selected | GT5U `BlockMultipart.reduceMOP` `Tuple2` index plus `jPartList`/`partMap` order |
 | [ ] | Look at a ThaumicEnergistics vis interface on a covered AE2 cable with Waila | ThaumicEnergistics **Vis Relay Interface** part on an AE2 **ME Glass Cable** with a **Stone Cover** | The vis-link Waila lines still appear once the cover has turned the cable into a multipart tile | reflected `TileMultipart` class name plus AE2 part-host pass-through |
@@ -100,6 +101,11 @@ its callback-side input tests nor its retained client-body probe validates actua
 - [ ] Shape-specific microblock NBT and packet payloads. Core `Microblock` shape/material NBT, description bytes and
   one-byte shape updates are complete, along with compact core tile/part NBT and logical chunk-description fixtures.
   Example setup: Stone Cover, Hollow Cover, Nook, Strip and Post; save/rejoin and mutate each shape.
+
+- [ ] Add UtilitiesInExcess as a compile/runtime fixture before it enters the pack: its `IPartFactory2`
+  registration, fence/wall/sphere parts and `getIdMap` / `materialCount` enumeration against the built port jar.
+  Fix its `mat` / `material` NBT key mismatch first; see the
+  [consumer finding](COMPATIBILITY.md#utilitiesinexcess---future-replacement-already-a-substantial-consumer).
 
 ## Item-name references
 
