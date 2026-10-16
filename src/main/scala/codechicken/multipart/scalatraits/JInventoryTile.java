@@ -97,6 +97,11 @@ public class JInventoryTile extends TileMultipart implements TIInventoryTile {
     }
 
     @Override
+    public void refreshInventorySlots() {
+        rebuildSlotMap();
+    }
+
+    @Override
     @SuppressWarnings("unchecked")
     public void rebuildSlotMap() {
         int totalSlots = 0;

@@ -570,7 +570,8 @@ AE2's cable bus is a full multipart integration, not just visual compatibility.
   iterator.
 - Occlusion is checked both directly with `NormalOcclusionTest` and by asking `tile.canAddPart` with an AE2
   `NormallyOccludedPart` probe.
-- When a generated tile implements `TIInventoryTile`, AE2 calls `rebuildSlotMap()` after changes.
+- When a generated tile implements `TIInventoryTile`, AE2 calls `rebuildSlotMap()` from `notifyNeighbors()`, after
+  its cable bus inventory size may have changed. `TileMultipart.refreshInventorySlots()` is the supported replacement.
 - AE2's Waila path and AE2 Fluid Craft load `TileMultipart` by name to register multipart HUD providers.
 - Since `4548d13f0` (2026-09-12), `CableBusPart.bind(TileMultipart)` calls `super.bind` then refreshes hosted
   parts through `CableBusContainer.updatePartHostInfo`. Host changes and world join also refresh those references.
@@ -868,7 +869,7 @@ behavior:
 This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
 Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
 client preview reconstruction, tile occlusion and box queries, render-ID accessors, named tile conversion results and
-the struck-part index are implemented on
+the struck-part index and inventory slot refresh are implemented on
 `algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
 tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
 
@@ -877,6 +878,7 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | `ButtonPart.sideMetaMap[side ^ 1]` live inverse lookup | ProjectRed `e173952e96a4` and separate preparatory migration checkout: `illumination/items.scala`, `ItemPartButtonCommons.newPart` | `ButtonPart.metaForSide(side ^ 1)`; [lookup contract](../api/BUTTON_ORIENTATIONS.md#reading-orientation-metadata) | FMP accessor/example and regression coverage added; consumer replacement requires a rebuilt FMP artifact; preparatory migration is not upstream adoption | Retain the array until ProjectRed and Et Futurum migrations are released/adopted and a fresh scan clears legacy use |
 | `TRedstoneTile.openConnections(int)` | ProjectRed `e173952e96a4`: `transmission/redwires.scala` | Existing stable `IRedstoneTile.openConnections(int)` with the same mask/rotation logic; [guide](../api/TILE_TRAIT_ACCESS.md) | FMP source-access example and Forge coverage complete; consumer source patch/release pending | Retain the old runtime interface descriptor until adoption |
 | `TSlottedTile.v_partMap()` array mutation | OpenComputers `2c00f79be24b`: `PrintPart.toggleState` | `TileMultipart.refreshPartSlots(part)`; [equality, cache and notification contract](../api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) | FMP API/example complete; consumer source patch/release pending, preserving validation and following sound/notify/packet/schedule order | Keep the live array/accessor ABI until released pack adoption; do not replace it with reflection or a whole-tile reload |
+| `TIInventoryTile.rebuildSlotMap()` raw trait call | AE2 `c690fbc273be`: `appeng/fmp/CableBusPart.notifyNeighbors` | `TileMultipart.refreshInventorySlots()`, a no-op without inventory parts, so the `instanceof` guard can go; [mapping and scope](../api/TILE_TRAIT_ACCESS.md#refreshing-inventory-slots) | FMP API, example and regression coverage complete; consumer source patch and release pending, keeping its neighbor notification afterward | Keep the `TIInventoryTile` interface and `rebuildSlotMap` until released pack adoption |
 | External Scala `LightMicroblock` registered through `MicroblockGenerator.registerTrait` | ProjectRed `e173952e96a4`: `illumination/lightmicroblocks.scala` | Java source trait registered by name, `IGeneratedMaterial`, typed sibling traversal and halo helper; [example](../api/MICROBLOCK_EXTENSIONS.md) | FMP example tested; consumer rewrite/release, existing config/halo wiring and physical-client checks pending | Retain external Scala trait ingestion until released-consumer adoption and internal Scala-trait removal |
 | `MultiPartRegistry$.registerParts(IPartFactory2, Seq)` and existing array calls | ProjectRed `e173952e96a4`: transmission, expansion and fabrication proxies | `MultiPartRegistry.registerPartFactory` with existing `IPartFactory2` methods and unchanged IDs | Source patch and release pending; Boolean-factory proxies separately need the two-method adapter described in the guide | No migrated pack version verified; retain all registration bridges and external trait support |
 | `MultiPartRegistry$.registerParts(Function2, Seq)` | ForgeRelocationFMP `49a810b8c63b`: proxy init registering `rfmp_frame` | `IPartFactory2` creating a fresh `FramePart` on both paths, registered through `registerPartFactory` | Source patch and release pending; preserve `rfmp_frame` and keep converter/pass-through registration | No migrated pack version verified; retain the function companion descriptor |
@@ -988,7 +990,7 @@ separate legacy/extension contracts.
   [converter guide](../api/BLOCK_CONVERTERS.md) covers lifecycle; actual inventory/network transfers need integration checks.
 - Raw trait classes become interfaces at runtime. ProjectRed should query `IRedstoneTile.openConnections` while
   preserving rotation/masks; OpenComputers should use `refreshPartSlots` while preserving validation and subsequent
-  sound/notify/packet/schedule order. Keep their legacy runtime interfaces until adoption. See
+  sound/notify/packet/schedule order; AE2 should call `refreshInventorySlots` before its neighbor notification. Keep their legacy runtime interfaces until adoption. See
   [stable tile access](../api/TILE_TRAIT_ACCESS.md).
 - The [custom tile-trait guide](../api/CUSTOM_TILE_TRAITS.md) covers a top-level Java input, separate marker/capability
   interfaces and ordinary helpers. Stateful extensions still own copy, persistence, synchronization and lifecycle

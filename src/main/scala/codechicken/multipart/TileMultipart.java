@@ -572,6 +572,18 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
      */
     public void refreshPartSlots(TMultiPart part) {}
 
+    /**
+     * Recomputes the generated inventory's flattened slot mapping after an inventory part already stored in this tile
+     * changes its {@link net.minecraft.inventory.IInventory#getSizeInventory()}. Tiles holding an {@code IInventory}
+     * part rebuild the mapping in part order; a tile without the inventory capability does nothing.
+     *
+     * <p>
+     * Adding, removing and loading parts already rebuild the mapping; call this only for a size change FMP cannot see.
+     * It does not add or remove inventories, move items, mark the tile dirty or notify neighbors. Callers keep their
+     * own notifications afterward. Replaces direct calls to the generated {@code TIInventoryTile.rebuildSlotMap()}.
+     */
+    public void refreshInventorySlots() {}
+
     /** Internal FMP placement callback for trait overrides; do not call directly from consumers. */
     public void partAdded(TMultiPart part) {}
 

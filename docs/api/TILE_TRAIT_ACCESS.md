@@ -33,6 +33,7 @@ call their generated `$class` helpers as a new integration strategy. Reflection 
 | Offered redstone connections or masked power | `IRedstoneConnector` | `getConnectionMask(side)`, `weakPowerLevel(side, mask)`; also used by non-FMP connectors |
 | Ordinary tile power queries | `TileMultipart` | `strongPowerLevel(side)`, `weakPowerLevel(side)`; preserve each method's side convention |
 | Inventory or sided inventory | Minecraft `IInventory` / `ISidedInventory` | Use the interface implemented by the tile, rather than raw `JInventoryTile` or its internal caches |
+| Inventory slots after a part's size changes | `TileMultipart` | `refreshInventorySlots()`; see [refreshing inventory slots](#refreshing-inventory-slots) |
 | Fluid operations | Forge `IFluidHandler` | Use the interface rather than raw `TFluidHandlerTile` or `tankList` |
 | A consumer-owned pass-through capability | The original ordinary Java interface | Register with `MultipartGenerator.registerPassThroughInterface`; generated calls forward to the implementing part |
 
@@ -96,8 +97,39 @@ Keep the tile/part's existing notification, sound, packet and scheduling sequenc
 
 `bindPart` dispatches through every generated cache trait, so those hooks still run once. As before, some non-slot
 caches append on bind and are not generally idempotent. This API matches OpenComputers' print part, whose additional
-capabilities do not append such caches; it is not a general refresh for inventory/fluid capability changes. A whole
+capabilities do not append such caches; it is not a general refresh for inventory/fluid capability changes (see
+[refreshing inventory slots](#refreshing-inventory-slots)). A whole
 `loadPartList` reconstruction would run broader cache, binding and notification behavior and is not equivalent.
+
+## Refreshing inventory slots
+
+A tile holding `IInventory` parts exposes one flattened inventory: each part's slots in part order. FMP caches that
+mapping and rebuilds it when inventory parts are added, removed, loaded or copied. When a stored part changes its
+own `getSizeInventory()`, call `TileMultipart.refreshInventorySlots()`. It replaces AE2's direct
+`TIInventoryTile.rebuildSlotMap()` call and drops the `instanceof` check, because tiles without inventory parts do
+nothing:
+
+```java
+tile.refreshInventorySlots();
+notifyNeighbors();
+```
+
+The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/TileTraitAccessExample.java)
+wraps the same call:
+
+```java
+TileTraitAccessExample.refreshInventory(tile);
+```
+
+It only recomputes the mapping from the inventories already tracked. It does not add or remove inventories, call
+`bindPart`, touch other trait caches, move items, mark the tile dirty or notify neighbors. Keep the caller's existing
+notifications afterward and call it on the owning world thread. Do not use `refreshPartSlots` for this: its
+`bindPart` dispatch would track the inventory part a second time.
+
+The old `TIInventoryTile.rebuildSlotMap()` call stays supported for released AE2 jars, and both calls do the same
+rebuild.
+
+## Custom generated tiles
 
 For custom generated tiles, keep consumer-callable methods on an ordinary Java capability interface and use the
 stable base for existing tile hooks. The [custom tile-trait guide](CUSTOM_TILE_TRAITS.md) provides the complete

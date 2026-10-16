@@ -18,4 +18,9 @@ public final class TileTraitAccessExample {
     public static void refreshSlots(TileMultipart tile, TMultiPart part) {
         tile.refreshPartSlots(part);
     }
+
+    /** Call after a stored inventory part changes its size, before notifying neighbors; no-op without inventories. */
+    public static void refreshInventory(TileMultipart tile) {
+        tile.refreshInventorySlots();
+    }
 }

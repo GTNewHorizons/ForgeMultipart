@@ -38,6 +38,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Call generated tile capabilities from Java | `TileMultipart`, `IRedstoneTile` and ordinary interfaces - [safe compilation and raw-trait pitfalls](api/TILE_TRAIT_ACCESS.md) |
 | Add aggregate or lifecycle behavior to generated multipart tiles | `registerTrait(marker, trait)` - [custom Java tile traits, stable capabilities and transformer constraints](api/CUSTOM_TILE_TRAITS.md) |
 | Refresh slots after a stored part changes shape | `refreshPartSlots(TMultiPart)` - [ownership, equality and notification responsibilities](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) |
+| Refresh the tile inventory after a stored part changes its inventory size | `refreshInventorySlots()` - [mapping, scope and AE2 migration](api/TILE_TRAIT_ACCESS.md#refreshing-inventory-slots) |
 | Add material-specific behavior to generated microblocks | `registerTrait(String)` and `IGeneratedMaterial` - [illuminated Java extension, compilation and side contracts](api/MICROBLOCK_EXTENSIONS.md) |
 | Access built-in saws and change their cutting strength | `MicroblockProxy.sawStone()` and `ItemSaw.setHarvestLevel(int)` - [state, rendering and Iguana migration](api/SAW_STRENGTH.md) |
 | Read/index/search a tile's parts | `jPartList()` - [part collection ownership and order](api/PART_TRAVERSAL.md#collection-ownership-and-ordering) |
@@ -93,7 +94,7 @@ The registry's matching companion methods carry the same internal marker. This i
 not a claim that every other public member is a supported API. See [TileMultipart's Javadocs](../src/main/scala/codechicken/multipart/TileMultipart.java)
 and [registry Javadocs](../src/main/scala/codechicken/microblock/MicroMaterialRegistry.java) for method-specific details.
 
-Three advanced methods remain supported because consumers use them directly:
+Four advanced methods remain supported because consumers use them directly:
 
 - **`bindPart(part)`** updates capability caches through generated overrides. It does not insert the part, change
   its tile binding or perform placement/notifications. The legacy OpenComputers integration clears a print part's old
@@ -103,6 +104,9 @@ Three advanced methods remain supported because consumers use them directly:
 - **`refreshPartSlots(part)`** replaces OpenComputers' direct generated-array mutation. Generated slotted tiles clear
   equal cached entries and invoke the virtual bind chain once; base tiles do nothing. It leaves ownership, storage,
   validation and notifications to the caller. See the [slot-refresh contract](api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask).
+- **`refreshInventorySlots()`** replaces AE2's direct `TIInventoryTile.rebuildSlotMap()` call. Generated inventory
+  tiles recompute their flattened slot mapping from the inventories they already track; other tiles do nothing. It
+  does not bind parts or notify. See [refreshing inventory slots](api/TILE_TRAIT_ACCESS.md#refreshing-inventory-slots).
 - **`internalPartChange(part)`** sends local `onPartChanged` callbacks through the retained `operate` hook. The base
   traversal captures list order, visits only parts still bound to the receiving tile, and excludes parts equal to the
   changed part using `part.equals(p)`. Null broadcasts to all eligible parts. Detached or transferred parts are skipped.

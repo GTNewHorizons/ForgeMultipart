@@ -445,6 +445,7 @@ class ForgeEnvironmentSmokeTest {
                                 "openInventory()V",
                                 "partRemoved(Lcodechicken/multipart/TMultiPart;I)V",
                                 "rebuildSlotMap()V",
+                                "refreshInventorySlots()V",
                                 "setInventorySlotContents(ILnet/minecraft/item/ItemStack;)V",
                                 "slotMap()[Lscala/Tuple2;",
                                 "slotMap_$eq([Lscala/Tuple2;)V",

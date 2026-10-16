@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,10 +21,13 @@ import net.minecraft.item.ItemStack;
 import org.junit.jupiter.api.Test;
 
 import codechicken.multipart.TMultiPart;
+import codechicken.multipart.TSlottedPart;
 import codechicken.multipart.TileMultipart;
 import codechicken.multipart.asm.MultipartMixinFactory;
+import codechicken.multipart.examples.TileTraitAccessExample;
 import codechicken.multipart.scalatraits.JInventoryTile;
 import codechicken.multipart.scalatraits.TIInventoryTile;
+import codechicken.multipart.scalatraits.TSlottedTile;
 import scala.Tuple2;
 import scala.collection.immutable.Nil$;
 
@@ -131,6 +135,61 @@ class TIInventoryTileFunctionalTest {
     }
 
     @Test
+    void supportedRefreshRebuildsTheMapAfterInventorySizeChanges() {
+        TileMultipart tile = newInventoryTile();
+        InventoryPart first = new InventoryPart("first", 1);
+        InventoryPart resized = new InventoryPart("resized", 1);
+        tile.addPart_do(first);
+        tile.addPart_do(resized);
+        TIInventoryTile inventory = inventory(tile);
+        assertEquals(2, inventory.getSizeInventory());
+
+        resized.resize(3);
+        assertEquals(2, inventory.getSizeInventory(), "FMP cannot see a size change on its own");
+        TileTraitAccessExample.refreshInventory(tile);
+
+        assertEquals(4, inventory.getSizeInventory());
+        assertEquals(Arrays.asList(first, resized), inventory.invList());
+        assertSame(first, inventory.slotMap()[0]._1());
+        assertSame(resized, inventory.slotMap()[3]._1());
+        assertEquals(2, ((Number) inventory.slotMap()[3]._2()).intValue());
+        assertEquals(Arrays.asList(first, resized), tile.jPartList());
+    }
+
+    @Test
+    void supportedRefreshDoesNothingWithoutTheInventoryCapability() {
+        TileMultipart plain = new TileMultipart();
+        PlainPart part = new PlainPart();
+        plain.addPart_do(part);
+        plain.refreshInventorySlots();
+        assertEquals(Arrays.asList(part), plain.jPartList());
+
+        TileMultipart slotted = newTile(TSlottedTile.class);
+        SlottedInventoryPart slottedPart = new SlottedInventoryPart(1 << 2);
+        slotted.addPart_do(slottedPart);
+        slotted.refreshInventorySlots();
+        assertFalse(slotted instanceof TIInventoryTile);
+        assertSame(slottedPart, slotted.partMap(2));
+        assertEquals(Arrays.asList(slottedPart), slotted.jPartList());
+    }
+
+    @Test
+    void supportedRefreshLeavesOtherTraitCachesAlone() {
+        TileMultipart tile = newTile(JInventoryTile.class, TSlottedTile.class);
+        SlottedInventoryPart part = new SlottedInventoryPart(1 << 2);
+        tile.addPart_do(part);
+        TIInventoryTile inventory = inventory(tile);
+
+        ((InventoryPart) part).resize(4);
+        tile.refreshInventorySlots();
+
+        assertEquals(Arrays.asList(part), inventory.invList(), "no inventory is added again");
+        assertEquals(4, inventory.getSizeInventory());
+        assertSame(part, tile.partMap(2));
+        assertNull(tile.partMap(3));
+    }
+
+    @Test
     void rebuildingQueriesEachInventorySizeOncePerPassAndPreservesSlotOrder() {
         TIInventoryTile api = inventory(newInventoryTile());
         InventoryPart empty = new InventoryPart("empty", 0);
@@ -209,9 +268,14 @@ class TIInventoryTileFunctionalTest {
     }
 
     private static TileMultipart newInventoryTile() {
-        int traitId = MultipartMixinFactory.getId(JInventoryTile.class.getName().replace('.', '/'));
+        return newTile(JInventoryTile.class);
+    }
+
+    private static TileMultipart newTile(Class<?>... traitInputs) {
         BitSet traits = new BitSet();
-        traits.set(traitId);
+        for (Class<?> input : traitInputs) {
+            traits.set(MultipartMixinFactory.getId(input.getName().replace('.', '/')));
+        }
         return (TileMultipart) MultipartMixinFactory.construct(traits, Nil$.MODULE$);
     }
 
@@ -324,6 +388,21 @@ class TIInventoryTileFunctionalTest {
 
         private void resize(int size) {
             stacks = Arrays.copyOf(stacks, size);
+        }
+    }
+
+    private static final class SlottedInventoryPart extends InventoryPart implements TSlottedPart {
+
+        private final int slotMask;
+
+        private SlottedInventoryPart(int slotMask) {
+            super("slotted", 1);
+            this.slotMask = slotMask;
+        }
+
+        @Override
+        public int getSlotMask() {
+            return slotMask;
         }
     }
 
