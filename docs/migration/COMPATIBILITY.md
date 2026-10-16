@@ -1,0 +1,905 @@
+# Downstream compatibility: ABI inventory and consumer audit
+
+Status: installed-jar and source refresh 2026-10-16 against GTNH `2.9.0-RC-2`; older dated snapshots are kept
+below as history. Read this before changing any compatibility surface. It has two parts, answering two different
+questions.
+
+- **Part 1, the ABI inventory**, answers "what must still link?" It is a constant-pool scan of every mod jar in a
+  real pack, not a source search.
+- **Part 2, the consumer audit**, answers the harder question: "what behavior do real consumers expect after they
+  have linked?" It covered all 27 ForgeMultipart consumers in the supplied GTNH daily `2026-08-25+700` instance, plus
+  UtilitiesInExcess as the planned Extra Utilities replacement. The `2.9.0-RC-2` refresh adds ThaumicEnergistics
+  as a 28th installed consumer and GT5U's new ProjectRed wire recoloring path.
+
+Intentional differences from the reference belong in the [divergence ledger](DIVERGENCES.md), and the
+consumer-facing summary of what breaks on rebuild is in the [release notes](../RELEASE_NOTES.md).
+
+# Part 1 - Downstream ABI inventory
+
+Method: constant-pool scan of every mod jar in a real pack, not a source search. Bytecode is the only oracle that
+covers reflection strings, closed-source consumers, and mods whose published source does not match their release jar.
+GitHub code search was deliberately not used; it indexes default branches only and silently omits results.
+
+Scanned: GTNH `2.9.0-RC-2`, 240 mod jars (`ForgeMultipart-1.7.16.jar` itself excluded). Reproduce with
+`tools/AbiScan.java`; frozen baselines in `src/test/fixtures/abi/gtnh-2.9.0-rc2-consumers.txt` (current) and
+`gtnh-daily-678-consumers.txt` (original `2026-08-14+678` inventory).
+
+```
+java tools/AbiScan.java <instance>/.minecraft/mods ForgeMultipart
+```
+
+Requires a JDK 17+ single-file source launch. Re-run after public-API changes and diff against the frozen baseline;
+any member that disappears from the port but appears in the baseline is a linkage break in a shipping mod.
+
+The RC-2 scan was resolved against this branch's compiled classes: every inherited type, other type and member
+resolves to a non-private declaration, or to an inherited Minecraft member. The one static exception is
+`scalatraits.TSlottedTile.v_partMap()`, a runtime-generated trait accessor covered by `ForgeEnvironmentSmokeTest`.
+
+## Totals
+
+| Category | `+678` | `2.9.0-RC-2` |
+| --- | ---: | ---: |
+| Consumer jars | 27 of 240 | 28 of 240 |
+| Types extended or implemented downstream | 35 | 35 |
+| Referenced members with exact descriptors | 255 | 268 |
+| Other referenced types | 76 | 80 |
+| Reflective string constants | 20 | 9 |
+
+Every `+678` member, inherited-type and other-type row is still present. The changes are:
+
+- **GuideNH `1.3.41`** replaced its 17-string reflection with 28 direct member references, most already linked by other consumers, including
+  `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)`,
+  `TileMultipart.loadParts(scala.collection.Iterable)`, `MicroblockGenerator$.create` and `Microblock.shape_$eq(B)`.
+  This matches the [source findings](#guidenh); the reflective contracts remain for older GuideNH jars.
+- **GT5U `5.09.54.205`** gained a ProjectRed wire recoloring path: `BlockMultipart.reduceMOP(MovingObjectPosition):
+  scala.Tuple2`, `TileMultipart.partMap(int)`, `TSlottedPart.getSlotMask()` and `TMultiPart.getType()`.
+- **AE2 `rv3-beta-1080`** links `JCuboidPart.bind(TileMultipart)`, the `super.bind` call from its host-refresh fix.
+- **ThaumicEnergistics `1.7.64-GTNH`** is a new consumer through one `Class.forName` string.
+
+## Consumers by weight
+
+Ranked by number of classes in the jar that touch `codechicken/multipart` or `codechicken/microblock`.
+
+| Classes | Jar |
+| ---: | --- |
+| 142 | ProjRed-4.12.47-GTNH |
+| 38 | extrautilities-1.2.12 |
+| 19 | OpenComputers-1.12.64-GTNH |
+| 18 | ProjectBlue-1.2.11-GTNH |
+| 7 | appliedenergistics2-rv3-beta-1080-GTNH |
+| 7 | buildcraft-compat-7.1.22 |
+| 5 | ForgeRelocationFMP-0.2.0, gregtech-5.09.54.205 |
+| 4 | Galacticraft-3.4.34-GTNH, ThaumicTinkerer-2.12.33, WR-CBE-1.7.12, chisel-2.17.34-GTNH |
+| 3 | IguanaTweaksTConstruct-2.7.12, WitchingGadgets-1.8.51-GTNH, guidenh-1.3.41 |
+| 2 | BloodArsenal-1.5.12, Botania-1.13.37-GTNH, Waila-1.19.34, matter-manipulator-0.1.61-GTNH |
+| 1 | BiomesOPlenty, BloodMagic-1.9.14, Natura-2.8.24, Schematica-1.12.6-GTNH, TConstruct-1.14.118-GTNH, ae2fc-1.5.113-gtnh, endercore-0.5.15, etfuturum-2.6.60-GTNH, thaumicenergistics-1.7.64-GTNH |
+
+Two distinct consumer shapes:
+
+- **Java consumers** (extrautilities, AE2, chisel, WitchingGadgets, ThaumicTinkerer, buildcraft-compat, gregtech,
+  matter-manipulator, and the long tail) use the Java-facing API: `MultiPartRegistry.registerParts(IPartFactory, String[])`,
+  `registerConverter`, `BlockMicroMaterial`, `MicroMaterialRegistry.registerMaterial`, `TileMultipart.jPartList()`,
+  `addPart`, `remPart`, `canAddPart`. None of these need Scala.
+- **Scala consumers** (ProjRed, OpenComputers, ProjectBlue, ForgeRelocationFMP) mix in ForgeMultipart traits and call
+  the generated `$class` static helpers directly. These are the constraint on Scala removal.
+
+## Load-bearing Scala surface
+
+Everything in this section must keep its exact descriptor, or a named consumer fails to link.
+
+### Trait `$class` helpers (8 classes, 16 static methods)
+
+| Helper | Methods used | Consumers |
+| --- | --- | --- |
+| `TCuboidPart$class` | `$init$`, `drawBreaking`, `getCollisionBoxes`, `getSubParts` | ForgeRelocationFMP, OpenComputers, ProjRed, ProjectBlue |
+| `TIconHitEffects$class` | `$init$`, `addDestroyEffects`, `addHitEffects` | ForgeRelocationFMP, OpenComputers, ProjRed |
+| `TNormalOcclusion$class` | `$init$`, `occlusionTest` | ForgeRelocationFMP, OpenComputers, ProjRed |
+| `JIconHitEffects$class` | `$init$`, `getBreakingIcon` | ForgeRelocationFMP, OpenComputers, ProjRed |
+| `TFacePart$class` | `$init$`, `solid`, `redstoneConductionMap` | OpenComputers, ProjRed, ProjectBlue |
+| `TItemMultiPart$class` | `$init$`, `getHitDepth`, `onItemUse` | ProjRed |
+| `Saw$class` | `$init$`, `getMaxCuttingStrength` | ProjRed |
+| `TEdgePart$class` | `$init$` | OpenComputers |
+
+`JPartialOcclusion$class` is not retained: it has **no** downstream caller in the pack. The two consumers that
+touch `JPartialOcclusion` (ForgeRelocationFMP, WitchingGadgets) only call
+`getPartialOcclusionBoxes()Ljava/lang/Iterable;`, which remains. The eight helpers above are the ones that matter.
+
+### Companion object singletons (17 `MODULE$` fields read downstream)
+
+`MultiPartRegistry$`, `TileMultipart$`, `MultipartGenerator$`, `NormalOcclusionTest$`, `RedstoneInteractions$`,
+`MicroMaterialRegistry$`, `MicroblockGenerator$`, `MicroblockRender$`, `BlockMicroMaterial$`, `ItemMicroPart$`,
+`CornerMicroClass$`, `EdgeMicroClass$`, `FaceMicroClass$`, `HollowMicroClass$`,
+`handler/MultipartProxy$`, `handler/MultipartSaveLoad$`, `handler/MicroblockProxy$`.
+
+Each must keep a public static `MODULE$` field of its own type plus the instance methods used on it.
+
+### Members with Scala types in their descriptors (8 total)
+
+| Descriptor | Consumers |
+| --- | --- |
+| `TileMultipart.partList()Lscala/collection/Seq;` | OpenComputers, ProjRed, AE2, extrautilities, guidenh |
+| `NormalOcclusionTest$.apply(Lscala/collection/Traversable;Lscala/collection/Traversable;)Z` | ForgeRelocationFMP, OpenComputers |
+| `MultiPartRegistry$.registerParts(Lcodechicken/multipart/MultiPartRegistry$IPartFactory2;Lscala/collection/Seq;)V` | ProjRed |
+| `MultiPartRegistry$.registerParts(Lscala/Function2;Lscala/collection/Seq;)V` | ForgeRelocationFMP |
+| `MicroMaterialRegistry.getIdMap()[Lscala/Tuple2;` | extrautilities |
+| `MultipartGenerator$.generateCompositeTile(Lnet/minecraft/tileentity/TileEntity;Lscala/collection/Iterable;Z)Lcodechicken/multipart/TileMultipart;` | guidenh (`2.9.0-RC-2`; previously reflective only) |
+| `TileMultipart.loadParts(Lscala/collection/Iterable;)V` | guidenh (`2.9.0-RC-2`; previously reflective only) |
+| `BlockMultipart.reduceMOP(Lnet/minecraft/util/MovingObjectPosition;)Lscala/Tuple2;` | gregtech (new in `2.9.0-RC-2`) |
+
+GT5U reads `reduceMOP`'s `_1()` as the boxed `Integer` part index and ignores `_2()`. The port keeps the exact
+static and companion descriptors, and `BlockMultipartCharacterizationTest` pins the boxed index and rebased hit.
+`BlockMultipart.hitPartIndex` is the Java replacement for the index; see the [guide](../api/HIT_PART.md) and the
+adoption ledger.
+
+The Scala-typed surface is small. `TileMultipart.jPartList()Ljava/util/List;` is already the more
+widely used accessor (ProjectBlue, WitchingGadgets, buildcraft-compat, extrautilities, gregtech, matter-manipulator),
+so the Java-first collection API mostly exists already and the Scala overloads are a thin retained shell.
+
+The port supplies `NormalOcclusionTest.testBoxes(java.lang.Iterable, java.lang.Iterable)` for the box-list
+contract. Both old `apply(Traversable, Traversable)` entries remain, with deprecations pointing to the Java entry.
+The shipping ForgeRelocationFMP/OpenComputers companion calls still require their exact descriptor until adoption;
+see the [migration guide](../api/OCCLUSION.md#box-versus-box-queries) and consumer ledger.
+
+`MultiPartRegistry.registerPartFactory(IPartFactory2, String...)` now provides the Java registration entry without
+Scala overload resolution. Both `registerParts(IPartFactory2, Seq)` entries are deprecated; all eight existing
+registration descriptors remain. ProjectRed's sequence and ForgeRelocationFMP's function companion calls still need
+their bridges until release/adoption. See the [registration guide](../api/PART_REGISTRATION.md).
+
+`IDWriter` has **zero** downstream references, so its Scala function accessors were not retained.
+
+## Reflective consumers
+
+These fail at runtime, not at link time, so ABI tooling will not catch a break. In `2.9.0-RC-2`, 9 string
+constants across:
+
+- `Schematica-1.12.6-GTNH` - `TileMultipart`, `TMultiPart`, `MultiPartRegistry$`, `MultipartGenerator$`, `MicroblockClass`.
+- `Galacticraft-3.4.34-GTNH` - `TileMultipart`, `MicroMaterialRegistry`, `BlockMicroMaterial`.
+- `Waila-1.19.34` - `BlockMultipart`.
+- `AE2`, `ae2fc`, `thaumicenergistics-1.7.64-GTNH` - `TileMultipart`, loaded with `Class.forName` to register Waila
+  providers.
+- `etfuturum-2.6.60-GTNH` - `codechicken.multipart.minecraft.ButtonPart`.
+
+`guidenh-1.3.20` in `+678` was the broadest reflective consumer, with 17 strings: `MultipartGenerator`/`MultipartGenerator$`,
+`MultipartHelper`/`MultipartHelper$`, `MultipartRenderer`/`MultipartRenderer$`, `TileMultipart`,
+`TileMultipartClient`, `MicroblockClient`, `Microblock`, `MicroblockClass`, `MicroblockGenerator$`,
+`BlockMicroMaterial`/`BlockMicroMaterial$`, `MicroMaterialRegistry`/`MicroMaterialRegistry$`, `BlockMultipart`.
+`guidenh-1.3.41` in RC-2 has none; it links the same members directly.
+
+Note that both the class and its `$` companion are named in several cases, so renaming or removing a companion
+object breaks these even where no bytecode reference exists.
+
+The port offers `MultipartHelper.createPreviewTileFromNBT` to replace Schematica's private registry map,
+microblock construction, Scala collection, generator and loader reflection as one all-or-nothing preview operation.
+The lower-level `MultiPartRegistry.getPartFactory(String): IPartFactory2` remains available for specialized callers.
+Existing private fields, companions and descriptors remain for released consumers until adoption.
+
+`ButtonPart.setOrientation(int, ForgeDirection): void` now replaces Et Futurum's four reflective array writes and
+keeps the two direction maps consistent; [guide](../api/BUTTON_ORIENTATIONS.md). The existing public mutable static
+`metaSideMap` and `sideMetaMap` fields retain their exact names, types and modifiers for old releases. Removing or
+narrowing them still waits for a migrated Et Futurum release, target-pack adoption and a fresh reflective-source scan.
+
+`ItemSaw.setHarvestLevel(int): void` now replaces Iguana's private-field write; [guide](../api/SAW_STRENGTH.md).
+The existing private `harvestLevel: int` field remains for old releases and shares storage with the setter. It loses
+only `ACC_FINAL`, which makes the supported mutation explicit and keeps reflective writes working. Removal still
+waits for an Iguana release, target-pack adoption and a fresh scan.
+
+## Compatibility retention rules
+
+1. Scala removal follows released-consumer adoption and retirement of internal Scala users.
+2. Keep `registerScalaTrait`, ScalaSignature decoding and the external-trait fixtures covering
+   `MicroblockGenerator.registerTrait`. Third-party Scala traits are not internal-only: ProjRed's
+   `LightMicroMaterial$` registers `mrtjp.projectred.illumination.LightMicroblock`, a compiled Scala trait with a
+   `$class` helper, so `ASMMixinFactory.registerTrait` parses its ScalaSignature. Removing that path breaks
+   ProjRed's illuminated microblocks until a migrated release ships.
+3. Preserve the listed 8 `$class` helpers, 17 `MODULE$` singletons and 8 Scala-typed descriptors until their removal
+   gates pass. Absence from that list alone is not permission to delete a bridge; check source and reflective use too.
+4. Verify reflective member lookups separately; constant-pool strings do not establish which members are selected.
+
+## Historical GuideNH reflective surface, from source
+
+This section describes older supported releases, not current GuideNH source or the `1.3.41` jar shipped in
+`2.9.0-RC-2`. Commit `4a0cd02e` (2026-09-16, included in tags `1.3.33` onward) removed FMP reflection and the
+private-material accessor mixin. Current source
+still calls the generator companions and Scala collection APIs directly; see the [current findings](#guidenh).
+The constraints below remain relevant to old jars until target-pack adoption is verified.
+
+The constant-pool scan can see the names guidenh reflects on but not the members it looks up. This section is read
+from the checked-out source at `6137525`, in
+`src/main/java/com/hfstudio/guidenh/integration/forgemultipart/ForgeMultipartHelpers.java`. **None of this is visible
+to the ABI diff**; a break here is silent until a user opens a guide page.
+
+The dispatch helper is `invokeStaticOrSingletonMethod(class, companion, method, args...)`. It tries a **static** method
+on the plain class first, and only on `INVOCATION_MISSING` falls back to reading `companion.MODULE$` and invoking the
+method on it. So for most entries the companion is a fallback. The exceptions below are the ones that matter.
+
+| Owner | Member reflected on | Reached via |
+| --- | --- | --- |
+| `MultipartHelper` | `createTileFromNBT(World, NBTTagCompound)` | static; companion is fallback |
+| `MultipartRenderer` | `renderWorldBlock(IBlockAccess, int, int, int, Block, int, RenderBlocks)` | static; companion is fallback |
+| `MultipartGenerator` | `generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` | **companion only for the Scala descriptor**; new static Java-Iterable entry is additive |
+| `BlockMicroMaterial` | `register(material)`, plus a constructor of arity 2 `(Block, int)` or 1 `(Block)` | static; companion is fallback |
+| `MicroMaterialRegistry` | `getMaterial(int)` | static; companion is fallback |
+| `MicroblockGenerator$` | `create(MicroblockClass, int, boolean)` | GuideNH explicitly selects the companion, matched by exact parameter types; static Java replacement exists |
+| `TileMultipart` | `partList()`, `partList_$eq(scala.collection.Seq)`, `loadParts(...)`, `notifyTileChange()`, `markRender()` | instance |
+| `Microblock` | `microClass()`, `material()`, `shape()` | instance |
+| `TMultiPart` | `getDrops()` | instance |
+| `BlockMicroMaterial` | `block()`, `meta()` | instance; absent from general `IMicroMaterial` |
+
+Types used only for `isInstanceOf`: `BlockMultipart`, `TileMultipart`, `TileMultipartClient`, `Microblock`,
+`MicroblockClient`, `BlockMicroMaterial`.
+
+### Three constraints this adds
+
+1. **`MultipartGenerator$.MODULE$` is load-bearing through reflection.** `generateCompositeTile` is `private[multipart]`
+   in Scala, so no static forwarder is emitted on `MultipartGenerator` and guidenh's static attempt always misses. It
+   reaches the method only through the companion. A port that keeps the class but drops the companion, or
+   promotes the method to a public static and removes it from the companion, breaks guidenh silently.
+
+   The port adds `MultipartGenerator.generateCompositeTile(TileEntity, java.lang.Iterable, boolean)` while
+   retaining the exact companion Scala descriptor/body. GuideNH's old Scala sequence is not assignable to the new
+   Java parameter, so its existing matcher still falls back to the companion. Both old and new reflective contracts
+   are tested; migration requires a Java parts collection. See the [guide](../api/COMPOSITE_GENERATION.md).
+
+2. **`MicroblockGenerator$.create` is matched by exact parameter types**, including `pts[0].getName()` string-compared
+   against `"codechicken.microblock.MicroblockClass"`. That pins `create(MicroblockClass, int, boolean)` on the
+   companion and pins `MicroblockClass`'s fully qualified name. Widening a parameter or renaming the class breaks the
+   lookup even though every call site still links.
+
+   The existing static `MicroblockGenerator.create(MicroblockClass, int, boolean)` now has a
+   [guide and compiling example](../api/MICROBLOCK_CREATION.md). Both exact reflective entries are tested; no API
+   shape or production method body changes were needed. GuideNH must change its explicitly selected owner and receiver
+   before it stops using the companion. Release/adoption, shape-setter override checks and client previews remain gates.
+
+3. **`TileMultipart.partList_$eq(scala.collection.Seq)` is reflectively load-bearing.** The port supplies
+   `setPartList(java.util.List)` and `loadPartList(java.util.Collection)`, while retaining the exact legacy setter and
+   loader descriptors and override dispatch. Dropping the old setter in favor of the Java method would still break
+   guidenh invisibly. Exact and assignability-based reflective tests cover both legacy contracts. `resolvePartList` also falls back to a public *field*
+   named `partList`, which never existed - Scala emits the field private - so that path is dead in the reference too.
+
+`MultipartHelper$` is retained on the strength of the fallback path alone: the static is found first today, so the
+companion is never reached in practice. That is a weaker justification than the two "companion only" entries above,
+but the cost of keeping a four-method forwarder is negligible against a silent break.
+
+GuideNH's private `BlockMicroMaterial.block: Block` and `meta: int` fields remain unchanged for its accessor mixin.
+Existing public virtual `block()` / `meta()` now have a [typed query guide](../api/MATERIAL_ACCESS.md) and regression
+coverage; no descriptor or method body changed. The mixin reads constructor fields whereas direct calls honor
+subclass overrides, as the old reflective fallback already did. Remove the consumer's mixin only when adopting the
+typed query; FMP field removal still waits for released-consumer adoption.
+
+
+# Part 2 - Source-level consumer audit
+
+
+## Bottom line
+
+The Java conversion cannot be treated as a set of independent class translations. Downstream code depends on five
+connected contracts:
+
+1. **The generated composite tile architecture.** Parts cause `TileMultipart` subclasses to acquire Scala traits,
+   Java traits, and arbitrary pass-through interfaces. AE2, ProjectRed, Extra Utilities, WR-CBE,
+   WitchingGadgets, ForgeRelocationFMP, and UtilitiesInExcess all exercise this architecture.
+2. **Scala-emitted binary shapes.** ProjectRed, OpenComputers, ProjectBlue, and ForgeRelocationFMP call generated
+   trait `$class` helpers and companion `MODULE$` objects. Java consumers also use Scala-shaped APIs such as
+   `partList(): scala.collection.Seq` and `getIdMap(): scala.Tuple2[]`.
+3. **Multipart state and lifecycle.** Consumers do more than add parts. They inspect `partMap`, mutate/rebuild slot
+   maps, move the live tile object, call `onMoved`, remove and reload parts, trigger part/tile notifications, and
+   make deliberate choices about description packets.
+4. **World, NBT, and packet formats.** The container `parts` list, each part's `id`, core microblock fields and part
+   type strings are an interchange format used by builders, schematic tools, movers, HUD mods, and save/load code.
+   Material numeric IDs and their packet encoding are also shared outside FMP.
+5. **Names that are not in ordinary linkage.** Schematica reaches a private Scala-mangled field, Et Futurum mutates
+   static arrays, older GuideNH releases mix into private fields, Iguana reflects a saw field, and several mods load FMP classes
+   and companions by string. A clean ABI diff alone will miss these breaks.
+
+The safest first Java release is therefore **Java-maintainable implementation with the bounded Scala compatibility
+shell retained**. Removing the Scala runtime is a separate coordinated migration, not the end of this source port.
+
+## Coverage and method
+
+The supplied instance was rescanned with `tools/AbiScan.java` before reading source:
+
+- scanner visited 241 mod JARs, one of which was excluded as ForgeMultipart itself;
+- 27 consumer JARs;
+- 35 downstream-extended or implemented FMP types;
+- 255 referenced FMP members with exact descriptors;
+- 76 other referenced FMP types;
+- 20 class-name/reflection strings.
+
+Those structural totals are unchanged from the frozen `+678` inventory. The consumer versions changed, but no new
+binary API family appeared. The compatibility audit covers active consumer binaries, including Extra Utilities,
+and the supplied source checkouts. It records required types/members, reflection contracts, factories, converters,
+part subclasses, tile access, registry access, NBT, packets, rendering, occlusion, redstone and movement behavior.
+Where source checkouts are available, important call sites were traced through the owning code instead of counting imports.
+
+The 2026-10-16 refresh rescanned GTNH `2.9.0-RC-2` (above) and traced every new or changed row to consumer source.
+The new consumer, ThaumicEnergistics, was read at `83c405d0bee3` (`1.7.66-GTNH`). Its only FMP reference
+appeared in `1.7.62-GTNH`, and `ModuleWaila.java` is unchanged since the installed `1.7.64-GTNH` tag.
+
+This gives full coverage of the current pack's known source and binary consumers. It does not claim that an arbitrary
+future mod, a runtime-generated script, or an unpublished patched JAR cannot contain another reflective use. The ABI
+scanner should remain a release gate for exactly that reason.
+
+`ForgeRelocation` itself is not the source of `ForgeRelocationFMP`; both repositories are needed and both are now
+present. Only the plugin is one of the FMP consumers.
+
+### Current source references (2026-10-16)
+
+Diffed every Java/Scala file that references FMP at either end, between the 2026-09-21 heads and the current
+heads. Only three consumers changed such files:
+
+- **GT5U**: `gregtech/api/util/ColoredBlockContainer.java` gained `ProjectRedWireContainer` (details in the
+  [GT5U row](#narrow-consumers-still-real-contracts)).
+- **ProjectRed**: `transmission/redwires.scala` and `bundledwires.scala` add `recolour(int)` to insulated wires and
+  bundled cables, plus part-update key `11`. It uses only FMP members ProjectRed already linked: `markDirty`, the
+  part write stream, `notifyPartChange` and `markRender`. This is the target of GT5U's recoloring.
+- **ProjectBlue**: `ControlPanelRenderer.java` changed label spacing only; its FMP use is unchanged.
+
+All other changed checkouts touched no FMP-referencing file. The September note that only GuideNH and AE2 had
+changed still holds for that window. Extra Utilities is the unchanged non-Git 1.2.12. No physical-client run was
+performed.
+
+| Checkout | Inspected HEAD | 2026-09-21 HEAD |
+| --- | --- | --- |
+| AE2FluidCraft-Rework | `c7ec5b0c8b5f` | `6e8dd013bd4e` |
+| Applied-Energistics-2-Unofficial | `c690fbc273be` | `fdedc3a8f023` |
+| BiomesOPlenty | `fc7f1f6392a1` | same |
+| BloodArsenal | `890824be106a` | same |
+| BloodMagic | `10a36f6413b8` | `6776676ef209` |
+| Botania | `3f62d4b8fe7c` | `c802a448e4f4` |
+| BuildCraftCompat | `79e02803be32` | same |
+| Chisel | `d08e48b73ba5` | `3d3260cd71b8` |
+| EnderCore | `1998218128c7` | same |
+| Et-Futurum-Requiem | `1944927eecd1` | `65407a439b57` |
+| ForgeRelocation | `21da7aae0e6e` | same |
+| ForgeRelocationFMP | `49a810b8c63b` | same |
+| Galacticraft | `ff4c5c87ba21` | `fbdc41b97e81` |
+| GT5-Unofficial | `1a9469a13228` | `fe3606a12547` |
+| GuideNH | `99785342eff2` | `16f142417df1` |
+| IguanaTweaksTConstruct | `2bc09889d3e2` | same |
+| MatterManipulator | `dbc15f55a031` | `4d9bc003f193` |
+| Natura | `4f88c0665928` | same |
+| OpenComputers | `1e4559ff5f24` | `a3ac18595179` |
+| ProjectBlue | `28abef1385cb` | `c01a5e769643` |
+| ProjectRed | `b29f404eaa05` | `e173952e96a4` |
+| Schematica | `3b03ee937953` | same |
+| ThaumicEnergistics | `83c405d0bee3` | new |
+| ThaumicTinkerer | `e4c8acdd4fa9` | same |
+| TinkersConstruct | `644373000cdc` | `8f6e2496f792` |
+| UtilitiesInExcess | `3e107a1fe9bc` | same |
+| waila | `f998f9ebfe09` | same |
+| WirelessRedstone-CBE | `9dfb913b4880` | same |
+| WitchingGadgets | `adf174f552f9` | `663bad20ac24` |
+
+## Cross-cutting compatibility map
+
+| Contract | Consumers that make it load-bearing | What must survive |
+| --- | --- | --- |
+| Part factory/converter registration | ProjectRed, Extra Utilities, OpenComputers, AE2, BuildCraftCompat, ForgeRelocationFMP, Chisel, ThaumicTinkerer, WR-CBE, WitchingGadgets, ProjectBlue, UtilitiesInExcess | Java `IPartFactory`/`IPartFactory2`, converters, the Scala `Function2` and `Seq` overloads, stable type strings, client/server construction |
+| Dynamic composite tiles | ProjectRed, Extra Utilities, AE2, ForgeRelocationFMP, WR-CBE, WitchingGadgets, UtilitiesInExcess; GuideNH and Schematica reconstruct them | Trait-bit selection, generated subclass caching, pass-through interfaces, client/server selection, promotion of an existing tile |
+| External Scala trait generation | ProjectRed illuminated microblocks | `MicroblockGenerator.registerTrait`, ScalaSignature decoding, `$class` helper handling, correct trait initialization and dispatch |
+| Tile collections and slot state | ProjectRed, Extra Utilities, OpenComputers, AE2, ProjectBlue, GT5U, BuildCraftCompat, WitchingGadgets, MatterManipulator, GuideNH | `partList(): Seq`, `jPartList(): List`, ordering, `partMap(int)`, mutable `TSlottedTile.v_partMap`, `bindPart`, slot-map rebuilds |
+| Capability-cache refresh | OpenComputers `PrintPart.toggleState` | Supported `TileMultipart.bindPart` dispatch, caller-cleared old slot entries, no implicit list insertion or part binding |
+| Local part-change notification | ProjectRed `RedstoneGatePart.onOutputChange` | Supported `TileMultipart.internalPartChange`, equality filtering and `operate` dispatch; caller retains packet/dirty/external-neighbor policy |
+| Placement/removal/replacement | Most custom-part mods | `getTile`/`getOrConvertTile`, `canPlacePart`, `canAddPart`, `canReplacePart`, `addPart`, `remPart`, binding and notifications in their current order |
+| Move lifecycle | ForgeRelocationFMP, MatterManipulator | A live `TileMultipart` can be detached/reinserted, coordinates rewritten, then `onMoved`; render, dirty, lighting, and description synchronization remain coherent |
+| Occlusion and geometry | ProjectRed, Extra Utilities, OpenComputers, AE2, ForgeRelocationFMP, Chisel, WR-CBE, WitchingGadgets, UtilitiesInExcess | Normal and partial occlusion, collision/subpart boxes, `PartMap` numbering, Java iterable adapters, Scala `Traversable` overload |
+| Redstone and connectivity | ProjectRed, Extra Utilities, OpenComputers, ProjectBlue, AE2, WR-CBE | `IRedstonePart` family, `TRedstoneTile`, `RedstoneInteractions`, face/edge/center maps, neighbor and part-change propagation |
+| Micro-material registry | Extra Utilities, ProjectRed, ProjectBlue, AE2, BuildCraftCompat, Chisel, material-only integrations, UtilitiesInExcess | Stable material names, integer IDs, remapping, packet ID encoding, `getIdMap(): Tuple2[]`, block/meta access, material behavior hooks |
+| Multipart save/load | Extra Utilities, ProjectRed, OpenComputers, BuildCraftCompat, MatterManipulator, GuideNH, Schematica, Waila, UtilitiesInExcess | Tile `parts` list, per-part `id`, factory lookup, `save`/`load` ordering, microblock fields, unknown/invalid-part behavior |
+| Description/update packets | Every substantial custom part integration | `writeDesc`/`readDesc`, keyed part packets, `sendDescUpdate`, `sendDescPacket`, material packet IDs, render and neighbor notification behavior |
+| Hit-to-part reduction | GT5U `ColoredBlockContainer` | Static `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2`, boxed `Integer` `_1()` matching `jPartList()` order for an `ExtendedMOP` from `RayTracer.retraceBlock`; Java replacement `hitPartIndex` |
+| Reflection/mixins | Older GuideNH releases, Schematica, Et Futurum, Galacticraft, Waila, AE2/AE2FC/ThaumicEnergistics, Iguana | Exact class/companion/member/field names and, where stated below, exact parameter and field types; current GuideNH uses direct calls |
+
+## Consumer findings
+
+### ProjectRed - deepest current consumer
+
+ProjectRed is not merely an optional integration. Wires, framed wires, bundled wires, gates, lamps, buttons, pipes,
+solar panels, and fabricated gates are FMP parts. Its 141 touching classes dominate the installed binary surface.
+
+- Its parts mix `TMultiPart` with `TCuboidPart`, `TFacePart`, `TSlottedPart`, `TNormalOcclusion`,
+  `TIconHitEffects`, redstone interfaces, and microblock hollow-connect interfaces. The emitted classes directly call
+  Scala trait `$class` helpers.
+- Item placement uses `TItemMultiPart`; registries use both `IPartFactory` and `IPartFactory2`, including the
+  Scala-`Seq` registration descriptor.
+- Connectivity is built on exact `PartMap` face/edge/center numbering and repeated `partMap` queries across the same
+  and neighboring tiles. Redstone propagation uses `RedstoneInteractions` and casts generated tiles to
+  `scalatraits.TRedstoneTile` for `openConnections`.
+- Parts rely on lifecycle callbacks and their ordering: `onAdded`, `onRemoved`, `onPartChanged`,
+  `onNeighborChanged`, `onChunkLoad`, `onWorldJoin`, scheduled ticks, `notifyPartChange`, `markDirty`, and
+  `markRender`.
+- Framed wires persist material names and use `materialID`, `materialName`, `getMaterial`, packet material IDs, and
+  `ItemMicroPart.create`. Their fit calculation temporarily changes their own occlusion bounds and calls
+  `tile.canReplacePart(this, this)`.
+- Part-owned NBT and packet fields include `connMap`, `side`, `orient`, `shape`, `mat`, and type-specific data. FMP
+  must keep treating these tags as opaque and must continue calling part save/load and packet hooks exactly once in
+  the established order.
+- `LightMicroMaterial` implements `MicroblockGenerator.IGeneratedMaterial` and registers the third-party Scala trait
+  `LightMicroblock` with `MicroblockGenerator.registerTrait`. Generated microblocks must actually acquire that trait;
+  it supplies dynamic halo rendering and computes light from `tile.partList`.
+- ProjectRed also uses `MultipartSaveLoad.loadingWorld`, `MultipartProxy.block`, vanilla multipart part classes,
+  microblock class companions, saw traits, and the material highlight renderer extension.
+
+**Migration consequence:** ProjectRed is the acceptance test for the complete architecture: Scala trait ingestion,
+trait linearization, tile and microblock code generation, redstone tile traits, core lifecycle, rendering, packets,
+and the micro-material system. A launch-only smoke test is inadequate; illuminated microblocks, gates, face/framed
+wires, and routed pipes need functional fixtures.
+
+### Extra Utilities 1.2.12 - active supported consumer
+
+Extra Utilities remains in the supported compatibility target. UtilitiesInExcess is its intended replacement;
+approval to switch that target and adoption of the replacement in the pack are still pending. Preserve the current
+consumer's required APIs, saved-data behavior and integration coverage until both gates pass.
+
+Required compatibility spans several FMP subsystems:
+
+- It registers generated-tile pass-through interfaces for `IAntiMobTorch`, pipe/cosmetic/filter pipe interfaces,
+  node, inventory, liquid, and energy node interfaces, plus CoFH `IEnergyHandler`. Composite tiles must expose these
+  interfaces and dispatch to the correct part.
+- Transfer pipes and nodes are multipart factories/converters. They use face/slot traits, neighbor-tile callbacks,
+  hollow connections, `TRedstoneTile`, `RedstoneInteractions`, part lists/maps, and part-change notifications.
+- Custom parts include the magnum torch, fence, wall, sphere, pipe jackets, and several microblock-derived shapes.
+  They exercise normal/partial occlusion, icon hit effects, `PartMetaAccess`, `MicroblockRender`, and client/server
+  factories.
+- Connected-texture and colored/full-bright micro-materials subclass `BlockMicroMaterial` and participate in
+  material rendering. Fences and walls add their own pass-through interfaces.
+- NEI recipes and item enumeration consume `MicroMaterialRegistry.getIdMap()` as `scala.Tuple2[]`, use
+  `MicroRecipe`, saw cutting strength, material names, and `ItemMicroPart` creation.
+- Some paths use `jPartList`; others use `partList().toIterator()`. Both collection views and stable ordering are
+  required even though the mod's implementation language is Java.
+
+The jar is sufficient to establish behavior, while the exact JAR's constant pool remains the authority for
+names and descriptors. Obfuscated Minecraft method names should not be treated as source-quality naming evidence.
+
+**Migration consequence:** Extra Utilities covers almost every Java-facing extension seam and is the strongest test
+that Java wrappers still compose into the same generated tile. UtilitiesInExcess does not make this compatibility
+burden disappear until existing worlds and the old mod have been retired.
+
+### OpenComputers - generated slot state is part of the effective API
+
+OpenComputers converts its cable and 3D print blocks to parts and registers `oc` cable/print factories.
+
+- `CablePart` mixes cuboid, slotted, hollow-connect, normal-occlusion, icon-effect, and OC network-environment
+  behavior. Network join/separate is driven from part lifecycle callbacks.
+- Network traversal locates cable parts through `TileMultipart.partList`. Connection checks combine FMP normal
+  occlusion boxes, solid face parts, and exact `PartMap.face(...).mask` values.
+- `PrintPart` mixes cuboid, edge, face, slotted, normal occlusion, and redstone traits. Its shape and slot mask change
+  at runtime.
+- When a print toggles shape, it casts the generated tile to `scalatraits.TSlottedTile`, directly clears every
+  matching entry in `v_partMap`, and calls `tile.bindPart(this)` to rebuild its slots. `v_partMap` field shape and
+  `bindPart` behavior are therefore externally load-bearing, not private implementation details in practice.
+- Placement uses `getOrConvertTile`, `canAddPart`, and `addPart`; complexity limits are calculated across the Scala
+  `partList`. Print redstone input also folds over that list.
+
+**Migration consequence:** a Java slot-map rewrite must retain a binary and behavioral bridge for `TSlottedTile`,
+including its public generated state. Test a print whose on/off shapes occupy different slots next to a cable and a
+face part.
+
+### ProjectBlue - Java parts built on Scala shim bases
+
+ProjectBlue defines tiny Scala bridge bases (`JFacePart`, `JCuboidFacePart`, `JCenterPart`) so most of its FMP code
+can be Java. Its active multipart is the bundled-redstone control panel.
+
+- The bridge bases inherit `TFacePart`, `TCuboidPart`, and `TSlottedPart`, so their generated `$class` calls remain
+  binary dependencies.
+- Control panels register an `IPartFactory`, place through `canPlacePart`/`addPart`, remove through `remPart`, and
+  send part description updates.
+- Bundled/redwire connectivity repeatedly queries `partMap` using exact face, edge, and center indices and uses
+  `RedstoneInteractions` for vanilla/FMP power.
+- The panel resolves its cover material by stable micro-material name and item representation. Its own persistent
+  fields are opaque part data.
+- Its edit network identifies a target part by world coordinates plus index in `jPartList`; list order is therefore
+  observable over the network.
+
+**Migration consequence:** preserve trait bridges, part ordering, `PartMap`, redstone semantics, and stable material
+name lookup. A control-panel edit packet is a useful ordering regression test.
+
+### Applied Energistics 2
+
+AE2's cable bus is a full multipart integration, not just visual compatibility.
+
+- `CableBusPart` is a Java cuboid part with normal occlusion, masked redstone, and `AEMultiTile`; AE2 dynamically
+  registers `AEMultiTile` and layer interfaces as pass-through interfaces.
+- `PartRegistry` constructs registered AE2 parts through AE2's combined-instance helper. The FMP integration acts as
+  both part factory and block converter.
+- Placement/conversion uses `getOrConvertTile`, `canAddPart`, and `addPart`. Code traverses the Scala `partList`
+  iterator.
+- Occlusion is checked both directly with `NormalOcclusionTest` and by asking `tile.canAddPart` with an AE2
+  `NormallyOccludedPart` probe.
+- When a generated tile implements `TIInventoryTile`, AE2 calls `rebuildSlotMap()` from `notifyNeighbors()`, after
+  its cable bus inventory size may have changed. `TileMultipart.refreshInventorySlots()` is the supported replacement.
+- AE2's Waila path and AE2 Fluid Craft load `TileMultipart` by name to register multipart HUD providers.
+- Since `4548d13f0` (2026-09-12), `CableBusPart.bind(TileMultipart)` calls `super.bind` then refreshes hosted
+  parts through `CableBusContainer.updatePartHostInfo`. Host changes and world join also refresh those references.
+  Loading and composite expansion/reduction must dispatch through the virtual `bind` hook, with the new tile already
+  visible through `tile()`, without restarting the parts during replacement. The port retains this behavior;
+  `TileMultipartLoadingTest` covers consumer host refresh through successive replacements.
+- That commit also makes `CableBusPart.addPart` reject placement when `canAddPart` fails, using the existing FMP
+  occlusion path. No new FMP entry point is required; the Scala part-list dependency remains.
+
+**Migration consequence:** preserve dynamic pass-through interfaces and generated tile inventory traits, not only
+the `CableBusPart` class ABI. Test a cable bus sharing a block with an inventory-bearing part and an occluding cover.
+
+### BuildCraftCompat
+
+BuildCraftCompat serializes multipart blocks for builders and reconstructs them later.
+
+- It identifies `MultipartProxy.block`, walks `jPartList`, calls each part's `save`, and records the part type.
+- Restore calls `MultiPartRegistry.loadPart(type, tag)`, then uses `canPlacePart`/`addPart`.
+- Its microblock schematic validates the saved material name through `MicroMaterialRegistry.getMaterial`.
+- It understands and rotates FMP's own saved type IDs for face, corner, edge, post, hollow, torch, lever, button,
+  and redstone-torch parts.
+
+**Migration consequence:** registry lookup, part `save`/`load`, core type IDs, material names, and placement validation
+are a world-data contract. A builder round trip containing every built-in Minecraft part and microblock shape should
+be a golden test.
+
+### ForgeRelocationFMP
+
+The plugin registers `rfmp_frame`, a frame-block converter, an `IFrame` pass-through interface, and an FMP tile
+mover.
+
+- `FramePart` mixes `TCuboidPart`, `TNormalOcclusion`, and `TIconHitEffects`. Its special fit test temporarily exposes
+  one face occlusion box, calls `canReplacePart(this, this)`, and combines another part's normal boxes, partial boxes,
+  and collision boxes through the Scala `NormalOcclusionTest` overload.
+- Frame placement requires an existing multipart tile and uses `canPlacePart`/`addPart`.
+- The mover removes the live `TileMultipart`, moves the original block and tile object, rewrites `xCoord/yCoord/zCoord`,
+  reinserts it, and calls `onMoved()` in the post-move hook.
+
+**Migration consequence:** this is a direct test of Scala trait helpers, Scala factory overloads, mixed occlusion,
+pass-through interfaces, and live tile movement. `onMoved` must reestablish every coordinate-sensitive/generated-tile
+invariant without replacing the tile object.
+
+### Chisel
+
+Chisel registers its blocks as micro-materials and adds a `chisel_torch` factory/converter. `PartChiselTorch`
+subclasses FMP's `TorchPart`, including its constructors, load/read/write behavior and static side mapping. Placement
+uses tile conversion, fit checks, and `addPart`; Chisel also supplies a full-bright material implementation.
+
+**Migration consequence:** the Minecraft-part classes are extension bases, not internal examples. Keep protected
+state, constructors, packet/NBT hooks, and static orientation tables source- and binary-compatible.
+
+### ThaumicTinkerer
+
+ThaumicTinkerer registers block micro-materials and factories/converters for candle and nitor parts. The parts extend
+`McMetaPart`; the candle participates in random display ticks. They rely on FMP meta-part persistence, placement,
+render hooks, and factory type dispatch.
+
+**Migration consequence:** preserve `McMetaPart` subclass semantics and random-display capability composition.
+
+### Wireless Redstone CBE
+
+WR-CBE registers transmitter, receiver, and jammer parts and pass-through interfaces for wireless tile APIs.
+
+- Its Java parts use `JItemMultiPart`, `JCuboidPart`, face/redstone, normal/partial occlusion, icon effects, and
+  micro-shrink rendering interfaces.
+- It uses `partMap`, `RedstoneInteractions`, `IRedstonePart`, `NormalOcclusionTest`, `MicroOcclusion.recalcBounds`,
+  `onPartChanged`, `remPart`, and tile item drops.
+
+**Migration consequence:** Java compatibility bases must retain the same trait defaults and generated composite
+behavior. Test wireless interface dispatch through a composite tile, not just direct calls on the part.
+
+### WitchingGadgets
+
+WitchingGadgets registers multipart essentia tubes and buffers, with block converters and factories.
+
+- Parts extend `McMetaPart`; the tube is slotted, and parts implement Thaumcraft transport/wand interfaces.
+- Those external APIs are registered as pass-through interfaces, including the overload carrying client/server
+  generation flags.
+- Connection logic walks `jPartList` and directly consumes other parts' normal and partial occlusion boxes.
+- Rendering goes through `PartMetaAccess`; placement uses `canAddPart`/`addPart`.
+
+**Migration consequence:** preserve flag-sensitive pass-through registration, Java occlusion iterables, slotted part
+semantics, and `PartMetaAccess` behavior.
+
+### MatterManipulator
+
+MatterManipulator is the broadest external editor of multipart state.
+
+- Analysis records each part's `getType`, calls `save` into NBT containing `id`, and captures `getDrops`.
+- Application removes current parts with `remPart`, sorts microblocks before other parts, reconstructs through
+  `MultiPartRegistry.loadPart(type, nbt)`, calls `part.load(nbt)`, and adds through `TileMultipart.addPart`.
+- It interprets core microblock type prefixes and NBT fields `material`, `shape`, `side`, `orient`, and `connMap`, and
+  transforms exact `PartMap` edge/corner numbering.
+- Its mover detaches and reinserts the same tile object, rewrites coordinates, validates it, calls `onMoved`, then
+  performs dirty, render, block-update, lighting, and description-packet synchronization.
+- Its apply path intentionally does **not** send a redundant description packet: rebuilding the tile a second time
+  previously produced null bounds. Packet timing and reconstruction side effects therefore matter.
+
+**Migration consequence:** add capture/apply/move golden tests. This consumer will expose changes in part ordering,
+factory semantics, core NBT, movement lifecycle, and over-eager network synchronization.
+
+### GuideNH
+
+GuideNH reconstructs and renders multipart tiles for guide scenes and exports part statistics. At `16f142417df1`,
+the FMP integration uses direct calls guarded by mod-presence checks and Forge `@Optional.Method` annotations.
+Commit `4a0cd02e` (2026-09-16, included in tags `1.3.33` onward) removed its FMP reflection and
+`AccessorBlockMicroMaterial` mixin. The dependency is FMP `1.7.14`; this is not adoption of the unreleased Java API.
+This upstream cleanup uses existing APIs and is not work performed by this migration project.
+
+- Reconstruction still starts with `MultipartHelper.createTileFromNBT`, promotes client microblocks and tiles,
+  loads/binds parts, then calls `notifyTileChange` and `markRender`. Rendering calls `MultipartRenderer` directly.
+- It directly invokes `MultipartGenerator$.MODULE$.generateCompositeTile` with a Scala iterable and
+  `MicroblockGenerator$.MODULE$.create`, then copies shape through `shape_$eq(byte)`.
+- Preview paths retain `partList(): Seq`, Scala iteration/`ListBuffer`, and `loadParts(scala.collection.Iterable)`.
+  `Ae2ForgeMultipartBridge` also retains Scala part traversal. The old `partList_$eq` call is gone.
+- Material export uses `jPartList`, `Microblock.material`, registry lookup and public `BlockMicroMaterial.block()` /
+  `meta()` getters. Statistics use `jPartList` and direct `getDrops`. Material lookup failures are logged and skipped;
+  getter failures propagate. See the [material guide](../api/MATERIAL_ACCESS.md) for differences from the example.
+- `createPreviewTileFromNBT` and the Java generator/collection replacements have not been adopted.
+
+**Migration consequence:** direct linking now enforces the retained companion/Scala contracts. All these calls have
+counterparts in the port; no production API change is required. Material access already uses public getters, while
+preview/Scala migration remains pending. Keep old private fields and setter descriptors for older supported jars
+until pack adoption is verified; source tags alone do not establish installed-artifact compatibility.
+
+### Schematica
+
+Schematica's optional integration reconstructs multipart tiles from schematic NBT, especially on the client. It is
+more invasive than its small binary footprint suggests.
+
+- It reflects `MultiPartRegistry$.MODULE$` and the **private Scala-mangled field**
+  `codechicken$multipart$MultiPartRegistry$$typeMap`, casting it to `scala.collection.mutable.Map`.
+- It resolves material IDs, obtains the registered microblock class from that map, and invokes
+  `MicroblockClass.create(boolean, int)`.
+- It reflects part `load`, `onPartChanged`, `TileMultipart.loadParts`, `TileMultipart.createFromNBT`, and
+  `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)`.
+- It parses tile NBT `parts`, each part's `id`, and microblock `material`; it rejects a preview if any part fails to
+  reconstruct.
+
+**Migration consequence:** the registry's private field name **and Scala mutable-map representation are currently
+effective public API**. A Java `Map` replacement will silently disable Schematica unless an exact compatibility field
+is retained or Schematica is patched and deployed first. This is a higher-risk constraint than the constant-pool
+inventory alone shows.
+
+`MultiPartRegistry$` retains the exact private field as a Scala mutable-map wrapper backed by the canonical Java
+`HashMap`. A regression test performs Schematica's lookup and verifies that both views resolve the same factory.
+
+The port provides `MultiPartRegistry.getPartFactory(String)` as the supported replacement for map lookup.
+It returns the exact registered factory or null without construction or missing-name logging. Schematica can reflect
+this public static method and continue invoking `MicroblockClass.create(client, materialId)` on the returned object;
+`loadPart` would incorrectly choose the server factory path for its client preview. The old private field remains.
+See the [guide](../api/FACTORY_LOOKUP.md) and the now-available [Java tile generator](../api/COMPOSITE_GENERATION.md);
+consumer patches and pack adoption remain pending.
+
+### UtilitiesInExcess - future replacement, already a substantial consumer
+
+UtilitiesInExcess is not in the `2.9.0-RC-2` JAR scan but is in scope because it is intended to replace Extra Utilities.
+
+- `Content` implements `IPartFactory2` for `ue_fence`, `ue_wall`, and `ue_sphere`, with legacy Extra Utilities type
+  aliases when the old mod is absent.
+- Parts extend `TMultiPart`, implement Java icon/normal-occlusion interfaces, call the normal occlusion protocol, and
+  render through microblock material helpers.
+- Placement and connectivity use `canPlacePart`, `addPart`, `BlockMultipart`, neighboring `TileMultipart` instances,
+  `jPartList`, and part sub-boxes.
+- Recipes and item enumeration consume `MicroMaterialRegistry.getIdMap()` as `scala.Tuple2[]` and use microblock
+  class IDs plus `ItemMicroPart.create`.
+- Materials use name/ID lookup, packet material ID helpers, remapping, sounds, icons, drops, and rendering. Legacy
+  Extra Utilities material names are explicitly remapped for world conversion.
+- At audited HEAD, the server factory reads NBT key `material` while `MaterialBasedPart.save` writes `mat`. That is a
+  UtilitiesInExcess-side inconsistency to resolve before relying on save/load round trips; FMP should not special-case
+  it.
+
+**Migration consequence:** replacing Extra Utilities does not permit early removal of `IPartFactory2`, the Scala
+`Tuple2[]` registry view, legacy material remapping, or the Java part/occlusion bridges. UtilitiesInExcess should be
+added to compatibility CI before it enters the pack.
+
+## Narrow consumers, still real contracts
+
+| Consumer | Actual use | Compatibility requirement |
+| --- | --- | --- |
+| BloodArsenal | Registers decorative blocks/metas as `BlockMicroMaterial` instances | Constructor and `registerMaterial`; stable chosen names |
+| Botania | Registers decorative blocks/metas as micro-materials | Same material registration API and block/meta behavior |
+| Biomes O' Plenty | Registers historical BOP block/metas as micro-materials | Constructor, registry, and its dot-separated material names |
+| Natura | Registers single/ranged block metas, using both `createAndRegister` and direct registration | Static helper plus registry API and generated material keys |
+| TConstruct | Optional init plugin registers many smeltery/metal/glass blocks with `createAndRegister` | Helper availability and init-time registration behavior |
+| Galacticraft | Reflectively constructs `BlockMicroMaterial` and chooses the first public method named `registerMaterial`; separately rejects `TileMultipart` as an energy receiver | Exact class/constructor names; compatible public registration method; tile class identity. Avoid incompatible same-name overloads because it does not check the signature |
+| BloodMagic | Teleposer reconstructs multipart tiles with `MultipartHelper.createTileFromNBT` and sends a description packet after placement | NBT reconstruction, placement lifecycle, and `sendDescPacket` |
+| Waila | Reflects `BlockMultipart`, reads tile NBT `parts`, then dispatches providers using each part tag's `id` | Block class name and tile/part NBT layout |
+| AE2 Fluid Craft | Reflects `TileMultipart` and registers Waila part providers | Tile class name and `jPartList`/provider behavior reached by AE2 |
+| GT5U | Detects `TileMultipart`, iterates `jPartList`, and finds a ProjectRed `GatePart` to expose its screwdriver slot. Since `5.09.54.205`, spray cans recolor ProjectRed insulated wires and bundled cables: retrace the block, take `(Integer) BlockMultipart.reduceMOP(hit)._1()` as a `jPartList` index, take the slot from `TSlottedPart.getSlotMask()`, then follow chained blocks through `partMap(slot)` and equal `getType()` | Tile identity, Java list view/order, part instance identity; exact `reduceMOP` static descriptor with Scala `Tuple2` return and boxed-index `_1`; ray-trace index agreeing with `jPartList` order; `partMap` slot numbering; stable type strings |
+| ThaumicEnergistics | Loads `TileMultipart` with `Class.forName` and registers Waila body/NBT providers on it, so vis-link info still shows after a cover moves its AE2 parts into a multipart tile. Parts are found through AE2's `Platform.getPartFromTE`, not FMP. Added by `f6422d7` (2026-10-02, tags `1.7.62-GTNH` onward); no FMP compile dependency | Exact `codechicken.multipart.TileMultipart` class name; AE2 part-host pass-through on generated tiles |
+| EnderCore | Tests items with `instanceof ItemSaw` for durability display | `ItemSaw` class identity and inheritance |
+| IguanaTweaksTConstruct | Creates saws through `MicroblockProxy`, reads saw methods, accesses proxy companions, and reflectively mutates private `ItemSaw.harvestLevel` | Proxy methods and `MODULE$`, `Saw`/`ItemSaw` identity, exact `harvestLevel: int` field name/type until adoption; `setHarvestLevel(int)` is the supported replacement |
+| Et Futurum Requiem | Reflectively gets and mutates static `int[] ButtonPart.metaSideMap` and `sideMetaMap` to add floor and ceiling orientation | Exact class and mutable static field names/types until migration; `ButtonPart.setOrientation` is the supported replacement |
+
+## Source-only hazards
+
+The constant-pool inventory identifies reflective class names, but source inspection adds exact member-level
+requirements:
+
+| Consumer | Hidden requirement | Likely symptom if broken |
+| --- | --- | --- |
+| Schematica | `MultiPartRegistry$.MODULE$`; field `codechicken$multipart$MultiPartRegistry$$typeMap` of Scala mutable-map shape; exact generator/load methods | FMP schematic tile reconstruction disables itself or returns no preview |
+| Older GuideNH releases | Companion-only generator methods; `partList_$eq(Seq)`; `BlockMicroMaterial.block` and `.meta` mixin fields | Missing/incorrect guide preview, material export, or part statistics; current source instead links directly to companion/Scala methods |
+| Et Futurum | Static mutable `ButtonPart.metaSideMap` and `sideMetaMap`, both `int[]`, until direct API adoption | FMP buttons attach with pre-fix orientation behavior |
+| Iguana | Private `ItemSaw.harvestLevel` field until direct setter adoption | Existing saw cutting strengths are not adjusted |
+| Galacticraft | Reflection by method name only for `registerMaterial` | Galacticraft micro-material registration is skipped after a caught exception |
+| Waila | `BlockMultipart` string plus tile NBT `parts`/part `id` | No multipart HUD data |
+
+These need targeted runtime tests or explicit downstream patches. They cannot be proven safe by `javap` ABI diffing.
+
+`ConsumerReflectionCompatibilityTest` freezes the older GuideNH, Et Futurum, Iguana, and Galacticraft
+member shapes above. `ButtonOrientationFunctionalTest` also freezes Et Futurum's exact array mutation and all-face
+placement, then verifies the supported typed replacement. `ItemSawCharacterizationTest` runs Iguana's exact boxed
+field mutation and the direct setter against shared storage. Schematica's registry lookup has its own live-view
+regression test. The manual client checks remain necessary for end-to-end integration behavior.
+
+## Data and ordering contracts
+
+### Core NBT and identity
+
+The following are read by code outside FMP and must be treated as serialized API:
+
+- the tile's `parts` compound list;
+- the `id` string in every part compound;
+- built-in multipart type strings and registry lookup behavior;
+- microblock `material`, `shape`, and orientation fields used by schematic/editor code;
+- material names and remapping, including legacy Extra Utilities names;
+- invalid/unknown part handling during `loadPart`, tile creation, and preview reconstruction.
+
+Consumer-specific fields such as ProjectRed's `connMap` and UtilitiesInExcess's `mat` belong to their parts. FMP's
+obligation is to invoke each part's hooks with the same tag and ordering, not to interpret or rewrite those fields.
+
+### Observable part order
+
+Part list order is not an internal detail:
+
+- ProjectBlue identifies an edited part by its `jPartList` index;
+- rendering code in ProjectRed and Extra Utilities indexes `partList` from hit data;
+- MatterManipulator deliberately sorts placement, with microblocks first;
+- GuideNH and Schematica build an ordered list before generating/loading a composite tile;
+- Waila preserves tile NBT order when dispatching part providers.
+
+The Java port may add faster indexed storage, but all published views, serialization, binding, ray-hit indices, and
+packet consumers must observe one consistent order.
+
+Current-branch verification: `MultipartHelperFunctionalTest` freezes ordered two-part NBT reconstruction and slot
+rebinding plus the exact logical chunk-description framing and part payload. `TileMultipartLifecycleFunctionalTest`
+freezes add/remove callbacks and the MatterManipulator-shaped live move, including ordered `onWorldSeparate` before
+ordered `onMoved`/`onWorldJoin`, without replacing the generated tile.
+
+### Material IDs and packets
+
+Numeric material IDs are runtime registry identities used in descriptions and custom-part packets. Names are the
+persistent identity. Preserve:
+
+- deterministic name-to-ID lookup for one runtime;
+- remap behavior for renamed materials;
+- `writeMaterialID`/`readMaterialID` wire agreement;
+- `materialName`/`materialID` round trips;
+- the legacy `getIdMap(): scala.Tuple2[]` view until Extra Utilities and UtilitiesInExcess are migrated.
+
+## Java API adoption ledger
+
+This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
+Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
+client preview reconstruction, tile occlusion and box queries, render-ID accessors, named tile conversion results and
+the struck-part index and inventory slot refresh are implemented on
+`algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
+tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
+
+| Legacy contract | Consumer and inspected source | Supported replacement | Consumer migration/release | Target-pack adoption and removal gate |
+| --- | --- | --- | --- | --- |
+| `ButtonPart.sideMetaMap[side ^ 1]` live inverse lookup | ProjectRed `e173952e96a4` and separate preparatory migration checkout: `illumination/items.scala`, `ItemPartButtonCommons.newPart` | `ButtonPart.metaForSide(side ^ 1)`; [lookup contract](../api/BUTTON_ORIENTATIONS.md#reading-orientation-metadata) | FMP accessor/example and regression coverage added; consumer replacement requires a rebuilt FMP artifact; preparatory migration is not upstream adoption | Retain the array until ProjectRed and Et Futurum migrations are released/adopted and a fresh scan clears legacy use |
+| `TRedstoneTile.openConnections(int)` | ProjectRed `e173952e96a4`: `transmission/redwires.scala` | Existing stable `IRedstoneTile.openConnections(int)` with the same mask/rotation logic; [guide](../api/TILE_TRAIT_ACCESS.md) | FMP source-access example and Forge coverage complete; consumer source patch/release pending | Retain the old runtime interface descriptor until adoption |
+| `TSlottedTile.v_partMap()` array mutation | OpenComputers `2c00f79be24b`: `PrintPart.toggleState` | `TileMultipart.refreshPartSlots(part)`; [equality, cache and notification contract](../api/TILE_TRAIT_ACCESS.md#refreshing-a-changed-slot-mask) | FMP API/example complete; consumer source patch/release pending, preserving validation and following sound/notify/packet/schedule order | Keep the live array/accessor ABI until released pack adoption; do not replace it with reflection or a whole-tile reload |
+| `TIInventoryTile.rebuildSlotMap()` raw trait call | AE2 `c690fbc273be`: `appeng/fmp/CableBusPart.notifyNeighbors` | `TileMultipart.refreshInventorySlots()`, a no-op without inventory parts, so the `instanceof` guard can go; [mapping and scope](../api/TILE_TRAIT_ACCESS.md#refreshing-inventory-slots) | FMP API, example and regression coverage complete; consumer source patch and release pending, keeping its neighbor notification afterward | Keep the `TIInventoryTile` interface and `rebuildSlotMap` until released pack adoption |
+| External Scala `LightMicroblock` registered through `MicroblockGenerator.registerTrait` | ProjectRed `e173952e96a4`: `illumination/lightmicroblocks.scala` | Java source trait registered by name, `IGeneratedMaterial`, typed sibling traversal and halo helper; [example](../api/MICROBLOCK_EXTENSIONS.md) | FMP example tested; consumer rewrite/release, existing config/halo wiring and physical-client checks pending | Retain external Scala trait ingestion until released-consumer adoption and internal Scala-trait removal |
+| `MultiPartRegistry$.registerParts(IPartFactory2, Seq)` and existing array calls | ProjectRed `e173952e96a4`: transmission, expansion and fabrication proxies | `MultiPartRegistry.registerPartFactory` with existing `IPartFactory2` methods and unchanged IDs | Source patch and release pending; Boolean-factory proxies separately need the two-method adapter described in the guide | No migrated pack version verified; retain all registration bridges and external trait support |
+| `MultiPartRegistry$.registerParts(Function2, Seq)` | ForgeRelocationFMP `49a810b8c63b`: proxy init registering `rfmp_frame` | `IPartFactory2` creating a fresh `FramePart` on both paths, registered through `registerPartFactory` | Source patch and release pending; preserve `rfmp_frame` and keep converter/pass-through registration | No migrated pack version verified; retain the function companion descriptor |
+| `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | UtilitiesInExcess `3e107a1fe9bc15fcb6a808242ffda1354dac7c3a`: `FMPRecipeLoader.run`, `UEMultipartItem.getSubItems` | `materialCount()` with `materialName(int)` and, when needed, `getMaterial(int)` | Source patch and first released version pending; checkout used as reference only | No migrated pack version verified; retain the bridge |
+| `MicroMaterialRegistry.getIdMap(): scala.Tuple2[]` | Extra Utilities 1.2.12, active supported consumer: NEI and microblock material enumeration | Same ID-based Java enumeration | Keep current compatibility; switching support to UtilitiesInExcess awaits approval and pack adoption | Verify Extra Utilities is absent and its replacement uses the new API before retiring this dependency |
+| `TileMultipart.partList(): scala.collection.Seq` | ProjectRed `e173952e96a4`: illumination aggregation, packet indices and rendered-part lookup | `jPartList()` with unchanged indices, filters and aggregation | Source patch and release pending; Scala consumer code may remain Scala | No migrated pack version verified; retain the getter and external trait support |
+| `TileMultipart.partList(): scala.collection.Seq` | OpenComputers `2c00f79be24b`: cable/print/network searches and aggregation | `jPartList()` with the same search/aggregation semantics | Source patch and release pending | No migrated pack version verified; retain the getter |
+| `TileMultipart.partList(): scala.collection.Seq` | AE2 `fdedc3a8f023`: `FMPPlacementHelper.getPart` and `removePart` | Iterate `jPartList()`; retain last-match lookup and removal/break behavior | Source patch and release pending; September host-binding fix does not migrate traversal | No migrated pack version verified; retain the getter |
+| `TileMultipart.partList(): scala.collection.Seq` | Extra Utilities 1.2.12: multipart renderer iterators | Iterate `jPartList()` without adding detached-part filtering | Retirement/replacement pending | Confirm absence or migration in the target pack before retiring the getter |
+| `TileMultipart.partList(): scala.collection.Seq` and Scala loading | GuideNH `16f142417df1`: `Ae2ForgeMultipartBridge`, `ForgeMultipartHelpers` | `createPreviewTileFromNBT` for previews; `jPartList()` for remaining traversal | Direct calls replaced reflection in `4a0cd02e` (tags `1.3.33` onward); export/statistics use Java traversal, preview/AE2 paths still use Scala; setter call removed | Retain getter/loader for current source and setter for older supported jars; pack adoption unverified |
+| `TileMultipart.loadParts(scala.collection.Iterable)` exact reflection | Schematica `3b03ee937953`: `nbt.ForgeMultipart` | `MultipartHelper.createPreviewTileFromNBT`; [complete preview contract](../api/CLIENT_PREVIEW.md) | Source patch and release pending; replace the whole reconstruction chain rather than one reflected method | No migrated pack version verified; retain the Scala loader descriptor |
+| Private `MultiPartRegistry$` Scala `typeMap` field and `Map.get` / `Option` | Schematica `3b03ee937953`: `nbt.ForgeMultipart.init` and `createPart` | `MultipartHelper.createPreviewTileFromNBT`; factories opt in through `createPartForClientPreview` | Source patch/release pending; all-or-nothing lookup, client construction and loading are implemented | No migrated pack version verified; retain the exact private live Scala-map field |
+| `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)` | Schematica `3b03ee937953` exact reflection; GuideNH `16f142417df1` direct companion call | `createPreviewTileFromNBT` for saved previews; static `MultipartGenerator.generateCompositeTile` for other staged reconstruction | Java API migration pending in both consumers; GuideNH removed reflection but still passes Scala parts | No migrated pack version verified; retain the companion and Scala descriptor |
+| `MicroblockGenerator$.create(MicroblockClass, int, boolean)` and encoded shape copy | GuideNH `16f142417df1`: `promoteMicroblockToClient` directly calls companion and `shape_$eq(byte)` | `createPreviewTileFromNBT` for whole previews; static `MicroblockGenerator.create` and `setShape` for individual unbound parts | Reflection/private shape write removed in source; static Java/preview migration pending; validate client traits and shape callback ordering | No migrated pack version verified; retain companion singleton and exact descriptor |
+| Private `BlockMicroMaterial.block` / `meta` accessor mixin and reflective material query | GuideNH `16f142417df1`: `resolvePrimaryMicroblockId`; mixin removed | Direct `jPartList()`, `Microblock.material()`, `getMaterial(int)`, `BlockMicroMaterial.block()` / `meta()`; [typed example and policy differences](../api/MATERIAL_ACCESS.md) | Upstream cleanup uses existing public getters since `4a0cd02e`, included in tags `1.3.33` onward; published artifacts, custom getter behavior and optional loading not validated here | No migrated pack version verified; retain private fields for older releases |
+| Reflective mutation of `ButtonPart.metaSideMap` / `sideMetaMap` | Et Futurum Requiem `78a5744dfd33`: `compat.CompatMisc.runModHooksInit` | Two direct `ButtonPart.setOrientation(int, ForgeDirection)` calls; [mapping and lifecycle guide](../api/BUTTON_ORIENTATIONS.md) | FMP API/example complete; consumer source patch and first released version pending | Retain both public mutable arrays until the migrated release is in the target pack and a fresh scan confirms no legacy access |
+| `MicroblockProxy$.MODULE$` saw access and reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `ClientFMPProxy.updateSawRenderers`, `IguanaFMPCompat.postInit` | Use static `MicroblockProxy.sawStone()` / `sawIron()` / `sawDiamond()` / `useSawIcons()`; read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP Scala-free API example complete; consumer source/lifecycle patch and first released version pending | Retain the companion and private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
+| `NormalOcclusionTest$.apply(Traversable, Traversable)` | OpenComputers `2c00f79be24b`: `common.block.Cable.canConnectFromSideFMP`, `server.network.Network.canConnectFromSideFMP` | `NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)`; `otherBounds` already comes from Java `getOcclusionBoxes()` | Source patch and release pending; retain side/color/face filtering | No migrated pack version verified; retain the companion and descriptor |
+| `NormalOcclusionTest$.apply(Traversable, Traversable)` | ForgeRelocationFMP `49a810b8c63b`: `FramePart.occlusionTest` | `NormalOcclusionTest.testBoxes(boxes.asJava, getOcclusionBoxes)`; retain combined normal/partial/collision boxes and caller order | Source patch and release pending; preserve temporary face bounds and replacement protocol | No migrated pack version verified; retain the companion and descriptor |
+| `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2` | GT5U `1a9469a13228`: `ColoredBlockContainer` ProjectRed wire branch, shipped in `5.09.54.205` | `BlockMultipart.hitPartIndex(hit)`, same index, `-1` when the hit carries none; [guide](../api/HIT_PART.md) | FMP API, example and regression coverage complete; consumer source patch and release pending, keeping its `ExtendedMOP` and coordinate guards | No migrated pack version verified; retain the exact static descriptor and boxed-`Integer` `_1()`; new in `2.9.0-RC-2` |
+
+## Adoption constraints
+
+The installed GTNH daily `2026-09-04+719` rescan scanned 241 jars, excluding FMP. Its 27 consumers retained
+all 386 full member/type/reflection rows from `+678`: 35 inherited types, 255 members, 76 other types and 20
+reflection strings. The `2.9.0-RC-2` rescan (240 jars, 28 consumers) keeps every `+678` member and type row and
+adds 13 members and 4 other types. GuideNH `1.3.41` replaced 17 reflection strings with direct links, and
+ThaumicEnergistics adds one. Source revisions above identify inspected checkouts, not guaranteed parity with newer jars.
+GuideNH's upstream material-access cleanup ships in RC-2's `1.3.41`, but none of its pending Java API migrations do. No consumer has been verified to have completed the full Java API
+migration; update artifact/adoption columns only with actual artifacts.
+
+### Consumer-specific migration traps
+
+- UtilitiesInExcess writes and loads its material name under `mat`, while `Content.createPart(String,
+  NBTTagCompound)` reads `material`. Fix the consumer factory before testing save/load or replacement adoption. FMP
+  must not add a fallback that hides the consumer's inconsistent persistent format.
+- Galacticraft selects the first public `MicroMaterialRegistry.registerMaterial` method by name without checking its
+  parameters. Keep exactly one compatible public method with that name until Galacticraft migrates; the reflection
+  compatibility test pins this constraint.
+- AE2's `FMPPlacementHelper.getPart` scans the whole part list and retains the last matching `CableBusPart`. Replacing
+  that loop with a first-match helper changes behavior. Iterate `jPartList()` and preserve the original selection and
+  removal rules.
+- MatterManipulator and ForgeRelocationFMP both move the same live `TileMultipart`, but they own different validation,
+  render, lighting and packet policies. A future common move coordinator belongs in `MultipartHelper`, which already
+  owns cross-tile NBT and description-packet operations; `TileMultipart.onMoved()` remains the per-tile callback. Add
+  such a coordinator only when both consumers can express their existing synchronization policy through it.
+- Waila, AE2 Fluid Craft and ThaumicEnergistics use `Class.forName` as an optional-mod loading boundary. That class lookup is intentional;
+  replacing it with a direct FMP type would make their otherwise optional integration load eagerly.
+- GT5U `5.09.54.205` (in `2.9.0-RC-2`) is the first consumer to call `BlockMultipart.reduceMOP`. It needs only
+  the part index, which `hitPartIndex` returns as an `int`. Add a named result only if a second consumer needs the
+  rebased hit. Keep the `Tuple2` descriptor, and its boxed-`Integer` `_1()` that GT5U casts, until a migrated GT5U
+  release ships.
+
+- FMP's own `ItemMicroPart` and `MicroRecipe$` still use legacy material arrays. Internal tuple paths also remain
+  in the generator and placement code, including `MicroblockPlacement.gtile()`. External adoption does not retire them.
+- Existing `jPartList()` users need no rename. `forEachPart` filters detached/rebound parts and must not replace
+  arbitrary read/query loops. It delegates through the supported `operate(Function1)` override hook, which lifecycle
+  callbacks still use. See [traversal](../api/PART_TRAVERSAL.md).
+- `setPartList` copies non-null list storage; the legacy setter retains the supplied sequence. Neither binds parts.
+  Use `loadPartList` for prepared reconstruction, preserving world/position setup and subsequent notifications.
+  See [loading and storage](../api/PART_LOADING.md).
+- No direct supplied consumer call to the two-argument tile `occlusionTest` was found, but generated
+  `TPartialOcclusionTile` and placement/replacement dispatch still require it. `canAddPart`/`canReplacePart` callers
+  need no rename and must retain outgoing-part exclusion. Box-list queries are a separate contract;
+  [testOcclusion and testBoxes](../api/OCCLUSION.md) do not retire each other's bridges.
+- `registerPartFactory` avoids Scala-dependent Java overload resolution. Preserve registration IDs, order,
+  ownership, partial-registration failure policy, and both NBT/packet construction paths. All legacy registration
+  entries remain; Schematica's private live Scala map is a separate dependency. See [registration](../api/PART_REGISTRATION.md).
+- No supplied direct legacy render-ID or tuple-result conversion caller was found (GT5U's `reduceMOP` tuple is
+  covered above). Existing tile-only `getOrConvertTile` users
+  need no rename. New [render-ID](../api/RENDER_ID.md) accessors do not allocate/register a renderer;
+  [conversion results](../api/TILE_CONVERSION.md) still describe uninstalled placeholders.
+- Saved client previews should use the complete [preview helper](../api/CLIENT_PREVIEW.md). The lower-level
+  [staged generator](../api/COMPOSITE_GENERATION.md) still does not copy/load/install parts automatically and remains
+  available for reconstruction flows that need candidate reuse or custom setup.
+- GuideNH's [typed material getters](../api/MATERIAL_ACCESS.md) likewise honor overrides that raw mixin fields
+  bypassed. Preserve first-usable-part order, export filtering and failure behavior; validate custom overrides and
+  optional-mod loading. Physical-client construction and GPU previews remain release checks.
+- Iguana must apply [saw strength](../api/SAW_STRENGTH.md) before ForgeMicroblock's post-init maximum calculation.
+  Et Futurum's [orientation setter](../api/BUTTON_ORIENTATIONS.md) maintains both inverse maps; keep the legacy
+  private field/public arrays until the respective released integrations are adopted.
+
+## API boundary audit
+
+Rechecked 2026-09-05 across 28 source checkouts, active Extra Utilities compatibility and the installed `+719`
+constant-pool inventory. No external calls were found to the 15 tile/material-registry implementation hooks listed
+in the [API boundary table](../API.md#supported-api-and-internal-hooks). Searches covered FMP-importing Java/Scala,
+method names and reflective strings; historical GuideNH comments avoiding `from`/`copyFrom` and WR-CBE's unrelated
+`RenderWireless.loadIcons` were excluded. This is evidence about the audited references, not every possible mod.
+
+Supported exceptions are OpenComputers `2c00f79be24b`, `PrintPart.scala:171`, clearing slots before
+`tile.bindPart(this)`, and ProjectRed `e173952e96a4`, `gatepartrs.scala:74`, calling `internalPartChange(this)`
+between packet/dirty work and selective neighbor notification. Cache binding neither places nor rebinds a part
+and is not universally idempotent. Local part notification does not perform world updates. Internal markers change
+no descriptor and authorize no removal; `operate`, `getOrConvertTile2` and material `loadIcons` retain their
+separate legacy/extension contracts.
+
+## Extension and converter migration
+
+- The [illuminated Java microblock example](../api/MICROBLOCK_EXTENSIONS.md) uses name-based registration and
+  `IGeneratedMaterial`. Register before input-class loading; keep inherited access in an ordinary helper with
+  `Object` parameters and dispatch through the stable base. It preserves metadata 16–31, cutter metadata modulo
+  16, all-shape selection, strict sibling filtering, light rounding/capping, pass-zero halos and hollow trimmed strips,
+  without new part NBT/packet fields. Headless client-body probes do not replace physical-client construction,
+  configuration/halo integration and released ProjectRed adoption.
+- Existing `IPartConverter`/`registerConverter` users need no replacement API; companion users can use the static
+  entry. Preserve separate factories, IDs, Chisel metadata selection, ForgeRelocationFMP frame construction,
+  OpenComputers original-tile lookup, AE2 state copying and consumer-specific cleanup. The
+  [converter guide](../api/BLOCK_CONVERTERS.md) covers lifecycle; actual inventory/network transfers need integration checks.
+- Raw trait classes become interfaces at runtime. ProjectRed should query `IRedstoneTile.openConnections` while
+  preserving rotation/masks; OpenComputers should use `refreshPartSlots` while preserving validation and subsequent
+  sound/notify/packet/schedule order; AE2 should call `refreshInventorySlots` before its neighbor notification. Keep their legacy runtime interfaces until adoption. See
+  [stable tile access](../api/TILE_TRAIT_ACCESS.md).
+- The [custom tile-trait guide](../api/CUSTOM_TILE_TRAITS.md) covers a top-level Java input, separate marker/capability
+  interfaces and ordinary helpers. Stateful extensions still own copy, persistence, synchronization and lifecycle
+  behavior. No direct custom multipart tile-trait registration was found in supplied consumer source; built-in traits,
+  pass-through interfaces and ProjectRed's microblock registration are distinct paths. Example coverage does not
+  authorize retirement of any existing consumer contract.

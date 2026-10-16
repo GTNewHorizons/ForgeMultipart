@@ -1,1 +1,160 @@
+import org.gradle.api.tasks.GradleBuild
+import groovy.xml.XmlSlurper
+
 apply plugin: 'scala'
+
+SourceSet functionalTestSet
+
+sourceSets {
+    functionalTestSet = create("functionalTest") {
+        java {
+            srcDir("src/functionalTest/java")
+            compileClasspath += sourceSets.patchedMc.output + sourceSets.main.output
+        }
+    }
+}
+
+configurations {
+    named(functionalTestSet.compileClasspathConfigurationName).configure {
+        extendsFrom(named("compileClasspath").get())
+    }
+    named(functionalTestSet.runtimeClasspathConfigurationName).configure {
+        extendsFrom(named("runtimeClasspath").get())
+    }
+    named(functionalTestSet.annotationProcessorConfigurationName).configure {
+        extendsFrom(named("annotationProcessor").get())
+    }
+}
+
+// FML scans classpath jars for @Mod with an ASM that predates Java 9, so every JUnit jar logs a LoaderException
+// stack trace for its module-info. Repackage them into the test mod jar and keep the originals off the classpath.
+def junitArtifactPrefixes = ["junit-jupiter", "junit-platform", "opentest4j", "apiguardian"]
+def isJunitArtifact = { File f -> junitArtifactPrefixes.any { f.name.startsWith(it) } }
+def functionalTestRuntime = configurations.named(functionalTestSet.runtimeClasspathConfigurationName)
+
+tasks.register(functionalTestSet.jarTaskName, Jar) {
+    from(functionalTestSet.output)
+    from(functionalTestRuntime.map { cfg -> cfg.files.findAll(isJunitArtifact).collect { zipTree(it) } }) {
+        // META-INF/versions is the Java 9+ half of the multi-release jars, never loaded on this Java 8 server.
+        // Signatures do not survive repackaging; the engine is still found through META-INF/services.
+        exclude(
+            "module-info.class",
+            "META-INF/versions/**",
+            "META-INF/*.SF",
+            "META-INF/*.DSA",
+            "META-INF/*.RSA")
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveClassifier.set("functionalTests")
+    archiveVersion.set("1.0")
+    destinationDirectory.set(layout.buildDirectory.dir("tmp"))
+}
+
+// Compile the documented consumer surface against the packaged dev jar, not main/test class directories.
+def compileJavaApiExamples = tasks.register("compileJavaApiExamples", JavaCompile) {
+    group = "verification"
+    description = "Compiles the Java API examples against the dev jar without Scala libraries"
+    source(fileTree("src/test/java") { include("codechicken/**/examples/*.java") })
+    source(fileTree("src/functionalTest/java") { include("codechicken/**/examples/*.java") })
+    classpath = files(tasks.named("jar")) + sourceSets.main.compileClasspath.filter {
+        !it.name.startsWith("scala-")
+    }
+    destinationDirectory = layout.buildDirectory.dir("classes/java/apiExamples")
+    javaCompiler = javaToolchains.compilerFor { languageVersion = JavaLanguageVersion.of(8) }
+    sourceCompatibility = "1.8"
+    targetCompatibility = "1.8"
+    options.encoding = "UTF-8"
+    options.annotationProcessorPath = files()
+    options.sourcepath = files()
+    options.compilerArgs.add("-proc:none")
+}
+
+tasks.named("check") { dependsOn(compileJavaApiExamples) }
+
+def functionalTestRunProperty = "forgemultipart.withFunctionalTests"
+def withFunctionalTests = providers.gradleProperty(functionalTestRunProperty).map { it.toBoolean() }.orElse(false).get()
+def profileRunProperty = "forgemultipart.profileFunctionalTests"
+def profileFunctionalTests = providers.gradleProperty(profileRunProperty).map { it.toBoolean() }.orElse(false).get()
+def functionalTestReportDirectory = layout.projectDirectory.dir("run/server/junit-out")
+def functionalTestProfileRecording = layout.projectDirectory.file("run/server/forgemultipart-baseline.jfr")
+def functionalTestProfileResults = layout.projectDirectory.file("run/server/forgemultipart-profile.txt")
+def addFunctionalTestsToRun = { JavaExec task ->
+    task.dependsOn(functionalTestSet.jarTaskName)
+    task.classpath(
+        // JUnit is repackaged into the test mod jar above.
+        functionalTestRuntime.map { cfg -> cfg.files.findAll { !isJunitArtifact(it) } },
+        tasks.named(functionalTestSet.jarTaskName))
+}
+
+tasks.register("runFunctionalTestServer", GradleBuild) {
+    group = "verification"
+    description = "Runs the Java 8 Forge server with the ForgeMultipart functional test mod"
+    setTasks(["runServer"])
+    startParameter.projectProperties.put(functionalTestRunProperty, "true")
+    if (profileFunctionalTests) {
+        startParameter.projectProperties.put(profileRunProperty, "true")
+    }
+
+    doFirst {
+        delete(functionalTestReportDirectory)
+        if (profileFunctionalTests) {
+            delete(functionalTestProfileRecording, functionalTestProfileResults)
+        }
+    }
+    doLast {
+        def reports = fileTree(functionalTestReportDirectory).matching { include("TEST-*.xml") }.files
+        if (reports.isEmpty()) {
+            throw new GradleException("ForgeMultipart functional tests produced no JUnit XML report")
+        }
+
+        int tests = 0
+        int failures = 0
+        int errors = 0
+        int skipped = 0
+        def failed = []
+        reports.each { report ->
+            def suite = new XmlSlurper(false, false).parse(report)
+            tests += suite.@tests.toInteger()
+            failures += suite.@failures.toInteger()
+            errors += suite.@errors.toInteger()
+            skipped += suite.@skipped.toString().isEmpty() ? 0 : suite.@skipped.toInteger()
+            suite.testcase.each { testcase ->
+                if (!testcase.failure.isEmpty() || !testcase.error.isEmpty()) {
+                    failed << "${testcase.@classname}.${testcase.@name}"
+                }
+            }
+        }
+
+        def summary = "Forge functional tests: ${tests} tests, ${tests - failures - errors - skipped} passed, " +
+            "${failures} failures, ${errors} errors, ${skipped} skipped"
+        logger.lifecycle(summary)
+        failed.each { logger.lifecycle("  FAILED ${it}") }
+
+        def stepSummary = System.getenv("GITHUB_STEP_SUMMARY")
+        if (stepSummary) {
+            new File(stepSummary) << "### ${summary}\n" + failed.collect { "- FAILED `${it}`\n" }.join()
+        }
+
+        if (tests == 0 || failures > 0 || errors > 0) {
+            throw new GradleException("ForgeMultipart functional tests failed: ${summary}")
+        }
+        if (profileFunctionalTests
+            && (!functionalTestProfileRecording.asFile.isFile() || !functionalTestProfileResults.asFile.isFile())) {
+            throw new GradleException("ForgeMultipart profile produced incomplete output")
+        }
+    }
+}
+
+if (withFunctionalTests) {
+    tasks.withType(JavaExec).configureEach { task ->
+        if (task.name == "runServer") {
+            addFunctionalTestsToRun(task)
+            if (profileFunctionalTests) {
+                task.jvmArgs(
+                    "-XX:+FlightRecorder",
+                    "-XX:StartFlightRecording=filename=forgemultipart-baseline.jfr,settings=profile,dumponexit=true")
+                task.systemProperty(profileRunProperty, "true")
+            }
+        }
+    }
+}

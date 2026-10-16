@@ -9,6 +9,7 @@ import net.minecraft.entity.player.EntityPlayer;
 import net.minecraft.item.ItemStack;
 import net.minecraft.util.IIcon;
 import net.minecraft.util.MovingObjectPosition;
+import net.minecraft.world.IBlockAccess;
 
 import codechicken.lib.vec.Cuboid6;
 import codechicken.multipart.IconHitEffects;
@@ -64,6 +65,12 @@ public abstract class McBlockPart extends JCuboidPart implements JNormalOcclusio
     @SideOnly(Side.CLIENT)
     public IIcon getBrokenIcon(int side) {
         return getBlock().getIcon(0, 0);
+    }
+
+    @Override
+    @SideOnly(Side.CLIENT)
+    public int getBrokenColour(int side, IBlockAccess world, int x, int y, int z) {
+        return getBlock().colorMultiplier(world, x, y, z);
     }
 
     @Override
