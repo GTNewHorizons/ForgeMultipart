@@ -50,7 +50,32 @@ public class BlockMultipart extends Block {
         return null;
     }
 
-    /** Splits a hit into the index of the part it struck and a MOP rebased onto that part's own data. */
+    /**
+     * Returns the index of the part struck by a multipart ray-trace hit, or -1 if the hit carries no part index.
+     *
+     * <p>
+     * The index is the struck part's position in {@link TileMultipart#jPartList()} when the trace ran, as recorded by
+     * {@link TileMultipart#rayTraceAll}. It is the same value as {@code reduceMOP(hit)._1()}, without Scala types or a
+     * rebased hit. It goes stale if parts are added or removed after the trace. This method does not check the hit's
+     * coordinates or look up a tile; callers should bounds-check the index against the tile they retrieve.
+     *
+     * @param hit a hit from {@link TileMultipart#collisionRayTrace} or a block ray trace through a multipart block
+     */
+    public static int hitPartIndex(MovingObjectPosition hit) {
+        if (hit instanceof ExtendedMOP && ((ExtendedMOP) hit).data instanceof Tuple2) {
+            Object index = ((Tuple2<?, ?>) ((ExtendedMOP) hit).data)._1();
+            if (index instanceof Integer) {
+                return (Integer) index;
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Splits a hit into the index of the part it struck and a MOP rebased onto that part's own data. The index is a
+     * boxed {@link Integer}; GT5U casts {@code _1()} to it. Java callers that need only the index should use
+     * {@link #hitPartIndex(MovingObjectPosition)}.
+     */
     public static Tuple2<Object, ExtendedMOP> reduceMOP(MovingObjectPosition hit) {
         ExtendedMOP ehit = (ExtendedMOP) hit;
         Tuple2<Object, Object> data = ExtendedMOP.getData(hit);

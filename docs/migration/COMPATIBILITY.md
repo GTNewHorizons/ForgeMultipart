@@ -157,9 +157,10 @@ Each must keep a public static `MODULE$` field of its own type plus the instance
 | `TileMultipart.loadParts(Lscala/collection/Iterable;)V` | guidenh (`2.9.0-RC-2`; previously reflective only) |
 | `BlockMultipart.reduceMOP(Lnet/minecraft/util/MovingObjectPosition;)Lscala/Tuple2;` | gregtech (new in `2.9.0-RC-2`) |
 
-`reduceMOP` is the only one of these without a Java replacement on this branch. GT5U reads `_1()` as the boxed
-`Integer` part index and ignores `_2()`. The port keeps the exact static descriptor and the boxed-index result, but
-no test pins it yet; see the [GT5U row](#narrow-consumers-still-real-contracts) and the adoption ledger.
+GT5U reads `reduceMOP`'s `_1()` as the boxed `Integer` part index and ignores `_2()`. The port keeps the exact
+static and companion descriptors, and `BlockMultipartCharacterizationTest` pins the boxed index and rebased hit.
+`BlockMultipart.hitPartIndex` is the Java replacement for the index; see the [guide](../api/HIT_PART.md) and the
+adoption ledger.
 
 This is a much smaller surface than the plan assumed. `TileMultipart.jPartList()Ljava/util/List;` is already the more
 widely used accessor (ProjectBlue, WitchingGadgets, buildcraft-compat, extrautilities, gregtech, matter-manipulator),
@@ -450,7 +451,7 @@ performed.
 | Micro-material registry | Extra Utilities, ProjectRed, ProjectBlue, AE2, BuildCraftCompat, Chisel, material-only integrations, UtilitiesInExcess | Stable material names, integer IDs, remapping, packet ID encoding, `getIdMap(): Tuple2[]`, block/meta access, material behavior hooks |
 | Multipart save/load | Extra Utilities, ProjectRed, OpenComputers, BuildCraftCompat, MatterManipulator, GuideNH, Schematica, Waila, UtilitiesInExcess | Tile `parts` list, per-part `id`, factory lookup, `save`/`load` ordering, microblock fields, unknown/invalid-part behavior |
 | Description/update packets | Every substantial custom part integration | `writeDesc`/`readDesc`, keyed part packets, `sendDescUpdate`, `sendDescPacket`, material packet IDs, render and neighbor notification behavior |
-| Hit-to-part reduction | GT5U `ColoredBlockContainer` | Static `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2`, boxed `Integer` `_1()` matching `jPartList()` order for an `ExtendedMOP` from `RayTracer.retraceBlock` |
+| Hit-to-part reduction | GT5U `ColoredBlockContainer` | Static `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2`, boxed `Integer` `_1()` matching `jPartList()` order for an `ExtendedMOP` from `RayTracer.retraceBlock`; Java replacement `hitPartIndex` |
 | Reflection/mixins | Older GuideNH releases, Schematica, Et Futurum, Galacticraft, Waila, AE2/AE2FC/ThaumicEnergistics, Iguana | Exact class/companion/member/field names and, where stated below, exact parameter and field types; current GuideNH uses direct calls |
 
 ## Consumer findings
@@ -866,7 +867,8 @@ behavior:
 
 This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
 Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
-client preview reconstruction, tile occlusion and box queries, render-ID accessors and named tile conversion results are implemented on
+client preview reconstruction, tile occlusion and box queries, render-ID accessors, named tile conversion results and
+the struck-part index are implemented on
 `algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
 tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
 
@@ -894,7 +896,7 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | `MicroblockProxy$.MODULE$` saw access and reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `ClientFMPProxy.updateSawRenderers`, `IguanaFMPCompat.postInit` | Use static `MicroblockProxy.sawStone()` / `sawIron()` / `sawDiamond()` / `useSawIcons()`; read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP Scala-free API example complete; consumer source/lifecycle patch and first released version pending | Retain the companion and private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | OpenComputers `2c00f79be24b`: `common.block.Cable.canConnectFromSideFMP`, `server.network.Network.canConnectFromSideFMP` | `NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)`; `otherBounds` already comes from Java `getOcclusionBoxes()` | Source patch and release pending; retain side/color/face filtering | No migrated pack version verified; retain the companion and descriptor |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | ForgeRelocationFMP `49a810b8c63b`: `FramePart.occlusionTest` | `NormalOcclusionTest.testBoxes(boxes.asJava, getOcclusionBoxes)`; retain combined normal/partial/collision boxes and caller order | Source patch and release pending; preserve temporary face bounds and replacement protocol | No migrated pack version verified; retain the companion and descriptor |
-| `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2` | GT5U `1a9469a13228`: `ColoredBlockContainer` ProjectRed wire branch, shipped in `5.09.54.205` | **None yet.** A Java query for the struck part index, and optionally the rebased `ExtendedMOP`, is needed before this consumer can drop Scala | Java API, example and regression test pending in FMP; consumer patch follows | Retain the exact static descriptor and boxed-`Integer` `_1()`; new in `2.9.0-RC-2` |
+| `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2` | GT5U `1a9469a13228`: `ColoredBlockContainer` ProjectRed wire branch, shipped in `5.09.54.205` | `BlockMultipart.hitPartIndex(hit)`, same index, `-1` when the hit carries none; [guide](../api/HIT_PART.md) | FMP API, example and regression coverage complete; consumer source patch and release pending, keeping its `ExtendedMOP` and coordinate guards | No migrated pack version verified; retain the exact static descriptor and boxed-`Integer` `_1()`; new in `2.9.0-RC-2` |
 
 ## Adoption constraints
 
@@ -924,8 +926,8 @@ migration; update artifact/adoption columns only with actual artifacts.
 - Waila, AE2 Fluid Craft and ThaumicEnergistics use `Class.forName` as an optional-mod loading boundary. That class lookup is intentional;
   replacing it with a direct FMP type would make their otherwise optional integration load eagerly.
 - GT5U `5.09.54.205` (in `2.9.0-RC-2`) is the first consumer to call `BlockMultipart.reduceMOP`. It needs only
-  the part index, so a Java replacement can return an `int` (or a named result if a second consumer needs the
-  rebased hit). Keep the `Tuple2` descriptor, and its boxed-`Integer` `_1()` that GT5U casts, until a migrated GT5U
+  the part index, which `hitPartIndex` returns as an `int`. Add a named result only if a second consumer needs the
+  rebased hit. Keep the `Tuple2` descriptor, and its boxed-`Integer` `_1()` that GT5U casts, until a migrated GT5U
   release ships.
 
 - FMP's own `ItemMicroPart` and `MicroRecipe$` still use legacy material arrays. Internal tuple paths also remain

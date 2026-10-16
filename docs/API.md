@@ -49,6 +49,7 @@ Existing reflective binaries remain supported until consumer release and pack ad
 | Test a candidate against a selected collection of parts | `testOcclusion(Collection, candidate)` - [occlusion queries and generated hooks](api/OCCLUSION.md) |
 | Test two groups of bounding boxes directly | `NormalOcclusionTest.testBoxes(Iterable, Iterable)` - [box-versus-box queries](api/OCCLUSION.md#box-versus-box-queries) |
 | Read FMP's global render registration ID | `TileMultipart.getRenderID()` - [render-ID meaning, lifecycle and setter](api/RENDER_ID.md) |
+| Find which part a ray-trace hit struck | `BlockMultipart.hitPartIndex(MovingObjectPosition)` - [index meaning, staleness and GT5U migration](api/HIT_PART.md) |
 | Inspect an existing tile or converted placeholder with a named result | `getOrConvertTileResult(World, BlockCoord)` - [conversion outcomes and placement lifecycle](api/TILE_CONVERSION.md) |
 | Add or remap multipart button attachment orientations | `ButtonPart.setOrientation(int, ForgeDirection)` - [metadata, face mapping and Et Futurum migration](api/BUTTON_ORIENTATIONS.md) |
 | Read a custom button's orientation metadata from its attachment face | `ButtonPart.metaForSide(int)` - [live inverse lookup and ProjectRed migration](api/BUTTON_ORIENTATIONS.md#reading-orientation-metadata) |
