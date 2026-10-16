@@ -1,14 +1,15 @@
 # Downstream compatibility: ABI inventory and consumer audit
 
-Status: source refresh 2026-09-21; installed-jar evidence remains at the dated snapshots below. Read this before
-changing any compatibility surface. It has two parts, answering two different
+Status: installed-jar and source refresh 2026-10-16 against GTNH `2.9.0-RC-2`; older dated snapshots are kept
+below as history. Read this before changing any compatibility surface. It has two parts, answering two different
 questions.
 
 - **Part 1, the ABI inventory**, answers "what must still link?" It is a constant-pool scan of every mod jar in a
   real pack, not a source search.
 - **Part 2, the consumer audit**, answers the harder question: "what behavior do real consumers expect after they
-  have linked?" It covers all 27 ForgeMultipart consumers in the supplied GTNH daily `2026-08-25+700` instance, plus
-  UtilitiesInExcess as the planned Extra Utilities replacement.
+  have linked?" It covered all 27 ForgeMultipart consumers in the supplied GTNH daily `2026-08-25+700` instance, plus
+  UtilitiesInExcess as the planned Extra Utilities replacement. The `2.9.0-RC-2` refresh adds ThaumicEnergistics
+  as a 28th installed consumer and GT5U's new ProjectRed wire recoloring path.
 
 Intentional differences from the reference belong in the [divergence ledger](DIVERGENCES.md), and the
 consumer-facing summary of what breaks on rebuild is in the [release notes](../RELEASE_NOTES.md).
@@ -19,8 +20,9 @@ Method: constant-pool scan of every mod jar in a real pack, not a source search.
 covers reflection strings, closed-source consumers, and mods whose published source does not match their release jar.
 GitHub code search was deliberately not used; it indexes default branches only and silently omits results.
 
-Scanned: GTNH daily `2026-08-14+678`, 240 mod jars (`ForgeMultipart-1.7.12.jar` itself excluded).
-Reproduce with `tools/AbiScan.java`; frozen baseline in `src/test/fixtures/abi/gtnh-daily-678-consumers.txt`.
+Scanned: GTNH `2.9.0-RC-2`, 240 mod jars (`ForgeMultipart-1.7.16.jar` itself excluded). Reproduce with
+`tools/AbiScan.java`; frozen baselines in `src/test/fixtures/abi/gtnh-2.9.0-rc2-consumers.txt` (current) and
+`gtnh-daily-678-consumers.txt` (original `2026-08-14+678` inventory).
 
 ```
 java tools/AbiScan.java <instance>/.minecraft/mods ForgeMultipart
@@ -29,15 +31,30 @@ java tools/AbiScan.java <instance>/.minecraft/mods ForgeMultipart
 Requires a JDK 17+ single-file source launch. Re-run after public-API changes and diff against the frozen baseline;
 any member that disappears from the port but appears in the baseline is a linkage break in a shipping mod.
 
+The RC-2 scan was resolved against this branch's compiled classes: every inherited type, other type and member
+resolves to a non-private declaration, or to an inherited Minecraft member. The one static exception is
+`scalatraits.TSlottedTile.v_partMap()`, a runtime-generated trait accessor covered by `ForgeEnvironmentSmokeTest`.
+
 ## Totals
 
-| Category | Count |
-| --- | ---: |
-| Consumer jars | 27 of 240 |
-| Types extended or implemented downstream | 35 |
-| Referenced members with exact descriptors | 255 |
-| Other referenced types | 76 |
-| Reflective string constants | 20 |
+| Category | `+678` | `2.9.0-RC-2` |
+| --- | ---: | ---: |
+| Consumer jars | 27 of 240 | 28 of 240 |
+| Types extended or implemented downstream | 35 | 35 |
+| Referenced members with exact descriptors | 255 | 268 |
+| Other referenced types | 76 | 80 |
+| Reflective string constants | 20 | 9 |
+
+Every `+678` member, inherited-type and other-type row is still present. The changes are:
+
+- **GuideNH `1.3.41`** replaced its 17-string reflection with 28 direct member references, most already linked by other consumers, including
+  `MultipartGenerator$.generateCompositeTile(TileEntity, scala.collection.Iterable, boolean)`,
+  `TileMultipart.loadParts(scala.collection.Iterable)`, `MicroblockGenerator$.create` and `Microblock.shape_$eq(B)`.
+  This matches the [source findings](#guidenh); the reflective contracts remain for older GuideNH jars.
+- **GT5U `5.09.54.205`** gained a ProjectRed wire recoloring path: `BlockMultipart.reduceMOP(MovingObjectPosition):
+  scala.Tuple2`, `TileMultipart.partMap(int)`, `TSlottedPart.getSlotMask()` and `TMultiPart.getType()`.
+- **AE2 `rv3-beta-1080`** links `JCuboidPart.bind(TileMultipart)`, the `super.bind` call from its host-refresh fix.
+- **ThaumicEnergistics `1.7.64-GTNH`** is a new consumer through one `Class.forName` string.
 
 ## Consumers by weight
 
@@ -45,17 +62,17 @@ Ranked by number of classes in the jar that touch `codechicken/multipart` or `co
 
 | Classes | Jar |
 | ---: | --- |
-| 141 | ProjRed-4.12.41-GTNH |
+| 142 | ProjRed-4.12.47-GTNH |
 | 38 | extrautilities-1.2.12 |
-| 19 | OpenComputers-1.12.55-GTNH |
-| 18 | ProjectBlue-1.2.10-GTNH |
-| 7 | appliedenergistics2-rv3-beta-1032-GTNH |
+| 19 | OpenComputers-1.12.64-GTNH |
+| 18 | ProjectBlue-1.2.11-GTNH |
+| 7 | appliedenergistics2-rv3-beta-1080-GTNH |
 | 7 | buildcraft-compat-7.1.22 |
-| 5 | ForgeRelocationFMP-0.2.0 |
-| 4 | Galacticraft-3.4.33-GTNH, ThaumicTinkerer-2.12.29, WR-CBE-1.7.12, chisel-2.17.32-GTNH |
-| 3 | IguanaTweaksTConstruct-2.7.12, WitchingGadgets-1.8.49-GTNH, guidenh-1.3.20 |
-| 2 | BloodArsenal-1.5.12, Botania-1.13.33-GTNH, Waila-1.19.31, matter-manipulator-0.1.53-GTNH |
-| 1 | BiomesOPlenty, BloodMagic-1.9.12, Natura-2.8.23, Schematica-1.12.6-GTNH, TConstruct-1.14.97-GTNH, ae2fc-1.5.102-gtnh, endercore-0.5.14, etfuturum-2.6.52-GTNH, gregtech-5.09.54.88 |
+| 5 | ForgeRelocationFMP-0.2.0, gregtech-5.09.54.205 |
+| 4 | Galacticraft-3.4.34-GTNH, ThaumicTinkerer-2.12.33, WR-CBE-1.7.12, chisel-2.17.34-GTNH |
+| 3 | IguanaTweaksTConstruct-2.7.12, WitchingGadgets-1.8.51-GTNH, guidenh-1.3.41 |
+| 2 | BloodArsenal-1.5.12, Botania-1.13.37-GTNH, Waila-1.19.34, matter-manipulator-0.1.61-GTNH |
+| 1 | BiomesOPlenty, BloodMagic-1.9.14, Natura-2.8.24, Schematica-1.12.6-GTNH, TConstruct-1.14.118-GTNH, ae2fc-1.5.113-gtnh, endercore-0.5.15, etfuturum-2.6.60-GTNH, thaumicenergistics-1.7.64-GTNH |
 
 Two distinct consumer shapes:
 
@@ -70,7 +87,7 @@ Two distinct consumer shapes:
 
 ### 1. Which existing downstream binaries must keep working without recompilation?
 
-The 27 jars above. The compatibility budget is dominated by four: ProjRed, extrautilities, OpenComputers, ProjectBlue.
+The 28 jars above. The compatibility budget is dominated by four: ProjRed, extrautilities, OpenComputers, ProjectBlue.
 ProjRed alone accounts for 141 of the touching classes and is the only consumer exercising the trait-generation path.
 
 ### 2. Are third-party Scala traits registered through `registerScalaTrait`?
@@ -87,8 +104,8 @@ supported external extension point.
 
 ### 3. How long should deprecated Scala bridges remain supported?
 
-Not answerable from this data alone, but the surface to support is now bounded and listed below. Of the 255 referenced
-members, only 5 carry Scala types in their descriptors.
+Not answerable from this data alone, but the surface to support is now bounded and listed below. Of the 268 referenced
+members in `2.9.0-RC-2`, only 8 carry Scala types in their descriptors (5 in `+678`).
 
 ### 4. Is complete Scala runtime removal required for the first Java release?
 
@@ -127,7 +144,7 @@ The eight helpers above are the ones that actually matter.
 
 Each must keep a public static `MODULE$` field of its own type plus the instance methods used on it.
 
-### Members with Scala types in their descriptors (5 total)
+### Members with Scala types in their descriptors (8 total)
 
 | Descriptor | Consumers |
 | --- | --- |
@@ -136,6 +153,13 @@ Each must keep a public static `MODULE$` field of its own type plus the instance
 | `MultiPartRegistry$.registerParts(Lcodechicken/multipart/MultiPartRegistry$IPartFactory2;Lscala/collection/Seq;)V` | ProjRed |
 | `MultiPartRegistry$.registerParts(Lscala/Function2;Lscala/collection/Seq;)V` | ForgeRelocationFMP |
 | `MicroMaterialRegistry.getIdMap()[Lscala/Tuple2;` | extrautilities |
+| `MultipartGenerator$.generateCompositeTile(Lnet/minecraft/tileentity/TileEntity;Lscala/collection/Iterable;Z)Lcodechicken/multipart/TileMultipart;` | guidenh (`2.9.0-RC-2`; previously reflective only) |
+| `TileMultipart.loadParts(Lscala/collection/Iterable;)V` | guidenh (`2.9.0-RC-2`; previously reflective only) |
+| `BlockMultipart.reduceMOP(Lnet/minecraft/util/MovingObjectPosition;)Lscala/Tuple2;` | gregtech (new in `2.9.0-RC-2`) |
+
+`reduceMOP` is the only one of these without a Java replacement on this branch. GT5U reads `_1()` as the boxed
+`Integer` part index and ignores `_2()`. The port keeps the exact static descriptor and the boxed-index result, but
+no test pins it yet; see the [GT5U row](#narrow-consumers-still-real-contracts) and the adoption ledger.
 
 This is a much smaller surface than the plan assumed. `TileMultipart.jPartList()Ljava/util/List;` is already the more
 widely used accessor (ProjectBlue, WitchingGadgets, buildcraft-compat, extrautilities, gregtech, matter-manipulator),
@@ -156,17 +180,21 @@ are not load-bearing and can be dropped.
 
 ## Reflective consumers
 
-These fail at runtime, not at link time, so ABI tooling will not catch a break. 20 string constants across:
+These fail at runtime, not at link time, so ABI tooling will not catch a break. In `2.9.0-RC-2`, 9 string
+constants across:
 
-- `guidenh-1.3.20` - the broadest reflective consumer: `MultipartGenerator`/`MultipartGenerator$`,
-  `MultipartHelper`/`MultipartHelper$`, `MultipartRenderer`/`MultipartRenderer$`, `TileMultipart`,
-  `TileMultipartClient`, `MicroblockClient`, `Microblock`, `MicroblockClass`, `MicroblockGenerator$`,
-  `BlockMicroMaterial`/`BlockMicroMaterial$`, `MicroMaterialRegistry`/`MicroMaterialRegistry$`, `BlockMultipart`.
 - `Schematica-1.12.6-GTNH` - `TileMultipart`, `TMultiPart`, `MultiPartRegistry$`, `MultipartGenerator$`, `MicroblockClass`.
-- `Galacticraft-3.4.33-GTNH` - `TileMultipart`, `MicroMaterialRegistry`, `BlockMicroMaterial`.
-- `Waila-1.19.31` - `BlockMultipart`.
-- `AE2`, `ae2fc` - `TileMultipart`.
-- `etfuturum-2.6.52-GTNH` - `codechicken.multipart.minecraft.ButtonPart`.
+- `Galacticraft-3.4.34-GTNH` - `TileMultipart`, `MicroMaterialRegistry`, `BlockMicroMaterial`.
+- `Waila-1.19.34` - `BlockMultipart`.
+- `AE2`, `ae2fc`, `thaumicenergistics-1.7.64-GTNH` - `TileMultipart`, loaded with `Class.forName` to register Waila
+  providers.
+- `etfuturum-2.6.60-GTNH` - `codechicken.multipart.minecraft.ButtonPart`.
+
+`guidenh-1.3.20` in `+678` was the broadest reflective consumer, with 17 strings: `MultipartGenerator`/`MultipartGenerator$`,
+`MultipartHelper`/`MultipartHelper$`, `MultipartRenderer`/`MultipartRenderer$`, `TileMultipart`,
+`TileMultipartClient`, `MicroblockClient`, `Microblock`, `MicroblockClass`, `MicroblockGenerator$`,
+`BlockMicroMaterial`/`BlockMicroMaterial$`, `MicroMaterialRegistry`/`MicroMaterialRegistry$`, `BlockMultipart`.
+`guidenh-1.3.41` in RC-2 has none; it links the same members directly.
 
 Note that both the class and its `$` companion are named in several cases, so renaming or removing a companion
 object breaks these even where no bytecode reference exists.
@@ -196,8 +224,9 @@ waits for an Iguana release, target-pack adoption and a fresh scan.
 
 ## Historical GuideNH reflective surface, from source
 
-This section describes older supported releases, not current GuideNH source. Commit `4a0cd02e` (2026-09-16,
-included in tags `1.3.33` onward) removed FMP reflection and the private-material accessor mixin. Current source
+This section describes older supported releases, not current GuideNH source or the `1.3.41` jar shipped in
+`2.9.0-RC-2`. Commit `4a0cd02e` (2026-09-16, included in tags `1.3.33` onward) removed FMP reflection and the
+private-material accessor mixin. Current source
 still calls the generator companions and Scala collection APIs directly; see the [current findings](#guidenh).
 The constraints below remain relevant to old jars until target-pack adoption is verified.
 
@@ -309,6 +338,10 @@ and the supplied source checkouts. It records required types/members, reflection
 part subclasses, tile access, registry access, NBT, packets, rendering, occlusion, redstone and movement behavior.
 Where source checkouts are available, important call sites were traced through the owning code instead of counting imports.
 
+The 2026-10-16 refresh rescanned GTNH `2.9.0-RC-2` (above) and traced every new or changed row to consumer source.
+The new consumer, ThaumicEnergistics, was read at `83c405d0bee3` (`1.7.66-GTNH`). Its only FMP reference
+appeared in `1.7.62-GTNH`, and `ModuleWaila.java` is unchanged since the installed `1.7.64-GTNH` tag.
+
 This gives full coverage of the current pack's known source and binary consumers. It does not claim that an arbitrary
 future mod, a runtime-generated script, or an unpublished patched JAR cannot contain another reflective use. The ABI
 scanner should remain a release gate for exactly that reason.
@@ -350,47 +383,55 @@ refresh below records current checkouts and does not assert that their jars are 
 | Future: UtilitiesInExcess | `UtilitiesInExcess` HEAD `3e107a1fe9bc` | Not installed; audited as forward compatibility scope     |
 
 `ForgeRelocation` itself is not the source of `ForgeRelocationFMP`; both repositories are needed and both are now
-present. Only the plugin is one of the 27 FMP consumers.
+present. Only the plugin is one of the FMP consumers.
 
-### Current source references (2026-09-21)
+### Current source references (2026-10-16)
 
-Compared FMP-referencing source files at the recorded audit revisions and current branch heads, including files
-removed by GuideNH. Traced changed integration paths and AE2's host-refresh implementation. Only GuideNH and AE2
-showed substantive FMP integration changes. OpenComputers, GT5U and ThaumicTinkerer changed shared files containing
-FMP references, but those edits were unrelated. Other compared integrations were unchanged. Biomes O' Plenty's
-historical branch and ForgeRelocation's supporting checkout remain at the heads below. Extra Utilities is the
-unchanged non-Git 1.2.12. No new installed-jar scan or physical-client run was performed.
+Diffed every Java/Scala file that references FMP at either end, between the 2026-09-21 heads and the current
+heads. Only three consumers changed such files:
 
-| Checkout | Inspected HEAD |
-| --- | --- |
-| AE2FluidCraft-Rework | `6e8dd013bd4e` |
-| Applied-Energistics-2-Unofficial | `fdedc3a8f023` |
-| BiomesOPlenty | `fc7f1f6392a1` |
-| BloodArsenal | `890824be106a` |
-| BloodMagic | `6776676ef209` |
-| Botania | `c802a448e4f4` |
-| BuildCraftCompat | `79e02803be32` |
-| Chisel | `3d3260cd71b8` |
-| EnderCore | `1998218128c7` |
-| Et-Futurum-Requiem | `65407a439b57` |
-| ForgeRelocation | `21da7aae0e6e` |
-| ForgeRelocationFMP | `49a810b8c63b` |
-| Galacticraft | `fbdc41b97e81` |
-| GT5-Unofficial | `fe3606a12547` |
-| GuideNH | `16f142417df1` |
-| IguanaTweaksTConstruct | `2bc09889d3e2` |
-| MatterManipulator | `4d9bc003f193` |
-| Natura | `4f88c0665928` |
-| OpenComputers | `a3ac18595179` |
-| ProjectBlue | `c01a5e769643` |
-| ProjectRed | `e173952e96a4` |
-| Schematica | `3b03ee937953` |
-| ThaumicTinkerer | `e4c8acdd4fa9` |
-| TinkersConstruct | `8f6e2496f792` |
-| UtilitiesInExcess | `3e107a1fe9bc` |
-| waila | `f998f9ebfe09` |
-| WirelessRedstone-CBE | `9dfb913b4880` |
-| WitchingGadgets | `663bad20ac24` |
+- **GT5U**: `gregtech/api/util/ColoredBlockContainer.java` gained `ProjectRedWireContainer` (details in the
+  [GT5U row](#narrow-consumers-still-real-contracts)).
+- **ProjectRed**: `transmission/redwires.scala` and `bundledwires.scala` add `recolour(int)` to insulated wires and
+  bundled cables, plus part-update key `11`. It uses only FMP members ProjectRed already linked: `markDirty`, the
+  part write stream, `notifyPartChange` and `markRender`. This is the target of GT5U's recoloring.
+- **ProjectBlue**: `ControlPanelRenderer.java` changed label spacing only; its FMP use is unchanged.
+
+All other changed checkouts touched no FMP-referencing file. The September note that only GuideNH and AE2 had
+changed still holds for that window. Extra Utilities is the unchanged non-Git 1.2.12. No physical-client run was
+performed.
+
+| Checkout | Inspected HEAD | 2026-09-21 HEAD |
+| --- | --- | --- |
+| AE2FluidCraft-Rework | `c7ec5b0c8b5f` | `6e8dd013bd4e` |
+| Applied-Energistics-2-Unofficial | `c690fbc273be` | `fdedc3a8f023` |
+| BiomesOPlenty | `fc7f1f6392a1` | same |
+| BloodArsenal | `890824be106a` | same |
+| BloodMagic | `10a36f6413b8` | `6776676ef209` |
+| Botania | `3f62d4b8fe7c` | `c802a448e4f4` |
+| BuildCraftCompat | `79e02803be32` | same |
+| Chisel | `d08e48b73ba5` | `3d3260cd71b8` |
+| EnderCore | `1998218128c7` | same |
+| Et-Futurum-Requiem | `1944927eecd1` | `65407a439b57` |
+| ForgeRelocation | `21da7aae0e6e` | same |
+| ForgeRelocationFMP | `49a810b8c63b` | same |
+| Galacticraft | `ff4c5c87ba21` | `fbdc41b97e81` |
+| GT5-Unofficial | `1a9469a13228` | `fe3606a12547` |
+| GuideNH | `99785342eff2` | `16f142417df1` |
+| IguanaTweaksTConstruct | `2bc09889d3e2` | same |
+| MatterManipulator | `dbc15f55a031` | `4d9bc003f193` |
+| Natura | `4f88c0665928` | same |
+| OpenComputers | `1e4559ff5f24` | `a3ac18595179` |
+| ProjectBlue | `28abef1385cb` | `c01a5e769643` |
+| ProjectRed | `b29f404eaa05` | `e173952e96a4` |
+| Schematica | `3b03ee937953` | same |
+| ThaumicEnergistics | `83c405d0bee3` | new |
+| ThaumicTinkerer | `e4c8acdd4fa9` | same |
+| TinkersConstruct | `644373000cdc` | `8f6e2496f792` |
+| UtilitiesInExcess | `3e107a1fe9bc` | same |
+| waila | `f998f9ebfe09` | same |
+| WirelessRedstone-CBE | `9dfb913b4880` | same |
+| WitchingGadgets | `adf174f552f9` | `663bad20ac24` |
 
 ## Cross-cutting compatibility map
 
@@ -409,7 +450,8 @@ unchanged non-Git 1.2.12. No new installed-jar scan or physical-client run was p
 | Micro-material registry | Extra Utilities, ProjectRed, ProjectBlue, AE2, BuildCraftCompat, Chisel, material-only integrations, UtilitiesInExcess | Stable material names, integer IDs, remapping, packet ID encoding, `getIdMap(): Tuple2[]`, block/meta access, material behavior hooks |
 | Multipart save/load | Extra Utilities, ProjectRed, OpenComputers, BuildCraftCompat, MatterManipulator, GuideNH, Schematica, Waila, UtilitiesInExcess | Tile `parts` list, per-part `id`, factory lookup, `save`/`load` ordering, microblock fields, unknown/invalid-part behavior |
 | Description/update packets | Every substantial custom part integration | `writeDesc`/`readDesc`, keyed part packets, `sendDescUpdate`, `sendDescPacket`, material packet IDs, render and neighbor notification behavior |
-| Reflection/mixins | Older GuideNH releases, Schematica, Et Futurum, Galacticraft, Waila, AE2/AE2FC, Iguana | Exact class/companion/member/field names and, where stated below, exact parameter and field types; current GuideNH uses direct calls |
+| Hit-to-part reduction | GT5U `ColoredBlockContainer` | Static `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2`, boxed `Integer` `_1()` matching `jPartList()` order for an `ExtendedMOP` from `RayTracer.retraceBlock` |
+| Reflection/mixins | Older GuideNH releases, Schematica, Et Futurum, Galacticraft, Waila, AE2/AE2FC/ThaumicEnergistics, Iguana | Exact class/companion/member/field names and, where stated below, exact parameter and field types; current GuideNH uses direct calls |
 
 ## Consumer findings
 
@@ -718,7 +760,8 @@ added to compatibility CI before it enters the pack.
 | BloodMagic | Teleposer reconstructs multipart tiles with `MultipartHelper.createTileFromNBT` and sends a description packet after placement | NBT reconstruction, placement lifecycle, and `sendDescPacket` |
 | Waila | Reflects `BlockMultipart`, reads tile NBT `parts`, then dispatches providers using each part tag's `id` | Block class name and tile/part NBT layout |
 | AE2 Fluid Craft | Reflects `TileMultipart` and registers Waila part providers | Tile class name and `jPartList`/provider behavior reached by AE2 |
-| GT5U | Detects `TileMultipart`, iterates `jPartList`, and finds a ProjectRed `GatePart` to expose its screwdriver slot | Tile identity, Java list view/order, part instance identity |
+| GT5U | Detects `TileMultipart`, iterates `jPartList`, and finds a ProjectRed `GatePart` to expose its screwdriver slot. Since `5.09.54.205`, spray cans recolor ProjectRed insulated wires and bundled cables: retrace the block, take `(Integer) BlockMultipart.reduceMOP(hit)._1()` as a `jPartList` index, take the slot from `TSlottedPart.getSlotMask()`, then follow chained blocks through `partMap(slot)` and equal `getType()` | Tile identity, Java list view/order, part instance identity; exact `reduceMOP` static descriptor with Scala `Tuple2` return and boxed-index `_1`; ray-trace index agreeing with `jPartList` order; `partMap` slot numbering; stable type strings |
+| ThaumicEnergistics | Loads `TileMultipart` with `Class.forName` and registers Waila body/NBT providers on it, so vis-link info still shows after a cover moves its AE2 parts into a multipart tile. Parts are found through AE2's `Platform.getPartFromTE`, not FMP. Added by `f6422d7` (2026-10-02, tags `1.7.62-GTNH` onward); no FMP compile dependency | Exact `codechicken.multipart.TileMultipart` class name; AE2 part-host pass-through on generated tiles |
 | EnderCore | Tests items with `instanceof ItemSaw` for durability display | `ItemSaw` class identity and inheritance |
 | IguanaTweaksTConstruct | Creates saws through `MicroblockProxy`, reads saw methods, accesses proxy companions, and reflectively mutates private `ItemSaw.harvestLevel` | Proxy methods and `MODULE$`, `Saw`/`ItemSaw` identity, exact `harvestLevel: int` field name/type until adoption; `setHarvestLevel(int)` is the supported replacement |
 | Et Futurum Requiem | Reflectively gets and mutates static `int[] ButtonPart.metaSideMap` and `sideMetaMap` to add floor and ceiling orientation | Exact class and mutable static field names/types until migration; `ButtonPart.setOrientation` is the supported replacement |
@@ -813,9 +856,9 @@ behavior:
 7. **Redstone:** ProjectRed face/framed wire, OpenComputers print, ProjectBlue panel, AE2 cable bus, and WR-CBE part in
    composite tiles; verify neighbor/part-change propagation and generated `TRedstoneTile` behavior.
 8. **Reflection:** launch focused checks for Schematica, older GuideNH releases, Et Futurum, Iguana, Galacticraft,
-   Waila, AE2, and AE2 Fluid Craft. Assert the exact names and types listed above. Check current GuideNH's direct
+   Waila, AE2, AE2 Fluid Craft and ThaumicEnergistics. Assert the exact names and types listed above. Check current GuideNH's direct
    companion/Scala calls and optional-mod absent/present loading separately.
-9. **Binary gate:** rebuild and diff all 27 installed JAR consumers against the frozen inventory after every public
+9. **Binary gate:** rebuild and diff all 28 installed JAR consumers against the frozen inventory after every public
    API, trait, generator, registry, or tile change. Add UtilitiesInExcess as a compile/runtime fixture now even though
    it is not yet in the pack.
 
@@ -851,14 +894,16 @@ tied to a released minimum dependency version. Unlisted contracts remain governe
 | `MicroblockProxy$.MODULE$` saw access and reflective mutation of private `ItemSaw.harvestLevel` | IguanaTweaksTConstruct `2bc09889d3e2`: `ClientFMPProxy.updateSawRenderers`, `IguanaFMPCompat.postInit` | Use static `MicroblockProxy.sawStone()` / `sawIron()` / `sawDiamond()` / `useSawIcons()`; read `harvestLevel()` and call `setHarvestLevel(int)`; [state and lifecycle guide](../api/SAW_STRENGTH.md) | FMP Scala-free API example complete; consumer source/lifecycle patch and first released version pending | Retain the companion and private field until the migrated release is in the target pack; ensure Iguana runs before ForgeMicroblock post-init and rescan for legacy access |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | OpenComputers `2c00f79be24b`: `common.block.Cable.canConnectFromSideFMP`, `server.network.Network.canConnectFromSideFMP` | `NormalOcclusionTest.testBoxes(ownBounds.asJava, otherBounds)`; `otherBounds` already comes from Java `getOcclusionBoxes()` | Source patch and release pending; retain side/color/face filtering | No migrated pack version verified; retain the companion and descriptor |
 | `NormalOcclusionTest$.apply(Traversable, Traversable)` | ForgeRelocationFMP `49a810b8c63b`: `FramePart.occlusionTest` | `NormalOcclusionTest.testBoxes(boxes.asJava, getOcclusionBoxes)`; retain combined normal/partial/collision boxes and caller order | Source patch and release pending; preserve temporary face bounds and replacement protocol | No migrated pack version verified; retain the companion and descriptor |
+| `BlockMultipart.reduceMOP(MovingObjectPosition): scala.Tuple2` | GT5U `1a9469a13228`: `ColoredBlockContainer` ProjectRed wire branch, shipped in `5.09.54.205` | **None yet.** A Java query for the struck part index, and optionally the rebased `ExtendedMOP`, is needed before this consumer can drop Scala | Java API, example and regression test pending in FMP; consumer patch follows | Retain the exact static descriptor and boxed-`Integer` `_1()`; new in `2.9.0-RC-2` |
 
 ## Adoption constraints
 
 The installed GTNH daily `2026-09-04+719` rescan scanned 241 jars, excluding FMP. Its 27 consumers retained
 all 386 full member/type/reflection rows from `+678`: 35 inherited types, 255 members, 76 other types and 20
-reflection strings. Source revisions above identify inspected checkouts, not guaranteed parity with newer jars.
-GuideNH's upstream material-access cleanup is present in tags `1.3.33` onward. Published binaries and target-pack
-adoption have not been verified in this refresh. No consumer has been verified to have completed the full Java API
+reflection strings. The `2.9.0-RC-2` rescan (240 jars, 28 consumers) keeps every `+678` member and type row and
+adds 13 members and 4 other types. GuideNH `1.3.41` replaced 17 reflection strings with direct links, and
+ThaumicEnergistics adds one. Source revisions above identify inspected checkouts, not guaranteed parity with newer jars.
+GuideNH's upstream material-access cleanup ships in RC-2's `1.3.41`, but none of its pending Java API migrations do. No consumer has been verified to have completed the full Java API
 migration; update artifact/adoption columns only with actual artifacts.
 
 ### Consumer-specific migration traps
@@ -876,10 +921,12 @@ migration; update artifact/adoption columns only with actual artifacts.
   render, lighting and packet policies. A future common move coordinator belongs in `MultipartHelper`, which already
   owns cross-tile NBT and description-packet operations; `TileMultipart.onMoved()` remains the per-tile callback. Add
   such a coordinator only when both consumers can express their existing synchronization policy through it.
-- Waila and AE2 Fluid Craft use `Class.forName` as an optional-mod loading boundary. That class lookup is intentional;
+- Waila, AE2 Fluid Craft and ThaumicEnergistics use `Class.forName` as an optional-mod loading boundary. That class lookup is intentional;
   replacing it with a direct FMP type would make their otherwise optional integration load eagerly.
-- No supplied consumer source or frozen installed-jar ABI entry calls `BlockMultipart.reduceMOP`. Do not add a named
-  result replacement until a real consumer needs that operation.
+- GT5U `5.09.54.205` (in `2.9.0-RC-2`) is the first consumer to call `BlockMultipart.reduceMOP`. It needs only
+  the part index, so a Java replacement can return an `int` (or a named result if a second consumer needs the
+  rebased hit). Keep the `Tuple2` descriptor, and its boxed-`Integer` `_1()` that GT5U casts, until a migrated GT5U
+  release ships.
 
 - FMP's own `ItemMicroPart` and `MicroRecipe$` still use legacy material arrays. Internal tuple paths also remain
   in the generator and placement code, including `MicroblockPlacement.gtile()`. External adoption does not retire them.
@@ -896,7 +943,8 @@ migration; update artifact/adoption columns only with actual artifacts.
 - `registerPartFactory` avoids Scala-dependent Java overload resolution. Preserve registration IDs, order,
   ownership, partial-registration failure policy, and both NBT/packet construction paths. All legacy registration
   entries remain; Schematica's private live Scala map is a separate dependency. See [registration](../api/PART_REGISTRATION.md).
-- No supplied direct legacy render-ID or tuple-result caller was found. Existing tile-only `getOrConvertTile` users
+- No supplied direct legacy render-ID or tuple-result conversion caller was found (GT5U's `reduceMOP` tuple is
+  covered above). Existing tile-only `getOrConvertTile` users
   need no rename. New [render-ID](../api/RENDER_ID.md) accessors do not allocate/register a renderer;
   [conversion results](../api/TILE_CONVERSION.md) still describe uninstalled placeholders.
 - Saved client previews should use the complete [preview helper](../api/CLIENT_PREVIEW.md). The lower-level

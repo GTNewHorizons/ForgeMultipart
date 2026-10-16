@@ -10,6 +10,11 @@ every downstream reference into `codechicken/multipart` and `codechicken/microbl
 `tools/AbiScan.java` and diff against this file at every public-API phase; a member present here but absent from the
 port is a linkage break in a shipping mod. See `docs/migration/COMPATIBILITY.md` for the analysis.
 
+`gtnh-2.9.0-rc2-consumers.txt` is the same scan over GTNH `2.9.0-RC-2` (240 jars, `ForgeMultipart-1.7.16.jar`
+excluded). It is a superset of the `+678` member, inherited-type and other-type rows; only reflective strings
+that GuideNH replaced with direct links dropped out. Diff new scans against this file first, and against `+678`
+when a row's history matters.
+
 ## Precompiled binary consumers
 
 When a port changes descriptors that the ABI inventory shows are load-bearing, freeze a consumer compiled against the

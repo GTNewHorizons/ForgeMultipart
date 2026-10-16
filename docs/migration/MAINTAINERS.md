@@ -106,7 +106,10 @@ first and subsequent calls, so probes use `LinkageError` rather than one exact s
 current registered content need disposable worlds to avoid missing-mapping prompts; restore server configuration.
 
 Run `java tools/AbiScan.java "<instance>/.minecraft/mods" ForgeMultipart` on JDK 17+ and compare full rows with
-`src/test/fixtures/abi/gtnh-daily-678-consumers.txt`. Preserve audited source revisions separately from pack versions.
+`src/test/fixtures/abi/gtnh-2.9.0-rc2-consumers.txt` (and `gtnh-daily-678-consumers.txt` for row history).
+Then check that every scanned type and member still resolves against the compiled port: a static resolver flags
+runtime-generated `scalatraits` accessors such as `TSlottedTile.v_partMap()`, which the Forge smoke test covers
+instead. Preserve audited source revisions separately from pack versions.
 Compile frozen Scala fixtures with Scala 2.11.5 on Java 8 against the reference artifact using
 `scala.tools.nsc.Main -target:jvm-1.8`, not against the replacement. Store bytes under `src/test/resources/compat/`
 and provenance/hashes in `src/test/fixtures/README.md`.
