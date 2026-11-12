@@ -1,0 +1,140 @@
+# Calling generated tile capabilities from Java
+
+[API index](../API.md) · [Composite generation](COMPOSITE_GENERATION.md)
+
+Call generated tiles through `TileMultipart` or a stable public capability interface. Several dev-jar classes under
+`scalatraits`, and `TileMultipartClient`, are raw inputs to FMP's transformer: Forge changes them into interfaces
+before generating a concrete tile. A Java signature that compiles against those classes can still fail at runtime.
+
+## Why raw trait calls fail
+
+These consumer expressions compile against the current dev jar but are unsafe:
+
+```java
+((TRedstoneTile) tile).openConnections(side); // javac emits invokevirtual for a class
+((TSlottedTile) tile).v_partMap;              // javac emits getfield
+```
+
+At runtime `TRedstoneTile` is an interface, so the first call throws `IncompatibleClassChangeError`. `TSlottedTile`
+has generated accessor methods instead of that field, so the second throws `NoSuchFieldError`. A cast or an
+`instanceof` check alone can still succeed; that does not make subsequent class-method/field bytecode valid.
+Merely adding Scala to the compile classpath does not turn these raw Java classes into interface stubs.
+
+Already compiled consumers using the original interface/accessor descriptors remain supported. Recompiling source
+against the raw Java port is a separate gate. Do not instantiate or subclass raw trait inputs in consumer code, or
+call their generated `$class` helpers as a new integration strategy. Reflection is not the migration target.
+
+## Stable entry points
+
+| Need | Compile against | Contract |
+| --- | --- | --- |
+| Parts, slot reads, placement, lifecycle | `TileMultipart` | `jPartList()`, `partMap(slot)`, placement and documented notifications dispatch through generated overrides |
+| Open redstone geometry | `IRedstoneTile` | `openConnections(side)`; capability is present when the tile hosts a redstone part |
+| Offered redstone connections or masked power | `IRedstoneConnector` | `getConnectionMask(side)`, `weakPowerLevel(side, mask)`; also used by non-FMP connectors |
+| Ordinary tile power queries | `TileMultipart` | `strongPowerLevel(side)`, `weakPowerLevel(side)`; preserve each method's side convention |
+| Inventory or sided inventory | Minecraft `IInventory` / `ISidedInventory` | Use the interface implemented by the tile, rather than raw `JInventoryTile` or its internal caches |
+| Inventory slots after a part's size changes | `TileMultipart` | `refreshInventorySlots()`; see [refreshing inventory slots](#refreshing-inventory-slots) |
+| Fluid operations | Forge `IFluidHandler` | Use the interface rather than raw `TFluidHandlerTile` or `tankList` |
+| A consumer-owned pass-through capability | The original ordinary Java interface | Register with `MultipartGenerator.registerPassThroughInterface`; generated calls forward to the implementing part |
+
+Test the capability when it is optional. Keep using the tile returned by placement/removal because adding or removing
+capabilities can replace the tile instance. These interfaces do not give a snapshot, reserve a tile, or add thread
+safety. Apply the owning method's lifecycle and side rules. Client-only rendering calls remain client-only even when
+a stable base method exists.
+
+## Compiling redstone example
+
+[TileTraitAccessExample.java](../../src/functionalTest/java/codechicken/multipart/examples/TileTraitAccessExample.java)
+uses only `TileMultipart` and `IRedstoneTile` and compiles as Java 8 without Scala on the classpath:
+
+```java
+boolean open = TileTraitAccessExample.hasOpenConnection(tile, side, mask);
+```
+
+The example returns false for a null tile or absent capability. Its caller supplies a Minecraft side in 0..5 and
+a mask using bits 0..3 for rotations around that side and bit 4 for the center. `openConnections` describes openings
+after face/edge obstruction; `getConnectionMask` describes the connections offered by contained parts. They are not
+interchangeable. The API does not validate the side or add a cache.
+
+ProjectRed's `transmission/redwires.scala` already knows its tile supports redstone. Its migration can change only
+the cast type, preserving the surrounding mask and rotation calculation:
+
+```scala
+tile.asInstanceOf[IRedstoneTile].openConnections(absDir)
+```
+
+That emits an interface call with the stable owner. ProjectRed can remain Scala internally.
+
+## Refreshing a changed slot mask
+
+Use `TileMultipart.refreshPartSlots(part)` after an already stored part validates and applies a new
+`TSlottedPart.getSlotMask()`. It provides the Java replacement for OpenComputers' direct `TSlottedTile.v_partMap`
+mutation:
+
+```java
+tile.refreshPartSlots(this);
+tile.notifyPartChange(this);
+sendDescUpdate();
+```
+
+The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/TileTraitAccessExample.java) keeps
+the cache operation itself separate because validation, state changes and notification policy belong to the part:
+
+```java
+TileTraitAccessExample.refreshSlots(tile, part);
+```
+
+On a generated slotted tile, FMP scans the live slot array in index order, clears every entry for which
+`Objects.equals(stored, part)` is true, then dispatches the existing virtual `bindPart(part)` once. This preserves
+Scala `==` behavior, including distinct equal objects. It reads the array directly, matching the old consumer rather
+than a possible `partMap` override. Unrelated slots, part-list storage and tile ownership stay unchanged. The current
+mask may overwrite a slot if the caller skipped its normal replacement/occlusion check.
+
+A tile without the slotted capability does nothing. The method does not check that the part is stored, bound to this
+tile or slotted, and it does not validate placement, send notifications, mark dirty/render state or schedule updates.
+Call it on the owning world thread only after the new shape passes the consumer's existing `canReplacePart` logic.
+Keep the tile/part's existing notification, sound, packet and scheduling sequence afterward.
+
+`bindPart` dispatches through every generated cache trait, so those hooks still run once. As before, some non-slot
+caches append on bind and are not generally idempotent. This API matches OpenComputers' print part, whose additional
+capabilities do not append such caches; it is not a general refresh for inventory/fluid capability changes (see
+[refreshing inventory slots](#refreshing-inventory-slots)). A whole
+`loadPartList` reconstruction would run broader cache, binding and notification behavior and is not equivalent.
+
+## Refreshing inventory slots
+
+A tile holding `IInventory` parts exposes one flattened inventory: each part's slots in part order. FMP caches that
+mapping and rebuilds it when inventory parts are added, removed, loaded or copied. When a stored part changes its
+own `getSizeInventory()`, call `TileMultipart.refreshInventorySlots()`. It replaces AE2's direct
+`TIInventoryTile.rebuildSlotMap()` call and drops the `instanceof` check, because tiles without inventory parts do
+nothing:
+
+```java
+tile.refreshInventorySlots();
+notifyNeighbors();
+```
+
+The [compiling example](../../src/functionalTest/java/codechicken/multipart/examples/TileTraitAccessExample.java)
+wraps the same call:
+
+```java
+TileTraitAccessExample.refreshInventory(tile);
+```
+
+It only recomputes the mapping from the inventories already tracked. It does not add or remove inventories, call
+`bindPart`, touch other trait caches, move items, mark the tile dirty or notify neighbors. Keep the caller's existing
+notifications afterward and call it on the owning world thread. Do not use `refreshPartSlots` for this: its
+`bindPart` dispatch would track the inventory part a second time.
+
+The old `TIInventoryTile.rebuildSlotMap()` call stays supported for released AE2 jars, and both calls do the same
+rebuild.
+
+## Custom generated tiles
+
+For custom generated tiles, keep consumer-callable methods on an ordinary Java capability interface and use the
+stable base for existing tile hooks. The [custom tile-trait guide](CUSTOM_TILE_TRAITS.md) provides the complete
+registration, helper, state/lifecycle and access pattern. Pass-through registration remains the smaller choice when
+a tile should only forward one interface to one implementing part.
+
+[RawTileTraitCalls.java](../../src/functionalTest/java/codechicken/multipart/test/RawTileTraitCalls.java) keeps the two
+unsafe caller shapes above as compiled fixtures, so the linkage failures they produce stay reproducible.
