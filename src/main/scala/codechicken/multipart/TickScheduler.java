@@ -22,6 +22,7 @@ import codechicken.lib.vec.BlockCoord;
 import codechicken.lib.world.ChunkExtension;
 import codechicken.lib.world.WorldExtension;
 import codechicken.multipart.handler.MultipartProxy;
+import scala.collection.JavaConversions;
 import scala.collection.mutable.HashSet;
 import scala.collection.mutable.Set;
 import scala.runtime.AbstractFunction1;
@@ -77,7 +78,9 @@ public final class TickScheduler {
         private long schedTime = 0L;
         private Set<ChunkTickScheduler> tickChunks = new HashSet<>();
         private boolean processing = false;
+        private boolean processingChunks = false;
         private final List<PartTickEntry> pending = new ArrayList<>();
+        private final List<TileMultipart> pendingMoves = new ArrayList<>();
 
         WorldTickScheduler(World world) {
             super(world);
@@ -102,6 +105,37 @@ public final class TickScheduler {
             scheduleTick((TMultiPart) part, nextRandomTick(), true);
         }
 
+        ChunkTickScheduler chunkScheduler(int chunkX, int chunkZ) {
+            return (ChunkTickScheduler) getChunkExtension(chunkX, chunkZ);
+        }
+
+        void moveTile(TileMultipart tile) {
+            // Chunk tick lists cannot change while a callback is iterating them.
+            if (processingChunks) {
+                pendingMoves.add(tile);
+            } else {
+                doMoveTile(tile);
+            }
+        }
+
+        /** Hands pending entries for the tile's parts to the chunk that now contains it, keeping their deadlines. */
+        void doMoveTile(TileMultipart tile) {
+            ChunkTickScheduler target = chunkScheduler(tile.xCoord >> 4, tile.zCoord >> 4);
+            if (target == null) {
+                return;
+            }
+
+            List<PartTickEntry> moved = new ArrayList<>();
+            for (ChunkTickScheduler chunk : JavaConversions.seqAsJavaList(tickChunks.toList())) {
+                if (chunk != target && chunk.removeEntriesFor(tile, moved) && chunk.tickList.isEmpty()) {
+                    tickChunks.remove(chunk);
+                }
+            }
+            for (PartTickEntry e : moved) {
+                target.scheduleTick(e.part(), e.time(), e.random());
+            }
+        }
+
         @Override
         public void preTick() {
             processing = true;
@@ -110,15 +144,20 @@ public final class TickScheduler {
         @Override
         public void postTick() {
             if (!tickChunks.isEmpty()) {
-                // Callbacks may unload chunks. Keep the reference's mutation-tolerant Scala traversal.
-                tickChunks = (Set<ChunkTickScheduler>) tickChunks
-                        .filter(new AbstractFunction1<ChunkTickScheduler, Object>() {
+                processingChunks = true;
+                try {
+                    // Callbacks may unload chunks. Keep the reference's mutation-tolerant Scala traversal.
+                    tickChunks = (Set<ChunkTickScheduler>) tickChunks
+                            .filter(new AbstractFunction1<ChunkTickScheduler, Object>() {
 
-                            @Override
-                            public Object apply(ChunkTickScheduler chunk) {
-                                return chunk.processTicks();
-                            }
-                        });
+                                @Override
+                                public Object apply(ChunkTickScheduler chunk) {
+                                    return chunk.processTicks();
+                                }
+                            });
+                } finally {
+                    processingChunks = false;
+                }
             }
 
             processing = false;
@@ -126,6 +165,10 @@ public final class TickScheduler {
                 doScheduleTick(e.part(), e.time(), e.random());
             }
             pending.clear();
+            for (TileMultipart tile : pendingMoves) {
+                doMoveTile(tile);
+            }
+            pendingMoves.clear();
 
             schedTime += 1;
         }
@@ -227,6 +270,21 @@ public final class TickScheduler {
 
         int nextRandomTick() {
             return scheduler().nextRandomTick();
+        }
+
+        /** Moves this chunk's entries for parts bound to {@code tile} into {@code out}; returns whether any moved. */
+        boolean removeEntriesFor(TileMultipart tile, List<PartTickEntry> out) {
+            boolean removed = false;
+            java.util.Iterator<PartTickEntry> it = tickList.iterator();
+            while (it.hasNext()) {
+                PartTickEntry e = it.next();
+                if (e.part().tile() == tile) {
+                    out.add(e);
+                    it.remove();
+                    removed = true;
+                }
+            }
+            return removed;
         }
 
         boolean processTicks() {
@@ -332,6 +390,22 @@ public final class TickScheduler {
     public static void loadRandomTick(TRandomUpdateTick part) {
         TMultiPart multiPart = (TMultiPart) part;
         ((WorldTickScheduler) getExtension(multiPart.tile().getWorldObj())).loadRandom(part);
+    }
+
+    /**
+     * Hands pending scheduled and random ticks of the tile's parts to the chunk that now contains it, keeping their
+     * deadlines. Called from {@link TileMultipart#onMoved()} after the tile's coordinates change; same-world moves
+     * only.
+     */
+    public static void onTileMoved(TileMultipart tile) {
+        World world = tile.getWorldObj();
+        if (world == null || world.isRemote) {
+            return;
+        }
+        WorldExtension extension = getExtension(world);
+        if (extension instanceof WorldTickScheduler) {
+            ((WorldTickScheduler) extension).moveTile(tile);
+        }
     }
 
     /** Schedule a tick for part relative to the current time. */

@@ -230,6 +230,7 @@ public class TileMultipart extends TileEntity implements IChunkLoadTile {
     }
 
     public void onMoved() {
+        TickScheduler.onTileMoved(this);
         operate(action(TMultiPart::onMoved));
     }
 
