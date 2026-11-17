@@ -191,7 +191,8 @@ are documented in the [maintainer guide](MAINTAINERS.md#trait-and-dispatch-rules
 The client-trait port also deliberately extends the Java-trait transformer:
 
 - Registered Java traits may extend an already registered Java trait; the parent runtime interface participates in
-  hierarchy and linearization.
+  hierarchy and linearization. A child's `super` call dispatches to the parent trait's implementation, or to the
+  base class when the parent trait does not override that method.
 - Explicit field accessors are recognized rather than duplicated.
 - Transient input fields are excluded from automatic `copyFrom`. Client render caches use this opt-out; their
   generated runtime fields remain ordinary private fields.

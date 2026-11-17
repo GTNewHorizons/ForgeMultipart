@@ -163,6 +163,54 @@ class JavaTraitRegistrationFunctionalTest {
     }
 
     @Test
+    void childTraitSuperCallDispatchesToRegisteredParentTrait() throws Exception {
+        try (Scope scope = new Scope()) {
+            ClassNode parent = base("SuperChildJavaBase");
+            scope.define(parent);
+            ClassNode first = input("SuperParent", parent.name);
+            constant(first, "score", "()I", 17, ACC_PUBLIC);
+            COMPILER.registerJavaTrait(first);
+            ClassNode second = input("SuperChild", first.name);
+            MethodVisitor score = second.visitMethod(ACC_PUBLIC, "score", "()I", null, null);
+            score.visitVarInsn(ALOAD, 0);
+            score.visitMethodInsn(INVOKESPECIAL, first.name, "score", "()I", false);
+            score.visitInsn(ICONST_1);
+            score.visitInsn(IADD);
+            score.visitInsn(IRETURN);
+            score.visitMaxs(2, 1);
+            COMPILER.internalDefine(second.name, ASMHelper.createBytes(second, 0));
+            COMPILER.registerJavaTrait(second);
+            Object value = COMPILER.mixinClasses(ROOT + "SuperChildComposite", parent.name, seq(second.name))
+                    .getConstructor(int.class).newInstance(9);
+            assertEquals(18, value.getClass().getMethod("score").invoke(value));
+        }
+    }
+
+    @Test
+    void childTraitSuperCallFallsBackToBaseWhenParentTraitDoesNotOverride() throws Exception {
+        try (Scope scope = new Scope()) {
+            ClassNode parent = base("SuperBaseChildJavaBase");
+            scope.define(parent);
+            ClassNode first = input("SuperBaseParent", parent.name);
+            constant(first, "fromParent", "()I", 17, ACC_PUBLIC);
+            COMPILER.registerJavaTrait(first);
+            ClassNode second = input("SuperBaseChild", first.name);
+            MethodVisitor score = second.visitMethod(ACC_PUBLIC, "score", "()I", null, null);
+            score.visitVarInsn(ALOAD, 0);
+            score.visitMethodInsn(INVOKESPECIAL, first.name, "score", "()I", false);
+            score.visitInsn(ICONST_1);
+            score.visitInsn(IADD);
+            score.visitInsn(IRETURN);
+            score.visitMaxs(2, 1);
+            COMPILER.internalDefine(second.name, ASMHelper.createBytes(second, 0));
+            COMPILER.registerJavaTrait(second);
+            Object value = COMPILER.mixinClasses(ROOT + "SuperBaseChildComposite", parent.name, seq(second.name))
+                    .getConstructor(int.class).newInstance(9);
+            assertEquals(10, value.getClass().getMethod("score").invoke(value));
+        }
+    }
+
+    @Test
     void sideOnlyAnnotationsStripOppositeJavaMembersAndInitializationOnTheServer() throws Exception {
         try (Scope scope = new Scope()) {
             ClassNode parent = base("SideJavaBase");

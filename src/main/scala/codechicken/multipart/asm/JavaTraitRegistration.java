@@ -87,7 +87,15 @@ final class JavaTraitRegistration {
             contract.visitMethod(ACC_PUBLIC | ACC_ABSTRACT, name + "_$eq", "(" + field.desc() + ")V", null, null);
         }
 
-        Context context = new Context(input, implementation, contract, fields, methodSignatures, supers, methods);
+        Context context = new Context(
+                input,
+                implementation,
+                contract,
+                fields,
+                methodSignatures,
+                supers,
+                methods,
+                parentTrait);
         Buffer<MethodNode> selected = (Buffer<MethodNode>) ((TraversableLike) JavaConversions
                 .asScalaBuffer(sourceMethods)).filterNot(fn(context::isGeneratedFieldAccessor));
         selected.foreach(fn(method -> {
@@ -148,9 +156,11 @@ final class JavaTraitRegistration {
         final java.util.Set<String> methodSignatures;
         final ListBuffer<String> supers;
         final ListBuffer<MethodNode> methods;
+        final Option<MixinInfo> parentTrait;
 
         Context(ClassNode input, ClassNode implementation, ClassNode contract, Map<String, FieldMixin> fields,
-                java.util.Set<String> methodSignatures, ListBuffer<String> supers, ListBuffer<MethodNode> methods) {
+                java.util.Set<String> methodSignatures, ListBuffer<String> supers, ListBuffer<MethodNode> methods,
+                Option<MixinInfo> parentTrait) {
             this.input = input;
             this.implementation = implementation;
             this.contract = contract;
@@ -158,6 +168,30 @@ final class JavaTraitRegistration {
             this.methodSignatures = methodSignatures;
             this.supers = supers;
             this.methods = methods;
+            this.parentTrait = parentTrait;
+        }
+
+        /**
+         * A registered parent trait is only an interface in class metadata, so the generic super lookup finds no
+         * implementation. Resolve the call against the parent's linearization and its base instead.
+         */
+        boolean isParentTraitSuperCall(MethodInsnNode call, StackAnalyser stack) {
+            if (!parentTrait.isDefined() || !Objects.equals(call.owner, input.superName)
+                    || !Objects.equals(call.name, stack.m().name))
+                return false;
+            StackAnalyser.StackEntry receiver = stack.peek(
+                    StackAnalyser.width(
+                            JavaConversions.asScalaBuffer(java.util.Arrays.asList(Type.getArgumentTypes(call.desc)))));
+            if (!(receiver instanceof StackAnalyser.Load)
+                    || !(((StackAnalyser.Load) receiver).e() instanceof StackAnalyser.This))
+                return false;
+            for (MixinInfo trait : JavaConversions.seqAsJavaList(parentTrait.get().linearise())) {
+                for (MethodNode method : JavaConversions.seqAsJavaList(trait.methods())) {
+                    if (Objects.equals(method.name, call.name) && Objects.equals(method.desc, call.desc)) return true;
+                }
+            }
+            return ASMMixinCompiler$.MODULE$.getClassInfo(parentTrait.get().parent())
+                    .findPublicImpl(call.name, call.desc).isDefined();
         }
 
         String fieldName(String name) {
@@ -212,7 +246,8 @@ final class JavaTraitRegistration {
                 } else if (instruction instanceof MethodInsnNode) {
                     MethodInsnNode call = (MethodInsnNode) instruction;
                     if (instruction.getOpcode() == INVOKESPECIAL) {
-                        if (ASMMixinCompiler$.MODULE$.getSuper(call, stack).isDefined())
+                        if (ASMMixinCompiler$.MODULE$.getSuper(call, stack).isDefined()
+                                || isParentTraitSuperCall(call, stack))
                             instruction = replace(instructions, instruction, superInstruction(call));
                     } else if (instruction.getOpcode() == INVOKEVIRTUAL && Objects.equals(call.owner, input.name)) {
                         if (methodSignatures.contains(call.name + call.desc)) instruction = replace(
