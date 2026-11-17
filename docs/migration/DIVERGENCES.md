@@ -1,6 +1,8 @@
 # Java migration divergences
 
-Current intentional differences from the `1.7.12` reference. This is a compatibility ledger, not a port diary.
+Current intentional differences from the `1.7.12` Scala reference. Upstream `master` fixes merged since then
+(through `1.8.0`) are ported; rows naming an upstream PR record whether the Java fix matches it.
+This is a compatibility ledger, not a port diary.
 An unchanged implementation needs no entry. Track remaining work in [migration status](README.md), client gaps in
 [manual release checks](MANUAL_CHECKS.md), and use the [performance protocol](MAINTAINERS.md#performance-validation)
 for measurements. Superseded decisions and per-port narratives remain in git history.
@@ -184,7 +186,7 @@ required before claiming source-compatible downstream rebuilds.
 
 Inherited/foreign-field and callback workarounds add package-private access shims for redstone, tile-change,
 fluid, inventory and both client traits; they are not new consumer APIs. Transformer constraints and shim recipes
-are documented once in the handoff.
+are documented in the [maintainer guide](MAINTAINERS.md#trait-and-dispatch-rules).
 
 The client-trait port also deliberately extends the Java-trait transformer:
 

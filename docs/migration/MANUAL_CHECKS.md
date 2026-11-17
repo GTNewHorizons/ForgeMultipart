@@ -109,7 +109,7 @@ its callback-side input tests nor its retained client-body probe validates actua
 
 ## Item-name references
 
-Resource paths below are relative to each consumer's `src/main/resources` in the clone root recorded in the handoff.
+Resource paths below are relative to each consumer's `src/main/resources` in its source checkout.
 Code locations identify the matching source packages/methods. Registration/behavior was checked in addition to
 translation keys; these are examples for running the checks, not claims that the checks have passed.
 
