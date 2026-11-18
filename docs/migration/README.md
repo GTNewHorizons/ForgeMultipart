@@ -52,6 +52,11 @@ in themselves. Add them only for a demonstrated need.
   adding a replacement or deprecation is not permission to delete a bridge.
 - FMP's own Scala storage, retained models, trait inputs and legacy callers are replaced or retired. In particular,
   ProjectRed's released Java extension alone does not eliminate FMP's internal need for Scala-signature decoding.
+- Before deleting any `X$` companion, every static facade method that forwards to it keeps its own implementation and
+  descriptor. Migrated consumers call these statics directly: for example `MultipartGenerator.generateCompositeTile`,
+  `MicroblockGenerator.create`, `MultipartSaveLoad.loadingWorld`, `MultipartProxy.block`, `MicroblockProxy.itemMicro`
+  and the saw accessors, `FacePlacementGrid.getHitSlot` / `render`, and `BlockMicroMaterial.createAndRegister`. Keep
+  `CommonMicroblock` as a type name (consumers test for it), or confirm consumers have moved to `Microblock`.
 - Shipped and generated FMP classes, descriptors and runtime loading paths contain no remaining Scala requirements;
   Scala compilation and compiler/runtime dependencies can then be removed.
 - Migrated consumers pass old-world, packet, client and dedicated-server validation against the resulting artifact.

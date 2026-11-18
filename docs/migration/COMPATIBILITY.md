@@ -775,9 +775,9 @@ persistent identity. Preserve:
 This ledger tracks migration of a specific legacy contract, not completion of an entire consumer's migration.
 Factory registration/lookup, material enumeration, tile collection/traversal access, tile loading/storage assignment,
 client preview reconstruction, tile occlusion and box queries, render-ID accessors, named tile conversion results and
-the struck-part index and inventory slot refresh are implemented on
-`algent/java`. The [API index](../API.md) links the guides and compiling Java examples. These additions are not yet
-tied to a released minimum dependency version. Unlisted contracts remain governed by the inventories above.
+the struck-part index and inventory slot refresh shipped in FMP 2.0.0, the minimum dependency for every replacement
+below. The [API index](../API.md) links the guides and compiling Java examples. Unlisted contracts remain governed by
+the inventories above.
 
 | Legacy contract | Consumer and inspected source | Supported replacement | Consumer migration/release | Target-pack adoption and removal gate |
 | --- | --- | --- | --- | --- |

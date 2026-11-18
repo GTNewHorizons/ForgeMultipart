@@ -135,7 +135,7 @@ methods. Explicit forwarding is required where the implementation remains abstra
 | --- | --- |
 | `TCuboidPart` | Extend `JCuboidPart`, or forward subparts, collision boxes and breaking rendering to its statics. |
 | `TNormalOcclusion` | Explicitly combine `NormalOcclusionTest.apply(this, other)` with the intended super chain. Audit existing `super.occlusionTest` calls too: they no longer route through the old trait. |
-| `TIconHitEffects` | Explicitly forward `addHitEffects` and `addDestroyEffects` to `IconHitEffects`. |
+| `TIconHitEffects` | Explicitly override `addHitEffects(hit, renderer)` and the two-argument `addDestroyEffects(hit, renderer)`, forwarding to `IconHitEffects`. Don't override the deprecated one-argument `addDestroyEffects(renderer)` that the old trait overrode. |
 | `TItemMultiPart` | Explicitly forward `onItemUse` to `JItemMultiPart`; the inherited Item method otherwise wins. |
 | `TRandomUpdateTick` | Explicitly implement `onWorldJoin` with `TickScheduler.loadRandomTick(this)`. |
 | `TScheduledPacketPart` | Explicitly forward `read` to `TScheduledPacketPart.readMask(this, packet)`. |

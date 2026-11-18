@@ -1,8 +1,8 @@
 # ForgeMultipart Java API
 
-Start here when integrating with ForgeMultipart for **Minecraft 1.7.10 / Forge**. This describes the `algent/java`
-migration branch. Its new APIs are implemented and tested but do not yet have a minimum published dependency version.
-Use a dev artifact containing the methods you need; source Javadocs are packaged with the sources artifact.
+Start here when integrating with ForgeMultipart for **Minecraft 1.7.10 / Forge**. The Java API first shipped in
+**FMP 2.0.0**; depend on that release or later (`com.github.GTNewHorizons:ForgeMultipart:2.0.0:dev`) and declare
+`ForgeMultipart@[2.0.0,)`. Source Javadocs are packaged with the sources artifact.
 
 Consumers can use the Java surface without importing Scala types. FMP itself still needs Scala at runtime. A
 Scala-authored mod can adopt the Java API without converting the rest of its code to Java.
@@ -69,6 +69,14 @@ compile classpath for overload resolution, as the [loading guide](api/PART_LOADI
 | Construct a server composite tile from parts, or restore saved multipart NBT | [MultipartHelper](../src/main/scala/codechicken/multipart/MultipartHelper.java): `createTileFromParts(Iterable)`, `createTileFromNBT(World, NBTTagCompound)` |
 | Register microblock materials | [MicroMaterialRegistry](../src/main/scala/codechicken/microblock/MicroMaterialRegistry.java) and [BlockMicroMaterial](../src/main/scala/codechicken/microblock/BlockMicroMaterial.java) |
 | Register generated tile traits or pass-through interfaces | [MultipartGenerator](../src/main/scala/codechicken/multipart/MultipartGenerator.java); see [custom tile-trait authoring](api/CUSTOM_TILE_TRAITS.md) and [safe capability access](api/TILE_TRAIT_ACCESS.md) |
+| Register a block/metadata microblock material under its default or an explicit name | [BlockMicroMaterial](../src/main/scala/codechicken/microblock/BlockMicroMaterial.java): `createAndRegister(Block, int)`, `createAndRegister(Block, int, String)`. The name is the saved material ID: keep it stable, or existing microblocks lose their material |
+| Restore a server tile from saved multipart NBT without touching the loading world | [TileMultipart](../src/main/scala/codechicken/multipart/TileMultipart.java): `createFromNBT(NBTTagCompound)`. Same as `MultipartHelper.createTileFromNBT(World, tag)` except that the helper also sets `MultipartSaveLoad.loadingWorld` first; use the helper when parts read that world in `load` |
+| Read the world whose multipart NBT is being loaded, from a part's `load(NBTTagCompound)` | [MultipartSaveLoad](../src/main/scala/codechicken/multipart/handler/MultipartSaveLoad.java): static `loadingWorld()`. FMP sets it before loading a chunk's multipart tiles and in `createTileFromNBT`; the part isn't bound to a tile yet. It isn't cleared afterwards, so read it only during FMP-driven loading (ProjectRed's gate timers) |
+| Get FMP's block and microblock item | [MultipartProxy](../src/main/scala/codechicken/multipart/handler/MultipartProxy.java): static `block()`; [MicroblockProxy](../src/main/scala/codechicken/microblock/handler/MicroblockProxy.java): static `itemMicro()` (saws: see [saw strength](api/SAW_STRENGTH.md)). Call these statics, not the `MultipartProxy$` / `MicroblockProxy$` companions |
+| Pick and highlight a face-placement slot for a custom face part | [FacePlacementGrid](../src/main/scala/codechicken/microblock/FacePlacementGrid.java): static `getHitSlot(Vector3, int)` and client-only `render(Vector3, int)` (ProjectBlue's control panel) |
+| Build a cuboid part, or a vanilla-style metadata part | Extend [JCuboidPart](../src/main/scala/codechicken/multipart/JCuboidPart.java) (subparts, collision boxes and breaking render from `getBounds`), or [McMetaPart](../src/main/scala/codechicken/multipart/minecraft/McMetaPart.java) / [McSidedMetaPart](../src/main/scala/codechicken/multipart/minecraft/McSidedMetaPart.java) |
+| Emit display particles, or expose masked redstone connections | Implement [IRandomDisplayTick](../src/main/scala/codechicken/multipart/IRandomDisplayTick.java) or [IMaskedRedstonePart](../src/main/scala/codechicken/multipart/IMaskedRedstonePart.java) on the part |
+| Test whether a part is a microblock | `instanceof` [Microblock](../src/main/scala/codechicken/microblock/Microblock.java), which every built-in shape extends. `CommonMicroblock` is still a retained Scala trait; prefer `Microblock` unless you need `getSlot()` |
 
 New API examples use Java 8 language/library features. The source path `src/main/scala` also contains Java classes
 because of the current joint-compilation layout; it does not imply that those APIs require Scala source in a consumer.
