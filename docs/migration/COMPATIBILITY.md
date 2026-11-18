@@ -374,7 +374,7 @@ performed.
 
 | Contract | Consumers that make it load-bearing | What must survive |
 | --- | --- | --- |
-| Part factory/converter registration | ProjectRed, Extra Utilities, OpenComputers, AE2, BuildCraftCompat, ForgeRelocationFMP, Chisel, ThaumicTinkerer, WR-CBE, WitchingGadgets, ProjectBlue, UtilitiesInExcess | Java `IPartFactory`/`IPartFactory2`, converters, the Scala `Function2` and `Seq` overloads, stable type strings, client/server construction |
+| Part factory/converter registration | ProjectRed, Extra Utilities, OpenComputers, AE2, BuildCraftCompat, ForgeRelocationFMP, Chisel, ThaumicTinkerer (unreachable since 2023), WR-CBE, WitchingGadgets, ProjectBlue, UtilitiesInExcess | Java `IPartFactory`/`IPartFactory2`, converters, the Scala `Function2` and `Seq` overloads, stable type strings, client/server construction |
 | Dynamic composite tiles | ProjectRed, Extra Utilities, AE2, ForgeRelocationFMP, WR-CBE, WitchingGadgets, UtilitiesInExcess; GuideNH and Schematica reconstruct them | Trait-bit selection, generated subclass caching, pass-through interfaces, client/server selection, promotion of an existing tile |
 | External Scala trait generation | ProjectRed illuminated microblocks | `MicroblockGenerator.registerTrait`, ScalaSignature decoding, `$class` helper handling, correct trait initialization and dispatch |
 | Tile collections and slot state | ProjectRed, Extra Utilities, OpenComputers, AE2, ProjectBlue, GT5U, BuildCraftCompat, WitchingGadgets, MatterManipulator, GuideNH | `partList(): Seq`, `jPartList(): List`, ordering, `partMap(int)`, mutable `TSlottedTile.v_partMap`, `bindPart`, slot-map rebuilds |
@@ -561,11 +561,14 @@ state, constructors, packet/NBT hooks, and static orientation tables source- and
 
 ### ThaumicTinkerer
 
-ThaumicTinkerer registers block micro-materials and factories/converters for candle and nitor parts. The parts extend
-`McMetaPart`; the candle participates in random display ticks. They rely on FMP meta-part persistence, placement,
-render hooks, and factory type dispatch.
+ThaumicTinkerer's only live FMP use is block micro-material registration: `new BlockMicroMaterial(block, meta)` plus
+`MicroMaterialRegistry.registerMaterial(material, name)`, with names `<unlocalizedName>` for meta 0 and
+`<unlocalizedName>_<meta>` otherwise. Its candle and nitor parts (`RegisterBlockPart`, `PartCandle`, `PartNitor`, which
+extend `McMetaPart`) are still in the jar, so the binary inventory lists their `IPartFactory`/`IPartConverter` and
+`McMetaPart` references. But nothing has registered them since ThaumicTinkerer `acbc864d` (2023), so they are dead code.
 
-**Migration consequence:** preserve `McMetaPart` subclass semantics and random-display capability composition.
+**Migration consequence:** keep material names stable. The part classes never run, so they need no runtime
+compatibility; the migrated release still moved them to `IPartFactory2`.
 
 ### Wireless Redstone CBE
 
