@@ -55,8 +55,11 @@ in themselves. Add them only for a demonstrated need.
 - Before deleting any `X$` companion, every static facade method that forwards to it keeps its own implementation and
   descriptor. Migrated consumers call these statics directly: for example `MultipartGenerator.generateCompositeTile`,
   `MicroblockGenerator.create`, `MultipartSaveLoad.loadingWorld`, `MultipartProxy.block`, `MicroblockProxy.itemMicro`
-  and the saw accessors, `FacePlacementGrid.getHitSlot` / `render`, and `BlockMicroMaterial.createAndRegister`. Keep
-  `CommonMicroblock` as a type name (consumers test for it), or confirm consumers have moved to `Microblock`.
+  and the saw accessors, `FacePlacementGrid.getHitSlot` / `render`, `BlockMicroMaterial.createAndRegister`,
+  `MicroOcclusion.recalcBounds`, the shape-class bounds getters such as `FaceMicroClass.aBounds`,
+  `RedstoneInteractions.getPowerTo` / `connectionMask`, and `MultipartGenerator.registerPassThroughInterface`. Keep
+  `CommonMicroblock` as a type name (consumers test for it), or confirm consumers have moved to `Microblock`. Port
+  `JMicroShrinkRender` (still a Scala trait, all-abstract) with its five method descriptors unchanged: WR-CBE implements it.
 - Shipped and generated FMP classes, descriptors and runtime loading paths contain no remaining Scala requirements;
   Scala compilation and compiler/runtime dependencies can then be removed.
 - Migrated consumers pass old-world, packet, client and dedicated-server validation against the resulting artifact.
