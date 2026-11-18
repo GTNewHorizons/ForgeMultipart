@@ -52,7 +52,8 @@ Confirmed still present on each project's default branch:
 | ProjectRed | `transmission/redwires.scala` | `TRedstoneTile.openConnections` |
 | OpenComputers | `integration/fmp/PrintPart.scala` | `TSlottedTile.v_partMap` |
 
-`TTileChangeTile`, `TFluidHandlerTile` and `TRandomDisplayTickTile` have no known consumer references.
+Migrated source patches for both exist (targeting `IRedstoneTile` and `refreshPartSlots`), but neither is released
+yet. `TTileChangeTile`, `TFluidHandlerTile` and `TRandomDisplayTickTile` have no known consumer references.
 
 ## 2. Silent behavior changes: recompiled Scala trait composition
 
