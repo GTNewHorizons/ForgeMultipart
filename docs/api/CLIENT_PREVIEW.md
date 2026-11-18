@@ -23,8 +23,12 @@ only Java API types. Keep this code in a client integration class because `Multi
 The helper accepts only a `savedMultipart` tag with at least one supported part. It preserves part order, loads each
 part from its original tag, generates the required client tile traits, restores tile coordinates and NBT state, and
 binds the parts. With a client world it then calls `onWorldJoin`, broadcasts a local part change, marks the render and
-rebuilds the client render cache. With a null world it creates a worldless staged preview; render caches initialize
-lazily.
+rebuilds the client render cache. With a null world it creates a worldless staged preview that only loads and binds
+its parts: no `onWorldJoin` or `onPartChanged` callbacks run, since parts may assume a world there. Render caches
+initialize lazily, and stock microblocks keep their unshrunk bounds until a world-backed part change recalculates them.
+
+Use this helper only for client-side previews. Server-thread work, such as rebuilding tiles while saving in an
+integrated server, should use `TileMultipart.createFromNBT` even on a physical client.
 
 A non-null world must have `isRemote == true`. The helper does not validate placement, install the tile in a chunk,
 notify neighbors, recalculate lighting or send packets. It reads the supplied NBT without mutating it.

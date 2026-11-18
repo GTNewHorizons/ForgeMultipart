@@ -60,7 +60,9 @@ public final class MultipartHelper {
      * A non-null world must be client-side. The tile receives its saved coordinates, binds every part, then runs
      * {@link TMultiPart#onWorldJoin()} and local {@link TMultiPart#onPartChanged(TMultiPart)} callbacks before
      * rebuilding its render state. It is not validated, placed in a chunk, or announced to neighboring blocks. A null
-     * world creates a worldless staged preview; render caches initialize lazily when a renderer uses the tile.
+     * world creates a worldless staged preview that only loads and binds its parts, like
+     * {@link TileMultipart#loadParts(scala.collection.Iterable)} without a world: no part callbacks run, because parts
+     * may assume a world in them. Render caches initialize lazily when a renderer uses the tile.
      *
      * @param world client preview world, or null for worldless staging
      * @param tag   saved multipart NBT; it is read but not mutated
@@ -104,9 +106,7 @@ public final class MultipartHelper {
         tile.setWorldObj(world);
         if (world != null) {
             tile.forEachPart(TMultiPart::onWorldJoin);
-        }
-        tile.internalPartChange(null);
-        if (world != null) {
+            tile.internalPartChange(null);
             tile.markRender();
         }
         return tile;

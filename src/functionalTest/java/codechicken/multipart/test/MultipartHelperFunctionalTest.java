@@ -23,6 +23,7 @@ import net.minecraft.world.chunk.Chunk;
 
 import org.junit.jupiter.api.Test;
 
+import codechicken.lib.data.MCDataInput;
 import codechicken.lib.packet.PacketCustom;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultipartHelper;
@@ -43,6 +44,28 @@ import scala.collection.JavaConversions;
  * needs the save/load hooks, and the packet path needs a loaded chunk.
  */
 class MultipartHelperFunctionalTest {
+
+    private static final String WORLD_DEPENDENT_PART = "test:preview_world_dependent";
+
+    static void registerDuringInit() {
+        MultiPartRegistry.registerPartFactory(new MultiPartRegistry.IPartFactory2() {
+
+            @Override
+            public TMultiPart createPart(String name, NBTTagCompound nbt) {
+                return new WorldDependentPart();
+            }
+
+            @Override
+            public TMultiPart createPart(String name, MCDataInput packet) {
+                return new WorldDependentPart();
+            }
+
+            @Override
+            public TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+                return new WorldDependentPart();
+            }
+        }, WORLD_DEPENDENT_PART);
+    }
 
     @Test
     void buildsATileAroundTheGivenParts() {
@@ -103,6 +126,22 @@ class MultipartHelperFunctionalTest {
         ExamplePart part = assertInstanceOf(ExamplePart.class, tile.jPartList().get(0));
         assertSame(tile, part.tile());
         assertEquals(37, part.value());
+    }
+
+    /** Parts may assume a world in onPartChanged, as ProjectRed gates do; worldless previews must not call it. */
+    @Test
+    void worldlessPreviewDoesNotCallPartChangeCallbacks() {
+        NBTTagCompound part = new NBTTagCompound();
+        part.setString("id", WORLD_DEPENDENT_PART);
+        NBTTagCompound tag = previewTag(37);
+        tag.getTagList("parts", 10).appendTag(part);
+
+        TileMultipart tile = MultipartHelper.createPreviewTileFromNBT(null, tag);
+
+        assertNotNull(tile);
+        assertEquals(2, tile.jPartList().size());
+        WorldDependentPart worldDependent = assertInstanceOf(WorldDependentPart.class, tile.jPartList().get(1));
+        assertSame(tile, worldDependent.tile());
     }
 
     @Test
@@ -194,6 +233,19 @@ class MultipartHelperFunctionalTest {
         tile.setInteger("z", -9);
         tile.setTag("parts", parts);
         return tile;
+    }
+
+    private static final class WorldDependentPart extends TMultiPart {
+
+        @Override
+        public String getType() {
+            return WORLD_DEPENDENT_PART;
+        }
+
+        @Override
+        public void onPartChanged(TMultiPart part) {
+            world().getTotalWorldTime();
+        }
     }
 
     /** Matches only its own tile class, so registering it cannot affect any real chunk load. */

@@ -60,6 +60,7 @@ public final class ForgeMultipartFunctionalTestMod {
     @Mod.EventHandler
     public void init(FMLInitializationEvent event) {
         PartRegistrationFunctionalTest.registerDuringInit();
+        MultipartHelperFunctionalTest.registerDuringInit();
         MultipartGenerator.registerPassThroughInterface(GeneratorPassThroughFixture.class.getName(), false, true);
         CustomTileTraitExample.register();
         externalScalaMicroblockTraitId = MicroblockGenerator
