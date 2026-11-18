@@ -11,7 +11,8 @@ dependencies {
     functionalTestImplementation("org.junit.platform:junit-platform-launcher")
     functionalTestImplementation("org.junit.platform:junit-platform-reporting")
 
-    implementation("com.github.GTNewHorizons:CodeChickenCore:1.4.22:dev")
+    // api: FMP's public types expose CCL/CCC classes, so consumers need CCC on their compile classpath.
+    api("com.github.GTNewHorizons:CodeChickenCore:1.4.22:dev")
     compileOnly("com.cardinalstar.cubicchunks:CubicChunks1710:v0.1.22-alpha:dev")
     compileOnly("com.github.GTNewHorizons:Angelica:2.2.32:dev")
     runtimeOnlyNonPublishable("com.github.GTNewHorizons:Hodgepodge:2.7.216:dev")
