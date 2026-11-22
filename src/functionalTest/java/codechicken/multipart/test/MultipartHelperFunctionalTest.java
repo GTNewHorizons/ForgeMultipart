@@ -13,6 +13,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Supplier;
 
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.nbt.NBTTagList;
@@ -25,6 +26,11 @@ import org.junit.jupiter.api.Test;
 
 import codechicken.lib.data.MCDataInput;
 import codechicken.lib.packet.PacketCustom;
+import codechicken.lib.vec.Cuboid6;
+import codechicken.microblock.FaceMicroClass$;
+import codechicken.microblock.HollowMicroblockClient;
+import codechicken.microblock.MicroblockGenerator;
+import codechicken.microblock.PostMicroblockClient;
 import codechicken.multipart.MultiPartRegistry;
 import codechicken.multipart.MultipartHelper;
 import codechicken.multipart.TMultiPart;
@@ -46,6 +52,9 @@ import scala.collection.JavaConversions;
 class MultipartHelperFunctionalTest {
 
     private static final String WORLD_DEPENDENT_PART = "test:preview_world_dependent";
+    private static final String PREVIEW_SERVER_FACE = "test:preview_server_face";
+    private static final String PREVIEW_HOLLOW_PROBE = "test:preview_hollow_probe";
+    private static final String PREVIEW_POST_PROBE = "test:preview_post_probe";
 
     static void registerDuringInit() {
         MultiPartRegistry.registerPartFactory(new MultiPartRegistry.IPartFactory2() {
@@ -65,6 +74,11 @@ class MultipartHelperFunctionalTest {
                 return new WorldDependentPart();
             }
         }, WORLD_DEPENDENT_PART);
+        registerPreviewFactory(
+                PREVIEW_SERVER_FACE,
+                () -> MicroblockGenerator.create(FaceMicroClass$.MODULE$, 0, false));
+        registerPreviewFactory(PREVIEW_HOLLOW_PROBE, () -> new HollowMicroblockClientFunctionalTest.ClientProbe(0));
+        registerPreviewFactory(PREVIEW_POST_PROBE, () -> new PostMicroblockClientFunctionalTest.ClientProbe(0));
     }
 
     @Test
@@ -142,6 +156,37 @@ class MultipartHelperFunctionalTest {
         assertEquals(2, tile.jPartList().size());
         WorldDependentPart worldDependent = assertInstanceOf(WorldDependentPart.class, tile.jPartList().get(1));
         assertSame(tile, worldDependent.tile());
+    }
+
+    /**
+     * Stock microblocks only compute render bounds in part callbacks, which worldless previews skip. The dedicated test
+     * server strips the generated client microblock traits, so the client parts here are the hand-written probes.
+     */
+    @Test
+    void worldlessPreviewInitializesMicroblockRenderBounds() {
+        NBTTagList parts = new NBTTagList();
+        parts.appendTag(microblockTag(PREVIEW_SERVER_FACE, 1 << 4)); // bottom cover
+        parts.appendTag(microblockTag(PREVIEW_HOLLOW_PROBE, 1 << 4 | 2)); // north hollow cover
+        parts.appendTag(microblockTag(PREVIEW_POST_PROBE, 2 << 4)); // Y-axis post
+        NBTTagCompound tag = new NBTTagCompound();
+        tag.setString("id", "savedMultipart");
+        tag.setTag("parts", parts);
+
+        TileMultipart tile = MultipartHelper.createPreviewTileFromNBT(null, tag);
+
+        assertNotNull(tile);
+        HollowMicroblockClient hollow = assertInstanceOf(HollowMicroblockClient.class, tile.jPartList().get(1));
+        PostMicroblockClient post = assertInstanceOf(PostMicroblockClient.class, tile.jPartList().get(2));
+        assertNotNull(hollow.renderBounds());
+        assertEquals(hollow.getHollowSize(), hollow.renderMask() >> 8);
+        assertNotNull(post.renderBounds1());
+        // Clipped by the bottom cover, so the bounds were computed against the bound tile.
+        assertEquals(0.125, post.renderBounds1().min.y, 1e-12);
+
+        Cuboid6 postBounds = post.renderBounds1().copy();
+        // The world-backed path computes the same post bounds through onPartChanged.
+        tile.internalPartChange(null);
+        assertBounds(postBounds, post.renderBounds1());
     }
 
     @Test
@@ -233,6 +278,43 @@ class MultipartHelperFunctionalTest {
         tile.setInteger("z", -9);
         tile.setTag("parts", parts);
         return tile;
+    }
+
+    private static void registerPreviewFactory(String name, Supplier<TMultiPart> previewPart) {
+        MultiPartRegistry.registerPartFactory(new MultiPartRegistry.IPartFactory2() {
+
+            @Override
+            public TMultiPart createPart(String name, NBTTagCompound nbt) {
+                return null;
+            }
+
+            @Override
+            public TMultiPart createPart(String name, MCDataInput packet) {
+                return null;
+            }
+
+            @Override
+            public TMultiPart createPartForClientPreview(String name, NBTTagCompound nbt) {
+                return previewPart.get();
+            }
+        }, name);
+    }
+
+    private static NBTTagCompound microblockTag(String id, int shape) {
+        NBTTagCompound part = new NBTTagCompound();
+        part.setString("id", id);
+        part.setByte("shape", (byte) shape);
+        part.setString("material", "minecraft:stone");
+        return part;
+    }
+
+    private static void assertBounds(Cuboid6 expected, Cuboid6 actual) {
+        assertEquals(expected.min.x, actual.min.x, 1e-12);
+        assertEquals(expected.min.y, actual.min.y, 1e-12);
+        assertEquals(expected.min.z, actual.min.z, 1e-12);
+        assertEquals(expected.max.x, actual.max.x, 1e-12);
+        assertEquals(expected.max.y, actual.max.y, 1e-12);
+        assertEquals(expected.max.z, actual.max.z, 1e-12);
     }
 
     private static final class WorldDependentPart extends TMultiPart {

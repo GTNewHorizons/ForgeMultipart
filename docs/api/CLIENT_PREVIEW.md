@@ -24,8 +24,14 @@ The helper accepts only a `savedMultipart` tag with at least one supported part.
 part from its original tag, generates the required client tile traits, restores tile coordinates and NBT state, and
 binds the parts. With a client world it then calls `onWorldJoin`, broadcasts a local part change, marks the render and
 rebuilds the client render cache. With a null world it creates a worldless staged preview that only loads and binds
-its parts: no `onWorldJoin` or `onPartChanged` callbacks run, since parts may assume a world there. Render caches
-initialize lazily, and stock microblocks keep their unshrunk bounds until a world-backed part change recalculates them.
+its parts: no `onWorldJoin` or `onPartChanged` callbacks run, since parts may assume a world there. Stock microblocks
+(covers, hollow covers, strips, corners and posts) normally compute their client render bounds in those callbacks, so
+the helper recalculates them directly; this needs only the bound tile and gives the same bounds as a world-backed part
+change. Render caches initialize lazily.
+
+Other mods' parts get no such initialization. A part that needs a world, or a callback, to be renderable should return
+null from `createPartForClientPreview`, so the whole tile is left out of the preview instead of failing while it
+renders.
 
 Use this helper only for client-side previews. Server-thread work, such as rebuilding tiles while saving in an
 integrated server, should use `TileMultipart.createFromNBT` even on a physical client.
