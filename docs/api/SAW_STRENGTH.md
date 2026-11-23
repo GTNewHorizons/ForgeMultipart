@@ -38,12 +38,13 @@ The setter changes only cutting strength. It does not recalculate the saw's dura
 damage. This matches Iguana's current post-construction field mutation. The integer is intentionally unrestricted,
 like the constructor and legacy field; the consumer owns its tier mapping.
 
-FMP calculates `MicroMaterialRegistry.getMaxCuttingStrength()` during ForgeMicroblock post-initialization and again
-on `FMLLoadCompleteEvent`, after every mod's post-init. Startup integrations that add or relevel saws only have to
-finish within their own post-init (Iguana's `after:*` post-init qualifies). Don't add `before:ForgeMicroblock` for
-this: combined with `after:*` it makes FML's mod sorter fail with a `ModSortingException`. `MicroRecipe.canCut` is the
-only reader of the cached maximum and only runs when crafting. Call the setter on the main initialization thread,
-before recipes can be used.
+FMP calculates `MicroMaterialRegistry.getMaxCuttingStrength()` during ForgeMicroblock post-initialization and, since
+FMP 2.0.1, again on `FMLLoadCompleteEvent`, after every mod's post-init. With 2.0.1 or later, startup integrations that
+add or relevel saws only have to finish within their own post-init (Iguana's `after:*` post-init qualifies); depend on
+`ForgeMultipart@[2.0.1,)` when relying on this. FMP 2.0.0 calculates it only in its own post-init. Don't add
+`before:ForgeMicroblock` for this: combined with `after:*` it makes FML's mod sorter fail with a
+`ModSortingException`. `MicroRecipe.canCut` is the only reader of the cached maximum and only runs when crafting. Call
+the setter on the main initialization thread, before recipes can be used.
 
 The method is specific to `ItemSaw`. Other `Saw` implementations may derive strength from each `ItemStack` and do
 not promise mutable global strength.

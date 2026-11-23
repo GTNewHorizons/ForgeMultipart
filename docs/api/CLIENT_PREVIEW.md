@@ -29,9 +29,15 @@ its parts: no `onWorldJoin` or `onPartChanged` callbacks run, since parts may as
 the helper recalculates them directly; this needs only the bound tile and gives the same bounds as a world-backed part
 change. Render caches initialize lazily.
 
-Other mods' parts get no such initialization. A part that needs a world, or a callback, to be renderable should return
-null from `createPartForClientPreview`, so the whole tile is left out of the preview instead of failing while it
-renders.
+Other mods' parts get no such initialization, and attaching a world afterwards does not run the skipped callbacks.
+A part whose client render state is built only in `onAdded`, `onWorldJoin` or `onPartChanged` (WR-CBE's transmitter
+base bounds, for example) should build it on first render when it is still missing. If that is not possible, return
+null from `createPartForClientPreview`: the factory cannot tell whether a world will be supplied, so this leaves the
+whole tile out of every preview instead of failing while it renders.
+
+Part `load(tag)` runs before any world is attached, with whatever `MultipartSaveLoad.loadingWorld()` last held. A
+part that reads it while loading (ProjectRed's active timer gates) sees a stale world, or null on a client connected
+to a remote server, where the resulting exception propagates and drops the tile. FMP 2.0.0 behaves the same way.
 
 Use this helper only for client-side previews. Server-thread work, such as rebuilding tiles while saving in an
 integrated server, should use `TileMultipart.createFromNBT` even on a physical client.

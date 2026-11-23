@@ -74,9 +74,9 @@ shape bits for every microblock family. `shape()` returns the complete byte; `ge
 It is not a clone of arbitrary custom-part state or a shape-validity check.
 
 Do not copy a shape with `setShape(getSize(), getShape())`. Its `slot` argument is the absolute `PartMap` slot (the value
-`getSlot()` returns), not the stored nibble. Corner and edge microblocks (nooks, strips and posts) override `setShape`
-to subtract their slot offset (7 and 15), so that round trip corrupts them. Faces and hollow covers have no offset,
-which hides the mistake.
+`getSlot()` returns), not the stored nibble. Corner and edge microblocks (nooks and strips) override `setShape` to
+subtract their slot offset (7 and 15), so that round trip corrupts them. Faces, hollow covers and posts use the base
+encoding (posts store an axis index, not a `PartMap` slot), which hides the mistake.
 
 The example captures factory, material and shape before construction. Current GuideNH reads the source shape after
 creation; material callbacks can have side effects, so that ordering can copy a callback-modified value. Preserve or

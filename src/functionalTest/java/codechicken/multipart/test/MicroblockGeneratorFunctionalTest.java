@@ -96,7 +96,7 @@ class MicroblockGeneratorFunctionalTest {
 
     @Test
     void javaExamplePreservesEveryShapeByteWithoutCopyingBindingsOrChangingTheSource() {
-        // Corner/edge/post override setShape with a slot offset, so every family must round-trip.
+        // Corners and edges override setShape with a slot offset, so every family must round-trip the raw byte.
         MicroblockClass[] families = { FaceMicroClass$.MODULE$, HollowMicroClass$.MODULE$, CornerMicroClass$.MODULE$,
                 EdgeMicroClass$.MODULE$, PostMicroClass$.MODULE$ };
         for (MicroblockClass family : families) {
