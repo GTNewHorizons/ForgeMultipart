@@ -11,8 +11,9 @@ method-specific guides linked from the API index.
   inherited traits, companion objects, `$class` helpers and private fields.
 - [ ] Preserve published part/material IDs, NBT keys and packet field order unless the change includes an explicit data
   migration or protocol break.
-- [ ] Identify the exact FMP artifact used to compile and run. New Java APIs on `algent/java` have no minimum published
-  version yet; require a release that actually contains every method used.
+- [ ] Identify the exact FMP artifact used to compile and run. The Java API first shipped in FMP 2.0.0; require
+  `ForgeMultipart@[2.0.0,)` (or a later release containing every method used) in the mod's dependency declaration or,
+  for optional integrations, in the version check that gates the compatibility class.
 - [ ] If FMP is optional, keep FMP-typed code in a compatibility class loaded only after checking mod presence and a
   supported version. Keep FMP types out of classes loaded unconditionally.
 

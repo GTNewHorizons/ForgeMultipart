@@ -29,6 +29,7 @@ of the later upstream rename, not a divergence from the `1.7.12` reference.
 | Scheduled ticks of moved tiles | `TileMultipart.onMoved` hands its parts' pending scheduled and random ticks to the chunk that now contains the tile, keeping their deadlines; moves requested from a tick callback apply after that tick's processing. The Scala implementation left them in the source chunk, so they were lost if it unloaded first, and were saved at the wrong position. Same-world moves only. This fixes a pre-existing Scala bug. |
 | World scheduler clock loading | Retains successfully loaded `schedTime` instead of overwriting it with total world time. Missing or unreadable files still fall back to world time. This fixes a pre-existing Scala bug and preserves the clock used by saved absolute tick deadlines; the file format is unchanged. |
 | Converted tile loading | Copies the source tile coordinates to a replacement produced by `MultipartSaveLoad.loadTiles` before assigning its world and validating it. The Scala implementation left converted replacements at their default coordinates. |
+| Maximum saw strength | ForgeMicroblock recalculates `MicroMaterialRegistry.getMaxCuttingStrength()` on `FMLLoadCompleteEvent` as well as in its post-init. Saws added or re-tiered in a later post-init (Iguana's `after:*`) now count, so `MicroRecipe.canCut`'s cut-anything exemption goes to the actual strongest saw instead of a stale maximum (with Iguana: the Manyullyn Saw, not the Iron Saw). This fixes a pre-existing Scala bug; `canCut` is the only reader and runs only when crafting. |
 | Placement-modifier player lifecycle | Removes cached control-key state when a player logs out and transfers it from the old player object to its replacement on clone. The Scala implementation retained entries until server shutdown. |
 | `IDWriter` before `setMax` | `read`/`write` throw `IllegalStateException` instead of `NullPointerException`. Uninitialized use is unsupported. |
 | `PacketScheduler` invalid `maskWidth` | Throws `IllegalArgumentException` instead of `scala.MatchError`. Valid widths remain 1, 2, 4 and 8. |
@@ -96,7 +97,7 @@ Other retained `$class` bridges and `MODULE$` companions are not covered by this
 | `TileMultipart` | `hasDynamicParts` (false by default), `renderStatic`, `renderDynamic` and `randomDisplayTick` hooks for dispatching generated overrides through a stable superclass |
 | `MultipartMixinFactory` | Four additional static forwarders: `onCompiled`, `autoCompleteJavaTrait` and the two mangled `ASMMixinFactory` parent helpers. Scala emitted them when the base became Java with its original public JVM access; the Java facade retains them. Existing facade entries are unchanged. |
 | `MultipartEventHandler` / `MultipartEventHandler$` | Public `playerLoggedOut(PlayerLoggedOutEvent)` and `playerCloned(PlayerEvent.Clone)` event handlers for placement-modifier state cleanup and transfer |
-| `MultipartHelper` | `createPreviewTileFromNBT(World, NBTTagCompound)` builds an uninstalled client composite directly from saved multipart NBT and rejects unsupported parts as a whole |
+| `MultipartHelper` | `createPreviewTileFromNBT(World, NBTTagCompound)` builds an uninstalled client composite directly from saved multipart NBT and rejects unsupported parts as a whole; with a null world it only loads and binds parts and recalculates stock microblock render bounds (2.0.0 also broadcast `onPartChanged`, which crashed parts that assume a world) |
 
 Previously abstract JVM interface methods now have Java defaults, allowing inheritance without Scala forwarders:
 
@@ -135,7 +136,7 @@ methods. Explicit forwarding is required where the implementation remains abstra
 | --- | --- |
 | `TCuboidPart` | Extend `JCuboidPart`, or forward subparts, collision boxes and breaking rendering to its statics. |
 | `TNormalOcclusion` | Explicitly combine `NormalOcclusionTest.apply(this, other)` with the intended super chain. Audit existing `super.occlusionTest` calls too: they no longer route through the old trait. |
-| `TIconHitEffects` | Explicitly forward `addHitEffects` and `addDestroyEffects` to `IconHitEffects`. |
+| `TIconHitEffects` | Explicitly override `addHitEffects(hit, renderer)` and the two-argument `addDestroyEffects(hit, renderer)`, forwarding to `IconHitEffects`. Don't override the deprecated one-argument `addDestroyEffects(renderer)` that the old trait overrode. |
 | `TItemMultiPart` | Explicitly forward `onItemUse` to `JItemMultiPart`; the inherited Item method otherwise wins. |
 | `TRandomUpdateTick` | Explicitly implement `onWorldJoin` with `TickScheduler.loadRandomTick(this)`. |
 | `TScheduledPacketPart` | Explicitly forward `read` to `TScheduledPacketPart.readMask(this, packet)`. |

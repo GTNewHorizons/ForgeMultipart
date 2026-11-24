@@ -68,17 +68,22 @@ unchanged for existing releases.
 
 GuideNH's promotion recreates the source family and material on the client, then copies the encoded shape byte.
 The [compiling Java example](../../src/functionalTest/java/codechicken/multipart/examples/MicroblockCreationExample.java)
-implements that core-data policy through `setShape(size, slot)`, preserving all eight shape bits. `getShape()` alone
-is only the slot nibble, while `shape()` returns the complete byte. The example leaves source bindings untouched and
-returns an unbound replacement. It is not a clone of arbitrary custom-part state or a shape-validity check.
+implements that core-data policy by copying the raw byte with `shape_$eq(source.shape())`, preserving all eight
+shape bits for every microblock family. `shape()` returns the complete byte; `getSize()` is its high nibble and
+`getShape()` the stored low nibble. The example leaves source bindings untouched and returns an unbound replacement.
+It is not a clone of arbitrary custom-part state or a shape-validity check.
+
+Do not copy a shape with `setShape(getSize(), getShape())`. Its `slot` argument is the absolute `PartMap` slot (the value
+`getSlot()` returns), not the stored nibble. Corner and edge microblocks (nooks and strips) override `setShape` to
+subtract their slot offset (7 and 15), so that round trip corrupts them. Faces, hollow covers and posts use the base
+encoding (posts store an axis index, not a `PartMap` slot), which hides the mistake.
 
 The example captures factory, material and shape before construction. Current GuideNH reads the source shape after
 creation; material callbacks can have side effects, so that ordering can copy a callback-modified value. Preserve or
 explicitly validate that policy when migrating custom materials.
 
-Public `setShape` uses the virtual shape setter; current GuideNH already calls `shape_$eq` directly, while its older
-private-field write bypassed that dispatch. Validate
-custom traits overriding these hooks before adopting the change. Preserve its existing missing/failed-promotion
+`shape_$eq` is the public virtual shape setter; current GuideNH already calls it directly, while its older
+private-field write bypassed that dispatch. Validate custom traits overriding it before adopting the change. Preserve its existing missing/failed-promotion
 handling, part order, Java collection migration, tile state setup and subsequent loading/notifications. Do not copy
 the source tile binding to the new part. Private material-field access has a separate [typed query guide](MATERIAL_ACCESS.md).
 

@@ -71,6 +71,10 @@ factory results or promise that a later NBT/packet will be accepted.
 - `IPartFactory` or Scala `(String, Boolean) => TMultiPart` callers: implement `IPartFactory2`; route the NBT method to
   the old constructor with `false` and the packet method with `true`. Keep any side-specific class selection. A factory
   that ignores the old Boolean, such as ForgeRelocationFMP's frame factory, can construct the same part class in both.
+  **Also override `createPartForClientPreview` to return the client part** (the old constructor with `true`). The legacy
+  adapter answered client-preview requests that way, while the `IPartFactory2` default returns null, which drops the
+  part, and with it the whole tile, from Schematica/GuideNH previews. Worldless previews run no part callbacks, so
+  check that the part can render without them; see the [client preview contract](CLIENT_PREVIEW.md#reconstruction-contract).
 - Keep [converter registration](BLOCK_CONVERTERS.md) and trait registration separate. This change neither replaces `registerConverter` nor
   completes ProjectRed's external microblock trait migration or Schematica's private registry-map migration.
 

@@ -97,7 +97,7 @@ class PostMicroblockClientFunctionalTest {
     /**
      * Executes client geometry with real Forge factories without requesting the stripped client factory entry point.
      */
-    private static final class ClientProbe extends Microblock implements PostMicroblockClient {
+    static final class ClientProbe extends Microblock implements PostMicroblockClient {
 
         private Cuboid6 first;
         private Cuboid6 second;

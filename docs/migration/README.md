@@ -21,10 +21,10 @@ artifact inventories should come from the reports for the revision being reviewe
 
 ## Remaining work
 
-1. **Migrate consumers.** Use the existing typed APIs, with optional integrations gated on presence/version.
-   Preserve each consumer's state, ordering, failure policy and initialization timing. Record the source revision,
-   first released version, minimum FMP dependency and actual target-pack artifact for each legacy contract.
-   Consumer mods may remain Scala internally. Reference checkouts are not evidence of a shipped migration.
+1. **Migrate consumers.** Source patches against FMP 2.0.0 are prepared for every blocking consumer (see the
+   [adoption ledger status](COMPATIBILITY.md#java-api-adoption-ledger)); next are their in-game checks, PRs, releases and
+   pack adoption. Record the first released version, minimum FMP dependency and actual target-pack artifact for each
+   legacy contract. Consumer mods may remain Scala internally. Prepared patches are not evidence of a shipped migration.
 2. **Validate client and pack behavior.** Complete the manual checklist, including illuminated microblock
    construction/halos, previews, rendering, particles, lighting, interactions, old worlds, multiplayer and movement.
    Test optional dependencies both absent and present. The successful MCPC hook needs an actual patched World
@@ -39,8 +39,8 @@ artifact inventories should come from the reports for the revision being reviewe
 5. **Remove FMP's Scala requirement last.** Complete the gates below before retiring bridges, compiler support
    or dependencies. Other mods' independent Scala requirements are outside this target.
 
-Extra Utilities 1.2.12 remains an active supported consumer. Switching support to UtilitiesInExcess requires an
-explicit support decision and actual pack adoption, including migration of the replacement's FMP contracts.
+Extra Utilities 1.2.12 is dropped, not patched; UtilitiesInExcess replaces it and its FMP migration is prepared.
+Confirming that Extra Utilities and Hodgepodge's Extra Utilities mixins are gone from the target pack is a removal gate.
 GTNHLib/fastutil, Sponge Mixins and a replacement runtime generator are conditional choices, not migration tasks
 in themselves. Add them only for a demonstrated need.
 
@@ -48,10 +48,19 @@ in themselves. Add them only for a demonstrated need.
 
 - Every affected adoption-ledger row is verified against the actual target-pack jars, including reflective fields,
   mixin targets, compiler-generated helpers and external Scala traits. Unmodifiable consumers must be retained or replaced.
+- Extra Utilities 1.2.12 (dropped, unmodifiable) and Hodgepodge's Extra Utilities mixins are absent from the target pack.
 - A deprecation/removal window and a release permitted to break the old ABI are agreed. That window is still open;
   adding a replacement or deprecation is not permission to delete a bridge.
 - FMP's own Scala storage, retained models, trait inputs and legacy callers are replaced or retired. In particular,
   ProjectRed's released Java extension alone does not eliminate FMP's internal need for Scala-signature decoding.
+- Before deleting any `X$` companion, every static facade method that forwards to it keeps its own implementation and
+  descriptor. Migrated consumers call these statics directly: for example `MultipartGenerator.generateCompositeTile`,
+  `MicroblockGenerator.create`, `MultipartSaveLoad.loadingWorld`, `MultipartProxy.block`, `MicroblockProxy.itemMicro`
+  and the saw accessors, `FacePlacementGrid.getHitSlot` / `render`, `BlockMicroMaterial.createAndRegister`,
+  `MicroOcclusion.recalcBounds`, the shape-class bounds getters such as `FaceMicroClass.aBounds`,
+  `RedstoneInteractions.getPowerTo` / `connectionMask`, and `MultipartGenerator.registerPassThroughInterface`. Keep
+  `CommonMicroblock` as a type name (consumers test for it), or confirm consumers have moved to `Microblock`. Port
+  `JMicroShrinkRender` (still a Scala trait, all-abstract) with its five method descriptors unchanged: WR-CBE implements it.
 - Shipped and generated FMP classes, descriptors and runtime loading paths contain no remaining Scala requirements;
   Scala compilation and compiler/runtime dependencies can then be removed.
 - Migrated consumers pass old-world, packet, client and dedicated-server validation against the resulting artifact.

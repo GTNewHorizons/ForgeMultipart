@@ -96,21 +96,44 @@ class MicroblockGeneratorFunctionalTest {
 
     @Test
     void javaExamplePreservesEveryShapeByteWithoutCopyingBindingsOrChangingTheSource() {
-        Microblock source = MicroblockGenerator.create(FaceMicroClass$.MODULE$, 0, false);
-        TileMultipart sourceTile = new TileMultipart();
-        source.bind(sourceTile);
-        for (int shape = Byte.MIN_VALUE; shape <= Byte.MAX_VALUE; shape++) {
-            source.shape_$eq((byte) shape);
-            Microblock created = MicroblockCreationExample.recreateForSide(source, false);
-            assertNotSame(source, created);
-            assertSame(source.getClass(), created.getClass());
-            assertSame(source.microClass(), created.microClass());
-            assertEquals(source.material(), created.material());
-            assertEquals((byte) shape, created.shape());
-            assertNull(created.tile());
-            assertSame(sourceTile, source.tile());
-            assertEquals((byte) shape, source.shape());
+        // Corners and edges override setShape with a slot offset, so every family must round-trip the raw byte.
+        MicroblockClass[] families = { FaceMicroClass$.MODULE$, HollowMicroClass$.MODULE$, CornerMicroClass$.MODULE$,
+                EdgeMicroClass$.MODULE$, PostMicroClass$.MODULE$ };
+        for (MicroblockClass family : families) {
+            Microblock source = MicroblockGenerator.create(family, 0, false);
+            TileMultipart sourceTile = new TileMultipart();
+            source.bind(sourceTile);
+            for (int shape = Byte.MIN_VALUE; shape <= Byte.MAX_VALUE; shape++) {
+                source.shape_$eq((byte) shape);
+                Microblock created = MicroblockCreationExample.recreateForSide(source, false);
+                assertNotSame(source, created);
+                assertSame(source.getClass(), created.getClass());
+                assertSame(source.microClass(), created.microClass());
+                assertEquals(source.material(), created.material());
+                assertEquals((byte) shape, created.shape(), family + " shape " + shape);
+                assertNull(created.tile());
+                assertSame(sourceTile, source.tile());
+                assertEquals((byte) shape, source.shape());
+            }
         }
+    }
+
+    @Test
+    void setShapeTakesTheAbsoluteSlotSoGetShapeDoesNotRoundTripForCornersAndEdges() {
+        // Documents the trap in docs/api/MICROBLOCK_CREATION.md: pair setShape with getSlot(), not getShape().
+        Microblock corner = MicroblockGenerator.create(CornerMicroClass$.MODULE$, 0, false);
+        corner.shape_$eq((byte) 0x23);
+        Microblock copy = MicroblockGenerator.create(CornerMicroClass$.MODULE$, 0, false);
+        copy.setShape(corner.getSize(), corner.getShape());
+        assertFalse(copy.shape() == corner.shape());
+        copy.setShape(corner.getSize(), ((codechicken.microblock.CommonMicroblock) corner).getSlot());
+        assertEquals(corner.shape(), copy.shape());
+
+        Microblock edge = MicroblockGenerator.create(EdgeMicroClass$.MODULE$, 0, false);
+        edge.shape_$eq((byte) 0x45);
+        Microblock edgeCopy = MicroblockGenerator.create(EdgeMicroClass$.MODULE$, 0, false);
+        edgeCopy.setShape(edge.getSize(), ((codechicken.microblock.CommonMicroblock) edge).getSlot());
+        assertEquals(edge.shape(), edgeCopy.shape());
     }
 
     @Test

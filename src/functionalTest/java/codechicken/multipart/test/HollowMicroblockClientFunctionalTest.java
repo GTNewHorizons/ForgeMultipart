@@ -154,7 +154,7 @@ class HollowMicroblockClientFunctionalTest {
     }
 
     /** Uses client helpers with real Forge factories; the dedicated server strips client factory creation. */
-    private static final class ClientProbe extends Microblock implements HollowMicroblockClient {
+    static final class ClientProbe extends Microblock implements HollowMicroblockClient {
 
         Cuboid6 bounds;
         int mask;

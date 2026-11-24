@@ -21,7 +21,7 @@ import cpw.mods.fml.common.Mod;
 class MicroblockModCharacterizationTest {
 
     private static final Set<String> EVENT_METHOD_NAMES = new TreeSet<>(
-            Arrays.asList("beforeServerStart", "handleIMC", "init", "postInit", "preInit"));
+            Arrays.asList("beforeServerStart", "handleIMC", "init", "loadComplete", "postInit", "preInit"));
 
     private static final Set<String> PUBLIC_METHODS = new TreeSet<>(
             Arrays.asList(
@@ -30,6 +30,7 @@ class MicroblockModCharacterizationTest {
                     "beforeServerStart(Lcpw/mods/fml/common/event/FMLServerAboutToStartEvent;)V",
                     "handleIMC(Lcpw/mods/fml/common/event/FMLInterModComms$IMCEvent;)V",
                     "init(Lcpw/mods/fml/common/event/FMLInitializationEvent;)V",
+                    "loadComplete(Lcpw/mods/fml/common/event/FMLLoadCompleteEvent;)V",
                     "postInit(Lcpw/mods/fml/common/event/FMLPostInitializationEvent;)V",
                     "preInit(Lcpw/mods/fml/common/event/FMLPreInitializationEvent;)V"));
 

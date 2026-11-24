@@ -5,6 +5,7 @@ import codechicken.multipart.Tags;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
@@ -33,6 +34,11 @@ public final class MicroblockMod {
     @Mod.EventHandler
     public static void postInit(FMLPostInitializationEvent event) {
         MicroblockMod$.MODULE$.postInit(event);
+    }
+
+    @Mod.EventHandler
+    public static void loadComplete(FMLLoadCompleteEvent event) {
+        MicroblockMod$.MODULE$.loadComplete(event);
     }
 
     @Mod.EventHandler

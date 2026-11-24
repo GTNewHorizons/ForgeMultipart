@@ -28,8 +28,10 @@ public class ItemSaw extends Item implements Saw {
 
     /**
      * Changes the cutting strength used by recipes and the saw renderer. This does not change the durability selected
-     * when the saw was constructed. Startup integrations that change saw tiers must finish before ForgeMicroblock
-     * post-initialization, when {@link MicroMaterialRegistry#getMaxCuttingStrength()} is calculated.
+     * when the saw was constructed. Startup integrations that change saw tiers must finish before
+     * {@code FMLLoadCompleteEvent}, when ForgeMicroblock recalculates
+     * {@link MicroMaterialRegistry#getMaxCuttingStrength()} (it is also calculated during its post-initialization), so
+     * any post-init phase works.
      *
      * @param harvestLevel the new cutting strength
      */

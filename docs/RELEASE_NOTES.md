@@ -31,7 +31,7 @@ Source compiled against the untransformed dev jar is the problem. `javac` and `s
 **The fix is to target the stable capability interface instead of the raw dev-jar class.** Note the package: the
 types that break are in `codechicken.multipart.scalatraits`, the replacements are not. The existing
 `IRedstoneTile.openConnections` and `TileMultipart.partMap` contracts work on both old and new FMP; the new
-`TileMultipart.refreshPartSlots` requires an FMP release containing the Java API.
+`TileMultipart.refreshPartSlots` requires FMP 2.0.0 or later, the first release containing the Java API.
 
 | Instead of | Use |
 | --- | --- |
@@ -52,7 +52,8 @@ Confirmed still present on each project's default branch:
 | ProjectRed | `transmission/redwires.scala` | `TRedstoneTile.openConnections` |
 | OpenComputers | `integration/fmp/PrintPart.scala` | `TSlottedTile.v_partMap` |
 
-`TTileChangeTile`, `TFluidHandlerTile` and `TRandomDisplayTickTile` have no known consumer references.
+Migrated source patches for both exist (targeting `IRedstoneTile` and `refreshPartSlots`), but neither is released
+yet. `TTileChangeTile`, `TFluidHandlerTile` and `TRandomDisplayTickTile` have no known consumer references.
 
 ## 2. Silent behavior changes: recompiled Scala trait composition
 
@@ -69,11 +70,15 @@ Where the implementation is now an interface default, forward explicitly:
 | --- | --- |
 | `TCuboidPart` | Extend `JCuboidPart`, or forward subparts, collision boxes and breaking rendering to its statics |
 | `TNormalOcclusion` | Combine `NormalOcclusionTest.apply(this, other)` with the intended super chain explicitly. Audit existing `super.occlusionTest` calls: they no longer route through the old trait |
-| `TIconHitEffects` | Forward `addHitEffects` and `addDestroyEffects` to `IconHitEffects` |
+| `TIconHitEffects` | Override `addHitEffects(hit, renderer)` → `IconHitEffects.addHitEffects(this, hit, renderer)` and the two-argument `addDestroyEffects(hit, renderer)` → `IconHitEffects.addDestroyEffects(this, renderer)`. Don't override the deprecated one-argument `addDestroyEffects(renderer)`, even though the old trait did |
 | `TItemMultiPart` | Forward `onItemUse` to `JItemMultiPart`; the inherited `Item` method otherwise wins |
 | `TRandomUpdateTick` | Implement `onWorldJoin` as `TickScheduler.loadRandomTick(this)` |
 | `TScheduledPacketPart` | Forward `read` to `TScheduledPacketPart.readMask(this, packet)` |
 | `ScratchBitSet` | Implement both methods and the storage accessors, and initialize storage explicitly |
+
+`TFacePart`, `TEdgePart`, `TSlottedPart`, `IRedstonePart` and `Saw` need no forwarder: `TMultiPart` and `Item` don't
+declare their methods, so the interface defaults apply. Where FMP has a deprecated overload, forward the
+non-deprecated one.
 
 Previously compiled calls into **retained** `$class` bridges still link; this applies only to recompilation.
 

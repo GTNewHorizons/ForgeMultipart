@@ -15,7 +15,8 @@ public final class MicroblockCreationExample {
         int material = source.material();
         byte shape = source.shape();
         Microblock created = MicroblockGenerator.create(microClass, material, client);
-        created.setShape(shape >> 4, shape & 0xF);
+        // Copy the raw byte: corner/edge setShape(size, slot) expects getSlot(), not the stored nibble.
+        created.shape_$eq(shape);
         return created;
     }
 }

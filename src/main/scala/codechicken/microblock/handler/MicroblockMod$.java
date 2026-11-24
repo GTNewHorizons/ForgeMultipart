@@ -8,6 +8,7 @@ import codechicken.multipart.Tags;
 import cpw.mods.fml.common.Mod;
 import cpw.mods.fml.common.event.FMLInitializationEvent;
 import cpw.mods.fml.common.event.FMLInterModComms.IMCEvent;
+import cpw.mods.fml.common.event.FMLLoadCompleteEvent;
 import cpw.mods.fml.common.event.FMLPostInitializationEvent;
 import cpw.mods.fml.common.event.FMLPreInitializationEvent;
 import cpw.mods.fml.common.event.FMLServerAboutToStartEvent;
@@ -45,6 +46,15 @@ public final class MicroblockMod$ {
     public void postInit(FMLPostInitializationEvent event) {
         MicroMaterialRegistry.setupIDMap();
         MicroblockProxy$.MODULE$.postInit();
+    }
+
+    /**
+     * Recomputes the cached maximum saw strength once every mod's post-init has run, so saws created or re-tiered in a
+     * later post-init (Iguana Tweaks' {@code after:*}) are counted. The post-init value is kept until then.
+     */
+    @Mod.EventHandler
+    public void loadComplete(FMLLoadCompleteEvent event) {
+        MicroMaterialRegistry.calcMaxCuttingStrength();
     }
 
     @Mod.EventHandler
